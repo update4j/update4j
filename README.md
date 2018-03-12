@@ -30,7 +30,7 @@ At the heart of everything is the `Configuration` class. Here are some useful me
 
 |Method|Purpose|
 |---|---|
-|`read(Reader)`| Read a configuration from an stream, in xml.|
+|`read(Reader)`| Read a configuration from a stream, in xml.|
 |`write(Writer)`| Write the configuration to an xml file.|
 |`update()`|Check if any file is outdated and update it.|
 |`update(Certificate)`|Same as above but will check the signature before saving the file.|
