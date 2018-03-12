@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
@@ -699,6 +700,17 @@ public class Configuration {
 		}
 
 		//	JAXB.marshal(configBinding, writer);
+	}
+
+	public String toString() {
+		StringWriter out = new StringWriter();
+		try {
+			write(out);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return out.toString();
 	}
 
 	public static Builder absolute() {
