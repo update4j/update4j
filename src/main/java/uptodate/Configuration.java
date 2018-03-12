@@ -109,11 +109,15 @@ public class Configuration {
 	}
 
 	public String getUserPropertyForCurrent(String key) {
-		return properties.stream()
+		return properties.stream() // First try to locate os specific properties
 						.filter(p -> key.equals(p.getKey()) && p.getOs() == OS.CURRENT)
 						.map(Property::getValue)
 						.findAny()
-						.orElse(null);
+						.orElse(properties.stream()
+										.filter(p -> key.equals(p.getKey()) && p.getOs() == null)
+										.map(Property::getValue)
+										.findAny()
+										.orElse(null));
 	}
 
 	public Map<String, String> getResolvedProperties() {
@@ -451,7 +455,7 @@ public class Configuration {
 						.filter(Library::isModulepath)
 						.map(Library::getPath)
 						.collect(Collectors.toList());
-		
+
 		ModuleFinder finder = ModuleFinder.of(paths.toArray(new Path[paths.size()]));
 		List<String> mods = finder.findAll()
 						.stream()
