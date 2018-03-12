@@ -113,7 +113,7 @@ public class Configuration {
 						.filter(p -> key.equals(p.getKey()) && p.getOs() == OS.CURRENT)
 						.map(Property::getValue)
 						.findAny()
-						.orElse(properties.stream()
+						.orElseGet(() -> properties.stream()
 										.filter(p -> key.equals(p.getKey()) && p.getOs() == null)
 										.map(Property::getValue)
 										.findAny()
