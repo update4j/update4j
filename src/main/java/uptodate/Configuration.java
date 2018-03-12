@@ -316,84 +316,87 @@ public class Configuration {
 			long downloadJobSize = requiresUpdate.stream().mapToLong(Library::getSize).sum();
 			double downloadJobCompleted = 0;
 
-			handler.startDownloads();
-			handler.updateDownloadProgress(0f);
+			if (!requiresUpdate.isEmpty()) {
+				handler.startDownloads();
+				handler.updateDownloadProgress(0f);
 
-			for (Library lib : requiresUpdate) {
-				handler.startDownloadLibrary(lib);
-				handler.updateDownloadLibraryProgress(lib, 0f);
+				for (Library lib : requiresUpdate) {
+					handler.startDownloadLibrary(lib);
+					handler.updateDownloadLibraryProgress(lib, 0f);
 
-				int read = 0;
-				double currentCompleted = 0;
-				byte[] buffer = new byte[1024];
+					int read = 0;
+					double currentCompleted = 0;
+					byte[] buffer = new byte[1024];
 
-				Path output;
-				if (tempDir == null) {
-					Files.createDirectories(lib.getPath().getParent());
-					output = Files.createTempFile(lib.getPath().getParent(), null, null);
-				} else {
-					Files.createDirectories(tempDir);
-					output = Files.createTempFile(tempDir, null, null);
-					updateData.put(output.toFile(), lib.getPath().toFile());
-				}
+					Path output;
+					if (tempDir == null) {
+						Files.createDirectories(lib.getPath().getParent());
+						output = Files.createTempFile(lib.getPath().getParent(), null, null);
+					} else {
+						Files.createDirectories(tempDir);
+						output = Files.createTempFile(tempDir, null, null);
+						updateData.put(output.toFile(), lib.getPath().toFile());
+					}
 
-				URLConnection connection = lib.getUri().toURL().openConnection();
+					URLConnection connection = lib.getUri().toURL().openConnection();
 
-				// Some downloads may fail with HTTP/403, this may solve it
-				connection.addRequestProperty("User-Agent", "Mozilla/5.0");
-				try (InputStream in = connection.getInputStream(); OutputStream out = Files.newOutputStream(output)) {
-					while ((read = in.read(buffer, 0, buffer.length)) > -1) {
-						out.write(buffer, 0, read);
+					// Some downloads may fail with HTTP/403, this may solve it
+					connection.addRequestProperty("User-Agent", "Mozilla/5.0");
+					try (InputStream in = connection.getInputStream();
+									OutputStream out = Files.newOutputStream(output)) {
+						while ((read = in.read(buffer, 0, buffer.length)) > -1) {
+							out.write(buffer, 0, read);
 
-						if (sig != null) {
-							sig.update(buffer, 0, read);
+							if (sig != null) {
+								sig.update(buffer, 0, read);
+							}
+
+							downloadJobCompleted += read;
+							currentCompleted += read;
+
+							handler.updateDownloadLibraryProgress(lib, (float) (currentCompleted / lib.getSize()));
+							handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
 						}
 
-						downloadJobCompleted += read;
-						currentCompleted += read;
+						if (sig != null) {
+							handler.verifyingLibrary(lib);
 
-						handler.updateDownloadLibraryProgress(lib, (float) (currentCompleted / lib.getSize()));
-						handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
-					}
+							if (lib.getSignature() == null)
+								throw new SecurityException("Missing signature.");
 
-					if (sig != null) {
-						handler.verifyingLibrary(lib);
+							if (!sig.verify(lib.getSignature()))
+								throw new SecurityException("Signature verification failed.");
+						}
 
-						if (lib.getSignature() == null)
-							throw new SecurityException("Missing signature.");
+						if (tempDir == null) {
+							Files.move(output, lib.getPath(), StandardCopyOption.REPLACE_EXISTING);
+						}
 
-						if (!sig.verify(lib.getSignature()))
-							throw new SecurityException("Signature verification failed.");
-					}
+						updated.add(lib);
+						handler.doneDownloadLibrary(lib);
 
-					if (tempDir == null) {
-						Files.move(output, lib.getPath(), StandardCopyOption.REPLACE_EXISTING);
-					}
-
-					updated.add(lib);
-					handler.doneDownloadLibrary(lib);
-
-				} finally {
-					// clean up if it failed
-					if (tempDir == null) {
-						Files.deleteIfExists(output);
+					} finally {
+						// clean up if it failed
+						if (tempDir == null) {
+							Files.deleteIfExists(output);
+						}
 					}
 				}
-			}
 
-			if (tempDir != null && updateData.size() > 0) {
-				Path updateDataFile = tempDir.resolve(UpToDate.UPDATE_DATA);
+				if (tempDir != null && updateData.size() > 0) {
+					Path updateDataFile = tempDir.resolve(UpToDate.UPDATE_DATA);
 
-				try (ObjectOutputStream out = new ObjectOutputStream(
-								Files.newOutputStream(updateDataFile, StandardOpenOption.CREATE))) {
-					out.writeObject(updateData);
+					try (ObjectOutputStream out = new ObjectOutputStream(
+									Files.newOutputStream(updateDataFile, StandardOpenOption.CREATE))) {
+						out.writeObject(updateData);
+					}
+
+					FileUtils.windowsHide(updateDataFile);
 				}
 
-				FileUtils.windowsHide(updateDataFile);
+				handler.doneDownloads();
 			}
-
-			handler.doneDownloads();
-
+			
 			handler.succedded();
 			success = true;
 
@@ -709,7 +712,7 @@ public class Configuration {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		return out.toString();
 	}
 
