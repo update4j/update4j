@@ -4,15 +4,15 @@ Auto-updater and launcher for your distributed applications. Built on top of Jav
 
 [![Build Status](https://travis-ci.org/uptodate-project/uptodate.svg?branch=master)](https://travis-ci.org/uptodate-project/uptodate)
 [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-![Release](https://img.shields.io/badge/release-v1.0--beta-yellow.svg)
+[![Release](https://img.shields.io/badge/release-v1.0--beta-yellow.svg)](https://github.com/uptodate-project/uptodate/releases/tag/v1.0-beta)
 
 
 ### Screenshots
 
-##### JavaFX
+#### JavaFX
 [![javafx][1]][1]
 
-##### Headless
+#### Headless
 [![headless][2]][2]
 
 
@@ -88,6 +88,5 @@ that made this possible.
 This project is licensed under the Apache Software License 2.0
 
 
-
-  [1]: https://i.stack.imgur.com/DrSzz.gif
+  [1]: https://i.stack.imgur.com/bi9gL.gif
   [2]: https://i.stack.imgur.com/ca9rT.gif
