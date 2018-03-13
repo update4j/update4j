@@ -4,7 +4,9 @@ Auto-updater and launcher for your distributed applications. Built on top of Jav
 
 [![Build Status](https://travis-ci.org/uptodate-project/uptodate.svg?branch=master)](https://travis-ci.org/uptodate-project/uptodate)
 [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+![Java-9](https://img.shields.io/badge/java-9%2B-orange.svg)
 [![Release](https://img.shields.io/badge/release-v1.0--beta-yellow.svg)](https://github.com/uptodate-project/uptodate/releases/tag/v1.0-beta)
+
 
 
 ### Screenshots
