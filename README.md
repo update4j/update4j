@@ -75,7 +75,7 @@ This Project loads modules on a new `ModuleLayer` when `Configuration::launch` i
   automatically resolves all modules in the `java`, `javax`, and `javafx` namespace.
   
   If you want to use system modules in the `jdk` namespace (as `jdk.incubator.httpclient`) you should either 
-  require them in one of the service handlers (more info in the [wiki](https://github.com/uptodate-project/uptodate/wiki))
+  require them in one of the service handlers (more info in the [wiki](https://github.com/uptodate-project/uptodate/wiki#handlers))
   or start the VM with `--add-modules jdk.icubator.httpsclient`,
   or -- to always get it right -- `--add-modules ALL-SYSTEM`.
   
