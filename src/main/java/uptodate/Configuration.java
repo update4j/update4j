@@ -318,11 +318,9 @@ public class Configuration {
 
 			if (!requiresUpdate.isEmpty()) {
 				handler.startDownloads();
-				handler.updateDownloadProgress(0f);
 
 				for (Library lib : requiresUpdate) {
 					handler.startDownloadLibrary(lib);
-					handler.updateDownloadLibraryProgress(lib, 0f);
 
 					int read = 0;
 					double currentCompleted = 0;
@@ -344,6 +342,14 @@ public class Configuration {
 					connection.addRequestProperty("User-Agent", "Mozilla/5.0");
 					try (InputStream in = connection.getInputStream();
 									OutputStream out = Files.newOutputStream(output)) {
+
+						// We should set download progress only AFTER the request has returned.
+						// The delay can be monitored by the difference between calls from startDownload to this.
+						if (downloadJobCompleted == 0) {
+							handler.updateDownloadProgress(0f);
+						}
+						handler.updateDownloadLibraryProgress(lib, 0f);
+						
 						while ((read = in.read(buffer, 0, buffer.length)) > -1) {
 							out.write(buffer, 0, read);
 
@@ -396,7 +402,7 @@ public class Configuration {
 
 				handler.doneDownloads();
 			}
-			
+
 			handler.succedded();
 			success = true;
 
