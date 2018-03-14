@@ -42,11 +42,13 @@ You can use it as a regular dependency, or you may run it as a runnable JAR file
 
 To run it as a runnable JAR as a module:
 
-```powershell
+```batchfile
 ~$> java --module-path . --module uptodate
 ```
+
 Or in shorthand:
-```powershell
+
+```batchfile
 ~$> java -p . -m uptodate
 ```
   
