@@ -38,7 +38,7 @@ the application would pass its command-line arguments to the existing running in
 
 Download the JAR file from the latest [release](https://github.com/uptodate-project/uptodate/releases).
 
-You can use it as a regular dependency, or you may run it as a runnable JAR file in modular mode. In the latter case you must also provide a [`Delegate`](https://github.com/uptodate-project/uptodate/wiki#handlers) in the module-path.
+You can use it as a regular dependency, or you may run it as a runnable JAR file in modular mode. In the latter case you must also provide a [`Delegate`](https://github.com/uptodate-project/uptodate/wiki/Documentation#handlers) in the module-path.
 
 To run it as a runnable JAR as a module:
 
@@ -52,11 +52,11 @@ Or in shorthand:
   
 ## Documentation
 
-Please refer to the [wiki](https://github.com/uptodate-project/uptodate/wiki) for full documentation.
+Please refer to the [documentation](https://github.com/uptodate-project/uptodate/wiki/Documentation) for a full reference guide.
 
 ## Limitations
 
-As this projects builds on top of the Module System we are limited to what it has to offer. Please refer to the [wiki](https://github.com/uptodate-project/uptodate/wiki#limitations) for a comprehensive list of limitations.
+As this projects builds on top of the Module System we are limited to what it has to offer. Please refer to the [documentation](https://github.com/uptodate-project/uptodate/wiki/Documentation#limitations) for a comprehensive list of limitations.
 
 ## Attribution
 
