@@ -226,6 +226,15 @@ public class Configuration {
 
 		throw new UnsupportedOperationException("Unknown implication type");
 	}
+	
+	public boolean requiresUpdate() throws IOException {
+		for(Library lib : getLibraries()) {
+			if(lib.requiresUpdate())
+				return true;
+		}
+		
+		return false;
+	}
 
 	public boolean update() {
 		return update((Certificate) null);
