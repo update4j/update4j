@@ -1,4 +1,4 @@
-package uptodate;
+package org.update4j;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -13,7 +13,8 @@ import java.util.Base64;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import uptodate.util.FileUtils;
+
+import org.update4j.util.FileUtils;
 
 public class Library {
 

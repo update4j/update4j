@@ -1,4 +1,4 @@
-package uptodate.service;
+package org.update4j.service;
 
 import java.util.List;
 

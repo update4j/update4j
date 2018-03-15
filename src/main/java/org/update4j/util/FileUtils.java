@@ -1,4 +1,4 @@
-package uptodate.util;
+package org.update4j.util;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
 import java.util.zip.Adler32;
 import java.util.zip.ZipFile;
 
-import uptodate.OS;
-import uptodate.service.Service;
+import org.update4j.OS;
+import org.update4j.service.Service;
 
 public class FileUtils {
 

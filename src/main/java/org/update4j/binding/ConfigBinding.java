@@ -1,4 +1,4 @@
-package uptodate.binding;
+package org.update4j.binding;
 
 import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -8,7 +8,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import uptodate.Property;
+import org.update4j.Property;
 
 /*
  * Everything that can be replaced by a property should be stored as strings.

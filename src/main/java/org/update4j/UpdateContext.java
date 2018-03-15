@@ -1,4 +1,4 @@
-package uptodate;
+package org.update4j;
 
 import java.nio.file.Path;
 import java.security.cert.Certificate;

@@ -1,7 +1,7 @@
-package uptodate.service;
+package org.update4j.service;
 
-import uptodate.Library;
-import uptodate.UpdateContext;
+import org.update4j.Library;
+import org.update4j.UpdateContext;
 
 public interface UpdateHandler extends Service {
 

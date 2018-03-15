@@ -1,4 +1,4 @@
-package uptodate;
+package org.update4j;
 
 import java.util.Collections;
 import java.util.List;

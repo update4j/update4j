@@ -1,4 +1,4 @@
-package uptodate;
+package org.update4j;
 
 import javax.xml.bind.annotation.XmlEnum;
 import javax.xml.bind.annotation.XmlEnumValue;

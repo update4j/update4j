@@ -1,6 +1,6 @@
-package uptodate.service;
+package org.update4j.service;
 
-import uptodate.LaunchContext;
+import org.update4j.LaunchContext;
 
 public interface LaunchHandler extends Service {
 

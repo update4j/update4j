@@ -1,4 +1,4 @@
-package uptodate;
+package org.update4j;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,33 +9,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import uptodate.service.Delegate;
-import uptodate.service.Service;
 
-public class UpToDate {
+public class Update {
 
 	public static final Path UPDATE_DATA = Paths.get(".update");
-
-	public static void main(String[] args) throws Throwable {
-		String overrideClass = null;
-
-		Pattern pattern = Pattern.compile(
-						"\\Q--delegate\\E\\s*?=?\\s*?(([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*)");
-		for (String s : args) {
-			Matcher matcher = pattern.matcher(s);
-			if (matcher.find()) {
-				overrideClass = matcher.group(1);
-				break;
-			}
-		}
-
-		Delegate delegate = Service.loadService(Delegate.class, overrideClass);
-		delegate.main(List.of(args));
-	}
 
 	public static boolean containsUpdate(Path tempDir) {
 		return Files.isRegularFile(tempDir.resolve(UPDATE_DATA));

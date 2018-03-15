@@ -1,4 +1,4 @@
-package uptodate.util;
+package org.update4j.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import uptodate.OS;
-import uptodate.Property;
+import org.update4j.OS;
+import org.update4j.Property;
 
 public class PropertyUtils {
 

@@ -1,4 +1,4 @@
-package uptodate.binding;
+package org.update4j.binding;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;

@@ -1,4 +1,4 @@
-package uptodate;
+package org.update4j;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import uptodate.util.FileUtils;
+import org.update4j.util.FileUtils;
 
 public class SingleInstanceManager {
 

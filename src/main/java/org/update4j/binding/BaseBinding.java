@@ -1,37 +1,16 @@
-package uptodate.binding;
+package org.update4j.binding;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import uptodate.OS;
-
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
-public class LibraryBinding {
+public class BaseBinding {
 
 	@XmlAttribute
 	public String uri;
-
 	@XmlAttribute
 	public String path;
-
-	@XmlAttribute
-	public String checksum;
-
-	@XmlAttribute
-	public Long size;
-
-	@XmlAttribute
-	public OS os;
-
-	@XmlAttribute
-	public Boolean modulepath;
-
-	@XmlAttribute
-	public String comment;
-
-	@XmlAttribute
-	public String signature;
 }

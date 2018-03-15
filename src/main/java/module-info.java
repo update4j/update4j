@@ -1,10 +1,10 @@
-module uptodate {
+module org.update4j {
 
 	/*
 	 * Public API
 	 */
-	exports uptodate;
-	exports uptodate.service;
+	exports org.update4j;
+	exports org.update4j.service;
 
 	/*
 	 * We list all system modules to make it available to layers requiring them;
@@ -87,13 +87,13 @@ module uptodate {
 	/*
 	 * JAXB framework for Configuration read/write
 	 */
-	opens uptodate to java.xml.bind;
-	opens uptodate.binding to java.xml.bind;
+	opens org.update4j to java.xml.bind;
+	opens org.update4j.binding to java.xml.bind;
 
-	uses uptodate.service.Delegate;
-	uses uptodate.service.UpdateHandler;
-	uses uptodate.service.LaunchHandler;
+	uses org.update4j.service.Delegate;
+	uses org.update4j.service.UpdateHandler;
+	uses org.update4j.service.LaunchHandler;
 
-	provides uptodate.service.UpdateHandler with uptodate.service.DefaultUpdateHandler;
+	provides org.update4j.service.UpdateHandler with org.update4j.service.DefaultUpdateHandler;
 
 }
