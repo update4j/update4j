@@ -67,5 +67,5 @@ that made this possible.
 This project is licensed under the [Apache Software License 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 
-  [1]: https://i.stack.imgur.com/bi9gL.gif
-  [2]: https://i.stack.imgur.com/ca9rT.gif
+  [1]: https://i.stack.imgur.com/Hz1G7.gif
+  [2]: https://i.stack.imgur.com/Ttf8Z.gif
