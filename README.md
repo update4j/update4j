@@ -10,11 +10,11 @@ Auto-updater and launcher for your distributed applications. Built on top of Jav
 
 ### JavaFX
 
-<sup>Downloads 3 files then launches `hello-world.jar`</sup>
+<sup>Downloads 4 files then launches `hello-world.jar`</sup>
 [![javafx][1]][1]
 
 ### Headless
-<sup>Downloads 3 files then launches `hello-world.jar`. You can see that subsequent runs won't download again.</sup>
+<sup>Downloads 4 files then launches `hello-world.jar`. You can see that subsequent runs won't download again.</sup>
 [![headless][2]][2]
 
 
