@@ -544,13 +544,13 @@ public class Configuration {
 		if (configBinding.handler != null) {
 			if (configBinding.handler.update != null) {
 				config.updateHandler = config.resolvePlaceholders(configBinding.handler.update);
-				if (!config.updateHandler.matches("([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*")) {
+				if (!config.updateHandler.matches(Main.CLASS_REGEX)) {
 					throw new IllegalStateException(config.updateHandler + " is not a valid java class name.");
 				}
 			}
 			if (configBinding.handler.launch != null) {
 				config.launchHandler = config.resolvePlaceholders(configBinding.handler.launch);
-				if (!config.launchHandler.matches("([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*")) {
+				if (!config.launchHandler.matches(Main.CLASS_REGEX)) {
 					throw new IllegalStateException(config.launchHandler + " is not a valid java class name.");
 				}
 			}

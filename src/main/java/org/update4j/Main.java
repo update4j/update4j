@@ -9,12 +9,12 @@ import org.update4j.service.Service;
 
 public class Main {
 
+	public static String CLASS_REGEX = "\\Q--delegate\\E\\s*?=?\\s*?(([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*)";
 
 	public static void main(String[] args) throws Throwable {
 		String overrideClass = null;
 
-		Pattern pattern = Pattern.compile(
-						"\\Q--delegate\\E\\s*?=?\\s*?(([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*)");
+		Pattern pattern = Pattern.compile(CLASS_REGEX);
 		for (String s : args) {
 			Matcher matcher = pattern.matcher(s);
 			if (matcher.matches()) {
