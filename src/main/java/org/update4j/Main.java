@@ -17,7 +17,7 @@ public class Main {
 						"\\Q--delegate\\E\\s*?=?\\s*?(([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*)");
 		for (String s : args) {
 			Matcher matcher = pattern.matcher(s);
-			if (matcher.find()) {
+			if (matcher.matches()) {
 				overrideClass = matcher.group(1);
 				break;
 			}
