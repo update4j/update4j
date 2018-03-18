@@ -92,7 +92,7 @@ module org.update4j {
 
 	uses org.update4j.service.Delegate;
 	uses org.update4j.service.UpdateHandler;
-	uses org.update4j.service.LaunchHandler;
+	uses org.update4j.service.Launcher;
 
 	provides org.update4j.service.UpdateHandler with org.update4j.service.DefaultUpdateHandler;
 

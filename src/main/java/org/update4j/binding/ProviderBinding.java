@@ -7,11 +7,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
-public class HandlerBinding {
+public class ProviderBinding {
 
 	@XmlAttribute
-	public String update;
+	public String updateHandler;
 	@XmlAttribute
-	public String launch;
+	public String launcher;
 
 }

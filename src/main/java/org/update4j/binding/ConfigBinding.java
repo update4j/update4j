@@ -29,7 +29,7 @@ public class ConfigBinding {
 	public BaseBinding base;
 
 	@XmlElement
-	public HandlerBinding handler;
+	public ProviderBinding provider;
 
 	@XmlElementWrapper
 	@XmlElement(name = "property")

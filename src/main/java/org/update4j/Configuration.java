@@ -45,9 +45,9 @@ import javax.xml.bind.Marshaller;
 
 import org.update4j.binding.BaseBinding;
 import org.update4j.binding.ConfigBinding;
-import org.update4j.binding.HandlerBinding;
+import org.update4j.binding.ProviderBinding;
 import org.update4j.binding.LibraryBinding;
-import org.update4j.service.LaunchHandler;
+import org.update4j.service.Launcher;
 import org.update4j.service.Service;
 import org.update4j.service.UpdateHandler;
 import org.update4j.util.FileUtils;
@@ -60,7 +60,7 @@ public class Configuration {
 	private URI baseUri;
 	private Path basePath;
 	private String updateHandler;
-	private String launchHandler;
+	private String launcher;
 
 	private List<Library> libraries;
 	private List<Library> unmodifiableLibraries;
@@ -93,8 +93,8 @@ public class Configuration {
 		return updateHandler;
 	}
 
-	public String getLaunchHandler() {
-		return launchHandler;
+	public String getLauncher() {
+		return launcher;
 	}
 
 	public List<Library> getLibraries() {
@@ -226,13 +226,13 @@ public class Configuration {
 
 		throw new UnsupportedOperationException("Unknown implication type");
 	}
-	
+
 	public boolean requiresUpdate() throws IOException {
-		for(Library lib : getLibraries()) {
-			if(lib.requiresUpdate())
+		for (Library lib : getLibraries()) {
+			if (lib.requiresUpdate())
 				return true;
 		}
-		
+
 		return false;
 	}
 
@@ -358,7 +358,7 @@ public class Configuration {
 							handler.updateDownloadProgress(0f);
 						}
 						handler.updateDownloadLibraryProgress(lib, 0f);
-						
+
 						while ((read = in.read(buffer, 0, buffer.length)) > -1) {
 							out.write(buffer, 0, read);
 
@@ -416,7 +416,7 @@ public class Configuration {
 			success = true;
 
 		} catch (Throwable t) {
-			// clean-up as update failed
+			// clean-up as updateHandler failed
 			if (tempDir != null) {
 				try {
 					Files.deleteIfExists(tempDir.resolve(Update.UPDATE_DATA));
@@ -448,26 +448,20 @@ public class Configuration {
 
 	}
 
-	public boolean launch() {
-		return launch(null, null);
+	public void launch() {
+		launch(null, null);
 	}
 
-	public boolean launch(Consumer<? super LaunchHandler> handlerSetup) {
-		return launch(null, handlerSetup);
+	public void launch(Consumer<? super Launcher> launcherSetup) {
+		launch(null, launcherSetup);
 	}
 
-	public boolean launch(List<String> args) {
-		return launch(args, null);
+	public void launch(List<String> args) {
+		launch(args, null);
 	}
 
-	public boolean launch(List<String> args, Consumer<? super LaunchHandler> handlerSetup) {
+	public void launch(List<String> args, Consumer<? super Launcher> launcherSetup) {
 		args = args == null ? List.of() : Collections.unmodifiableList(args);
-
-		LaunchHandler handler = Service.loadService(LaunchHandler.class, launchHandler);
-
-		if (handlerSetup != null) {
-			handlerSetup.accept(handler);
-		}
 
 		List<Path> paths = getLibraries().stream()
 						.filter(lib -> lib.getOs() == null || lib.getOs() == OS.CURRENT)
@@ -489,16 +483,18 @@ public class Configuration {
 
 		LaunchContext ctx = new LaunchContext(layer, this, args);
 
+		Launcher launcher = Service.loadService(layer, Launcher.class, this.launcher);
+		if (launcherSetup != null) {
+			launcherSetup.accept(launcher);
+		}
+
+		Thread t = new Thread(() -> launcher.run(ctx));
+		t.start();
+
 		try {
-			handler.start(ctx);
-			handler.stop();
-
-			return true;
-		} catch (Throwable t) {
-			handler.failed(t);
-			handler.stop();
-
-			return false;
+			t.join();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
 	}
 
@@ -541,17 +537,17 @@ public class Configuration {
 				config.basePath = Paths.get(config.resolvePlaceholders(configBinding.base.path));
 		}
 
-		if (configBinding.handler != null) {
-			if (configBinding.handler.update != null) {
-				config.updateHandler = config.resolvePlaceholders(configBinding.handler.update);
+		if (configBinding.provider != null) {
+			if (configBinding.provider.updateHandler != null) {
+				config.updateHandler = config.resolvePlaceholders(configBinding.provider.updateHandler);
 				if (!config.updateHandler.matches(Main.CLASS_REGEX)) {
 					throw new IllegalStateException(config.updateHandler + " is not a valid java class name.");
 				}
 			}
-			if (configBinding.handler.launch != null) {
-				config.launchHandler = config.resolvePlaceholders(configBinding.handler.launch);
-				if (!config.launchHandler.matches(Main.CLASS_REGEX)) {
-					throw new IllegalStateException(config.launchHandler + " is not a valid java class name.");
+			if (configBinding.provider.launcher != null) {
+				config.launcher = config.resolvePlaceholders(configBinding.provider.launcher);
+				if (!config.launcher.matches(Main.CLASS_REGEX)) {
+					throw new IllegalStateException(config.launcher + " is not a valid java class name.");
 				}
 			}
 		}
@@ -621,16 +617,16 @@ public class Configuration {
 			configBinding.timestamp = getTimestamp().toString();
 
 		if (getUpdateHandler() != null) {
-			configBinding.handler = new HandlerBinding();
-			configBinding.handler.update = implyPlaceholders(getUpdateHandler(), implication, false);
+			configBinding.provider = new ProviderBinding();
+			configBinding.provider.updateHandler = implyPlaceholders(getUpdateHandler(), implication, false);
 		}
 
-		if (getLaunchHandler() != null) {
-			if (configBinding.handler == null) {
-				configBinding.handler = new HandlerBinding();
+		if (getLauncher() != null) {
+			if (configBinding.provider == null) {
+				configBinding.provider = new ProviderBinding();
 			}
 
-			configBinding.handler.launch = implyPlaceholders(getLaunchHandler(), implication, false);
+			configBinding.provider.launcher = implyPlaceholders(getLauncher(), implication, false);
 		}
 
 		if (getUserProperties().size() > 0)
@@ -731,6 +727,20 @@ public class Configuration {
 		return out.toString();
 	}
 
+	@Override
+	public boolean equals(Object other) {
+		if (other == null || !(other instanceof Configuration)) {
+			return false;
+		}
+
+		Configuration otherConfig = (Configuration) other;
+		if (!this.getTimestamp().equals(otherConfig.getTimestamp())) {
+			return false;
+		}
+
+		return toString().equals(other.toString());
+	}
+
 	public static Builder absolute() {
 		return withBase(null, null);
 	}
@@ -825,7 +835,7 @@ public class Configuration {
 			return this;
 		}
 
-		public Builder launchHandler(Class<? extends LaunchHandler> clazz) {
+		public Builder launchHandler(Class<? extends Launcher> clazz) {
 			this.launchHandler = clazz.getCanonicalName();
 
 			return this;
@@ -852,7 +862,7 @@ public class Configuration {
 			config.baseUri = uri;
 			config.basePath = path;
 			config.updateHandler = updateHandler;
-			config.launchHandler = launchHandler;
+			config.launcher = launchHandler;
 
 			config.libraries = libs;
 			config.unmodifiableLibraries = Collections.unmodifiableList(config.libraries);

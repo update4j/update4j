@@ -8,9 +8,15 @@ import java.util.stream.Collectors;
 public interface Service {
 
 	long version();
-	
-	public static <T extends Service> T loadService(Class<T> type, String override) {
-		ServiceLoader<T> loader = ServiceLoader.load(type);
+
+	public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type, String override) {
+		ServiceLoader<T> loader;
+		if (layer != null) {
+			loader = ServiceLoader.load(layer, type);
+		} else {
+			loader = ServiceLoader.load(type);
+		}
+
 		List<Provider<T>> providers = loader.stream().collect(Collectors.toList());
 
 		if (providers.isEmpty()) {
@@ -43,6 +49,14 @@ public interface Service {
 		}
 
 		return maxValue;
+	}
+
+	public static <T extends Service> T loadService(Class<T> type, String override) {
+		return loadService(null, type, override);
+	}
+
+	public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type) {
+		return loadService(layer, type, null);
 	}
 
 	public static <T extends Service> T loadService(Class<T> type) {
