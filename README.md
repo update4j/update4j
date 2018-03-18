@@ -35,7 +35,7 @@ the application would pass its command-line arguments to the existing running in
 
 Download the JAR file from the latest [release](https://github.com/update4j/update4j/releases).
 
-You can use it as a regular dependency, or you may run it as a runnable JAR file in modular mode. In the latter case you must also provide a [`Delegate`](https://github.com/update4j/update4j/wiki/Documentation#handlers) in the module-path.
+You can use it as a regular dependency, or you may run it as a runnable JAR file in modular mode. In the latter case you must also provide a [`Delegate`](https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers) in the module-path.
 
 To run it as a runnable JAR as a module:
 
@@ -53,9 +53,9 @@ Or in shorthand:
 
 Please refer to the [documentation](https://github.com/update4j/update4j/wiki/Documentation) for a full reference guide.
 
-## Limitations
+The Javadoc is available [here]().
 
-As this projects builds on top of the Module System we are limited to what it has to offer. Please refer to the [documentation](https://github.com/update4j/update4j/wiki/Documentation#limitations) for a comprehensive list of limitations.
+For frequently asked questions, please refer to the [FAQ](https://github.com/update4j/update4j/wiki/FAQ).
 
 ## Attribution
 
