@@ -761,7 +761,7 @@ public class Configuration {
 		private URI uri;
 		private Path path;
 		private String updateHandler;
-		private String launchHandler;
+		private String launcher;
 
 		private List<Library.Reference> libraries;
 
@@ -835,8 +835,8 @@ public class Configuration {
 			return this;
 		}
 
-		public Builder launchHandler(Class<? extends Launcher> clazz) {
-			this.launchHandler = clazz.getCanonicalName();
+		public Builder launcher(Class<? extends Launcher> clazz) {
+			this.launcher = clazz.getCanonicalName();
 
 			return this;
 		}
@@ -862,7 +862,7 @@ public class Configuration {
 			config.baseUri = uri;
 			config.basePath = path;
 			config.updateHandler = updateHandler;
-			config.launcher = launchHandler;
+			config.launcher = launcher;
 
 			config.libraries = libs;
 			config.unmodifiableLibraries = Collections.unmodifiableList(config.libraries);
