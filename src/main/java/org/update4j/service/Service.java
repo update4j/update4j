@@ -5,11 +5,18 @@ import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
 import java.util.stream.Collectors;
 
+import org.update4j.Bootstrap;
+import org.update4j.util.StringUtils;
+
 public interface Service {
 
 	long version();
 
 	public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type, String override) {
+		if(override != null && !StringUtils.isClassName(override)) {
+			throw new IllegalArgumentException(override + " is not a valid Java class name.");
+		}
+		
 		ServiceLoader<T> loader;
 		if (layer != null) {
 			loader = ServiceLoader.load(layer, type);
