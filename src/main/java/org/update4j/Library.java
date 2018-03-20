@@ -28,17 +28,27 @@ public class Library {
 	private final byte[] signature;
 
 	private Library(URI uri, Path path, OS os, long checksum, long size, boolean modulepath, String comment,
-					byte[] signature) {
-		this.uri = Objects.requireNonNull(uri, "uri");
+					byte[] signature, boolean fromFile) {
 
-		if (!uri.isAbsolute()) {
-			throw new IllegalArgumentException("Absolute uri required: " + uri);
+		this.uri = uri;
+		
+		// parsing properties might fail sometimes when not on current os, so let it through
+		if (fromFile && (os == null || os == OS.CURRENT)) {
+			Objects.requireNonNull(uri, "uri");
+
+			if (!uri.isAbsolute()) {
+				throw new IllegalArgumentException("Absolute uri required: " + uri);
+			}
 		}
 
-		this.path = Objects.requireNonNull(path, "path");
+		this.path = path;
 
-		if (!path.isAbsolute()) {
-			throw new IllegalArgumentException("Absolute path required: " + path);
+		if (fromFile && (os == null || os == OS.CURRENT)) {
+			Objects.requireNonNull(path, "path");
+
+			if (!path.isAbsolute()) {
+				throw new IllegalArgumentException("Absolute path required: " + path);
+			}
 		}
 
 		this.os = os;
@@ -175,7 +185,7 @@ public class Library {
 							.modulepath(isModulepath())
 							.signature(getSignature(key))
 							.comment(getComment())
-							.build();
+							.build(false);
 
 		}
 
@@ -321,7 +331,7 @@ public class Library {
 			return signature(Base64.getDecoder().decode(signature));
 		}
 
-		Library build() {
+		Library build(boolean fromFile) {
 			if (path == null && uri != null) {
 				path(FileUtils.fromUri(uri));
 			}
@@ -350,7 +360,7 @@ public class Library {
 				this.path = basePath.resolve(path);
 			}
 
-			return new Library(uri, path, os, checksum, size, modulepath, comment, signature);
+			return new Library(uri, path, os, checksum, size, modulepath, comment, signature, fromFile);
 		}
 	}
 }

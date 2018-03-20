@@ -52,6 +52,7 @@ import org.update4j.service.Service;
 import org.update4j.service.UpdateHandler;
 import org.update4j.util.FileUtils;
 import org.update4j.util.PropertyUtils;
+import org.update4j.util.StringUtils;
 
 public class Configuration {
 
@@ -69,6 +70,8 @@ public class Configuration {
 
 	private Map<String, String> resolvedProperties;
 	private Map<String, String> unmodifiableResolvedProperties;
+
+	private ConfigBinding binding;
 
 	private Configuration() {
 		timestamp = Instant.now();
@@ -130,6 +133,14 @@ public class Configuration {
 	}
 
 	public String resolvePlaceholders(String str) {
+		return resolvePlaceholders(str, false);
+	}
+
+	/*
+	 * igonreForeignProperty will not throw an exception if the key is found in an
+	 * unresolved foreign property.
+	 */
+	public String resolvePlaceholders(String str, boolean ignoreForeignProperty) {
 		if (str == null) {
 			return null;
 		}
@@ -141,6 +152,11 @@ public class Configuration {
 			String value = getResolvedProperty(key);
 
 			if (value == null) {
+				Property p = getUserProperty(key);
+				if (p != null && p.getOs() != null && p.getOs() != OS.CURRENT && ignoreForeignProperty) {
+					continue;
+				}
+
 				value = PropertyUtils.trySystemProperty(key);
 				resolvedProperties.put(key, value);
 			}
@@ -491,10 +507,11 @@ public class Configuration {
 		Thread t = new Thread(() -> launcher.run(ctx));
 		t.start();
 
-		try {
-			t.join();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+		while (t.isAlive()) {
+			try {
+				t.join();
+			} catch (InterruptedException e) {
+			}
 		}
 	}
 
@@ -540,14 +557,14 @@ public class Configuration {
 		if (configBinding.provider != null) {
 			if (configBinding.provider.updateHandler != null) {
 				config.updateHandler = config.resolvePlaceholders(configBinding.provider.updateHandler);
-				if (!config.updateHandler.matches(Main.CLASS_REGEX)) {
-					throw new IllegalStateException(config.updateHandler + " is not a valid java class name.");
+				if (!StringUtils.isClassName(config.updateHandler)) {
+					throw new IllegalStateException(config.updateHandler + " is not a valid Java class name.");
 				}
 			}
 			if (configBinding.provider.launcher != null) {
 				config.launcher = config.resolvePlaceholders(configBinding.provider.launcher);
-				if (!config.launcher.matches(Main.CLASS_REGEX)) {
-					throw new IllegalStateException(config.launcher + " is not a valid java class name.");
+				if (!StringUtils.isClassName(config.launcher)) {
+					throw new IllegalStateException(config.launcher + " is not a valid Java class name.");
 				}
 			}
 		}
@@ -557,11 +574,22 @@ public class Configuration {
 		for (LibraryBinding lib : configBinding.libraries) {
 			Library.Builder libBuilder = Library.withBase(config.getBaseUri(), config.getBasePath());
 
-			if (lib.uri != null)
-				libBuilder.uri(URI.create(config.resolvePlaceholders(lib.uri)));
+			if (lib.uri != null) {
+				String s = config.resolvePlaceholders(lib.uri, lib.os != null && lib.os != OS.CURRENT);
 
-			if (lib.path != null)
-				libBuilder.path(Paths.get(config.resolvePlaceholders(lib.path)));
+				// Might happen when trying to parse foreign os properties
+				if (!PropertyUtils.containsPlaceholder(s)) {
+					libBuilder.uri(URI.create(s));
+				}
+			}
+
+			if (lib.path != null) {
+				String s = config.resolvePlaceholders(lib.path, lib.os != null && lib.os != OS.CURRENT);
+
+				if (!PropertyUtils.containsPlaceholder(s)) {
+					libBuilder.path(Paths.get(s));
+				}
+			}
 
 			if (lib.checksum != null)
 				libBuilder.checksum(lib.checksum);
@@ -581,11 +609,13 @@ public class Configuration {
 			if (lib.signature != null)
 				libBuilder.signature(lib.signature);
 
-			libraries.add(libBuilder.build());
+			libraries.add(libBuilder.build(true));
 		}
 
 		config.libraries = libraries;
 		config.unmodifiableLibraries = Collections.unmodifiableList(config.libraries);
+
+		config.binding = configBinding; // used for write
 
 		return config;
 	}
@@ -595,99 +625,101 @@ public class Configuration {
 	}
 
 	public void write(Writer writer, ImplicationType implication) throws IOException {
-		ConfigBinding configBinding = new ConfigBinding();
+		if (binding == null) {
+			binding = new ConfigBinding();
 
-		if (!getBaseUri().equals(URI.create(""))) {
-			if (configBinding.base == null) {
-				configBinding.base = new BaseBinding();
+			if (!getBaseUri().equals(URI.create(""))) {
+				if (binding.base == null) {
+					binding.base = new BaseBinding();
+				}
+
+				binding.base.uri = implyPlaceholders(getBaseUri().toString(), implication, true);
 			}
 
-			configBinding.base.uri = implyPlaceholders(getBaseUri().toString(), implication, true);
-		}
+			if (!getBasePath().equals(Paths.get(""))) {
+				if (binding.base == null) {
+					binding.base = new BaseBinding();
+				}
 
-		if (!getBasePath().equals(Paths.get(""))) {
-			if (configBinding.base == null) {
-				configBinding.base = new BaseBinding();
+				binding.base.path = implyPlaceholders(getBasePath().toString().replace("\\", "/"), implication, true);
 			}
 
-			configBinding.base.path = implyPlaceholders(getBasePath().toString().replace("\\", "/"), implication, true);
-		}
+			if (getTimestamp() != null)
+				binding.timestamp = getTimestamp().toString();
 
-		if (getTimestamp() != null)
-			configBinding.timestamp = getTimestamp().toString();
-
-		if (getUpdateHandler() != null) {
-			configBinding.provider = new ProviderBinding();
-			configBinding.provider.updateHandler = implyPlaceholders(getUpdateHandler(), implication, false);
-		}
-
-		if (getLauncher() != null) {
-			if (configBinding.provider == null) {
-				configBinding.provider = new ProviderBinding();
+			if (getUpdateHandler() != null) {
+				binding.provider = new ProviderBinding();
+				binding.provider.updateHandler = implyPlaceholders(getUpdateHandler(), implication, false);
 			}
 
-			configBinding.provider.launcher = implyPlaceholders(getLauncher(), implication, false);
-		}
+			if (getLauncher() != null) {
+				if (binding.provider == null) {
+					binding.provider = new ProviderBinding();
+				}
 
-		if (getUserProperties().size() > 0)
-			configBinding.properties = getUserProperties();
+				binding.provider.launcher = implyPlaceholders(getLauncher(), implication, false);
+			}
 
-		List<LibraryBinding> libraries = new ArrayList<>();
+			if (getUserProperties().size() > 0)
+				binding.properties = getUserProperties();
 
-		if (getLibraries().size() > 0) {
+			List<LibraryBinding> libraries = new ArrayList<>();
 
-			for (Library lib : getLibraries()) {
-				LibraryBinding libBinding = new LibraryBinding();
+			if (getLibraries().size() > 0) {
 
-				URI uri = getBaseUri().relativize(lib.getUri());
-				Path path = getBasePath().relativize(lib.getPath());
+				for (Library lib : getLibraries()) {
+					LibraryBinding libBinding = new LibraryBinding();
 
-				// just the path part, for comparison with path string
-				String uriStr = uri.getPath();
-				String pathStr = path.toString().replace("\\", "/");
+					URI uri = getBaseUri().relativize(lib.getUri());
+					Path path = getBasePath().relativize(lib.getPath());
 
-				// Not absolute and matches, keep only one - preferably the path - but not if
-				// the uri contains more info
-				if (!uri.isAbsolute() && uriStr.equals(pathStr)) {
-					if (uri.getQuery() != null || uri.getFragment() != null) {
-						pathStr = null;
-					} else {
-						uri = null;
+					// just the path part, for comparison with path string
+					String uriStr = uri.getPath();
+					String pathStr = path.toString().replace("\\", "/");
+
+					// Not absolute and matches, keep only one - preferably the path - but not if
+					// the uri contains more info
+					if (!uri.isAbsolute() && uriStr.equals(pathStr)) {
+						if (uri.getQuery() != null || uri.getFragment() != null) {
+							pathStr = null;
+						} else {
+							uri = null;
+						}
 					}
-				}
 
-				// Absolute uri, and filename is same
-				else if (uri.isAbsolute() && !pathStr.contains("/")) {
-					if (uri.getPath().endsWith(pathStr)) {
-						pathStr = null;
+					// Absolute uri, and filename is same
+					else if (uri.isAbsolute() && !pathStr.contains("/")) {
+						if (uri.getPath().endsWith(pathStr)) {
+							pathStr = null;
+						}
 					}
+
+					// Flip from above
+					else if (path.isAbsolute() && !uriStr.contains("/")) {
+						if (uri.getQuery() == null && uri.getFragment() == null)
+							uri = null;
+					}
+
+					if (uri != null)
+						libBinding.uri = implyPlaceholders(uri.toString(), implication, true);
+
+					if (pathStr != null)
+						libBinding.path = implyPlaceholders(pathStr, implication, true);
+
+					libBinding.checksum = Long.toHexString(lib.getChecksum());
+					libBinding.size = lib.getSize();
+					libBinding.os = lib.getOs();
+					libBinding.modulepath = lib.isModulepath() ? true : null;
+					libBinding.comment = implyPlaceholders(lib.getComment(), implication, false);
+
+					if (lib.getSignature() != null)
+						libBinding.signature = Base64.getEncoder().encodeToString(lib.getSignature());
+
+					libraries.add(libBinding);
 				}
 
-				// Flip from above
-				else if (path.isAbsolute() && !uriStr.contains("/")) {
-					if (uri.getQuery() == null && uri.getFragment() == null)
-						uri = null;
-				}
-
-				if (uri != null)
-					libBinding.uri = implyPlaceholders(uri.toString(), implication, true);
-
-				if (pathStr != null)
-					libBinding.path = implyPlaceholders(pathStr, implication, true);
-
-				libBinding.checksum = Long.toHexString(lib.getChecksum());
-				libBinding.size = lib.getSize();
-				libBinding.os = lib.getOs();
-				libBinding.modulepath = lib.isModulepath() ? true : null;
-				libBinding.comment = implyPlaceholders(lib.getComment(), implication, false);
-
-				if (lib.getSignature() != null)
-					libBinding.signature = Base64.getEncoder().encodeToString(lib.getSignature());
-
-				libraries.add(libBinding);
+				binding.libraries = libraries;
 			}
-
-			configBinding.libraries = libraries;
 		}
 
 		/*
@@ -702,7 +734,7 @@ public class Configuration {
 			Marshaller marshaller = jc.createMarshaller();
 			marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 			marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
-			marshaller.marshal(configBinding, writer);
+			marshaller.marshal(binding, writer);
 		} catch (DataBindingException e) {
 			if (e.getCause() instanceof IOException) {
 				throw (IOException) e.getCause();
