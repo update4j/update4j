@@ -39,14 +39,14 @@ You can use it as a regular dependency, or you may run it as a runnable JAR file
 
 To run it as a runnable JAR as a module:
 
-```batchfile
-~$> java --module-path . --module org.update4j
+```shell
+$ java --module-path . --module org.update4j
 ```
 
 Or in shorthand:
 
-```batchfile
-~$> java -p . -m org.update4j
+```shell
+$ java -p . -m org.update4j
 ```
   
 ## Documentation
