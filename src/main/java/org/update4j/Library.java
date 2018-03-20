@@ -33,7 +33,7 @@ public class Library {
 		this.uri = uri;
 		
 		// parsing properties might fail sometimes when not on current os, so let it through
-		if (fromFile && (os == null || os == OS.CURRENT)) {
+		if (!fromFile || os == null || os == OS.CURRENT) {
 			Objects.requireNonNull(uri, "uri");
 
 			if (!uri.isAbsolute()) {
@@ -43,7 +43,7 @@ public class Library {
 
 		this.path = path;
 
-		if (fromFile && (os == null || os == OS.CURRENT)) {
+		if (!fromFile || os == null || os == OS.CURRENT) {
 			Objects.requireNonNull(path, "path");
 
 			if (!path.isAbsolute()) {
