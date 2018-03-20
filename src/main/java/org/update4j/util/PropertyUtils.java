@@ -131,5 +131,9 @@ public class PropertyUtils {
 	public static String wrap(String key) {
 		return "${" + key + "}";
 	}
+	
+	public static boolean containsPlaceholder(String str) {
+		return PLACEHOLDER.matcher(str).find();
+	}
 
 }
