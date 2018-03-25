@@ -1,5 +1,7 @@
 # update4j &nbsp; &nbsp; &nbsp; [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Release](https://img.shields.io/badge/release-v1.0--beta-yellow.svg)](https://github.com/update4j/update4j/releases/tag/v1.0-beta)
 
+**Documentation available at the [wiki](https://github.com/update4j/update4j/wiki/Documentation).**
+
 Auto-updater and launcher for your distributed applications. Built on top of Java 9's module system.
 
 
@@ -8,14 +10,15 @@ Auto-updater and launcher for your distributed applications. Built on top of Jav
 
 ## Screenshots
 
+### Headless
+<sup>Downloads 4 files then launches `hello-world.jar`. You can see that subsequent runs won't download again.</sup>
+[![headless][2]][2]
+
 ### JavaFX
 
 <sup>Downloads 4 files then launches `hello-world.jar`</sup>
 [![javafx][1]][1]
 
-### Headless
-<sup>Downloads 4 files then launches `hello-world.jar`. You can see that subsequent runs won't download again.</sup>
-[![headless][2]][2]
 
 
 ## Overview
@@ -48,14 +51,7 @@ Or in shorthand:
 ```shell
 $ java -p . -m org.update4j
 ```
-  
-## Documentation
 
-Please refer to the [documentation](https://github.com/update4j/update4j/wiki/Documentation) for a full reference guide.
-
-The Javadoc is available [here]().
-
-For frequently asked questions, please refer to the [FAQ](https://github.com/update4j/update4j/wiki/FAQ).
 
 ## Attribution
 
