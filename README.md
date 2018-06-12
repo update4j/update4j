@@ -1,4 +1,4 @@
-# update4j &nbsp; &nbsp; &nbsp; [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Release](https://img.shields.io/badge/release-v1.0.0--beta-yellow.svg)](https://github.com/update4j/update4j/releases/tag/v1.0)
+# update4j &nbsp; &nbsp; &nbsp; [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.0.0--beta-yellow.svg)](https://mvnrepository.com/artifact/org.update4j/update4j/1.0.0-beta)
 
 **Documentation available at the [wiki](https://github.com/update4j/update4j/wiki/Documentation).**
 
@@ -34,9 +34,19 @@ each and every downloaded file. It will forcefully reject any files without or w
 As a side feature, update4j allows you to make your application running as a single instance. Any new instance of
 the application would pass its command-line arguments to the existing running instance and shut down.
 
-## Installation
+## Installation & Usage
 
-Download the JAR file from the latest [release](https://github.com/update4j/update4j/releases).
+Install using Maven:
+
+```xml
+<dependency>
+    <groupId>org.update4j</groupId>
+    <artifactId>update4j</artifactId>
+    <version>1.0.0-beta</version>
+</dependency>
+```
+
+Or alternatively download the JAR file from the latest [release](https://github.com/update4j/update4j/releases).
 
 You can use it as a regular dependency, or you may run it as a runnable JAR file in modular mode. In the latter case you must also provide a [`Delegate`](https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers) in the module-path.
 
