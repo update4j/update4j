@@ -20,14 +20,17 @@ module org.update4j {
 	 */
 	exports org.update4j;
 	exports org.update4j.service;
+	
+	exports org.update4j.binding to org.update4j.maven;
+	exports org.update4j.util to org.update4j.maven;
 
 	/*
 	 * We list all system modules to make it available to layers requiring them;
 	 */
-	requires java.jnlp;
+//	requires java.jnlp;
 	requires java.se;
 	requires java.se.ee;
-	requires java.smartcardio;
+//	requires java.smartcardio;
 	requires javafx.base;
 	requires javafx.controls;
 	requires javafx.fxml;
