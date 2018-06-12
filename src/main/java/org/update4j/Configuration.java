@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.Certificate;
 import java.time.Instant;
@@ -266,38 +267,70 @@ public class Configuration {
 	}
 
 	public boolean update() {
-		return update((Certificate) null);
+		return update((PublicKey) null);
 	}
 
 	public boolean update(Consumer<? super UpdateHandler> handlerSetup) {
-		return update(null, handlerSetup);
+		return update((PublicKey) null, handlerSetup);
 	}
 
+	public boolean update(PublicKey key) {
+		return update(key, null);
+	}
+
+	/**
+	 * @deprecated In favor of {@link #update(PublicKey)}
+	 */
+	@Deprecated(forRemoval = true)
 	public boolean update(Certificate cert) {
-		return update(cert, null);
+		return update(cert.getPublicKey());
 	}
 
+	public boolean update(PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
+		return updateImpl(null, key, handlerSetup);
+	}
+
+	/**
+	 * @deprecated In favor of {@link #update(PublicKey, Consumer)}
+	 */
+	@Deprecated(forRemoval = true)
 	public boolean update(Certificate cert, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateImpl(null, cert, handlerSetup);
+		return update(cert.getPublicKey(), handlerSetup);
 	}
 
 	public boolean updateTemp(Path tempDir) {
-		return updateTemp(tempDir, (Certificate) null);
+		return updateTemp(tempDir, (PublicKey) null);
 	}
 
 	public boolean updateTemp(Path tempDir, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateTemp(tempDir, null, handlerSetup);
+		return updateTemp(tempDir, (PublicKey) null, handlerSetup);
 	}
 
+	public boolean updateTemp(Path tempDir, PublicKey key) {
+		return updateTemp(tempDir, key, null);
+	}
+
+	/**
+	 * @deprecated In favor of {@link #updateTemp(Path, PublicKey)}
+	 */
+	@Deprecated(forRemoval = true)
 	public boolean updateTemp(Path tempDir, Certificate cert) {
-		return updateTemp(tempDir, cert, null);
+		return updateTemp(tempDir, cert.getPublicKey());
 	}
 
+	public boolean updateTemp(Path tempDir, PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
+		return updateImpl(Objects.requireNonNull(tempDir), key, handlerSetup);
+	}
+
+	/**
+	 * @deprecated In favor of {@link #updateTemp(Path, PublicKey, Consumer)}
+	 */
+	@Deprecated(forRemoval = true)
 	public boolean updateTemp(Path tempDir, Certificate cert, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateImpl(Objects.requireNonNull(tempDir), cert, handlerSetup);
+		return updateTemp(Objects.requireNonNull(tempDir), cert.getPublicKey(), handlerSetup);
 	}
 
-	private boolean updateImpl(Path tempDir, Certificate cert, Consumer<? super UpdateHandler> handlerSetup) {
+	private boolean updateImpl(Path tempDir, PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
 		boolean success;
 
 		UpdateHandler handler = Service.loadService(UpdateHandler.class, updateHandler);
@@ -312,7 +345,7 @@ public class Configuration {
 			List<Library> requiresUpdate = new ArrayList<>();
 			List<Library> updated = new ArrayList<>();
 
-			UpdateContext ctx = new UpdateContext(this, requiresUpdate, updated, tempDir, cert);
+			UpdateContext ctx = new UpdateContext(this, requiresUpdate, updated, tempDir, key);
 			handler.init(ctx);
 
 			handler.startCheckUpdates();
@@ -346,9 +379,9 @@ public class Configuration {
 			}
 
 			Signature sig = null;
-			if (cert != null) {
-				sig = Signature.getInstance("SHA256with" + cert.getPublicKey().getAlgorithm());
-				sig.initVerify(cert);
+			if (key != null) {
+				sig = Signature.getInstance("SHA256with" + key.getAlgorithm());
+				sig.initVerify(key);
 			}
 
 			long downloadJobSize = requiresUpdate.stream().mapToLong(Library::getSize).sum();

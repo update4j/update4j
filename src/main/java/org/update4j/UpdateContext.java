@@ -16,6 +16,7 @@
 package org.update4j;
 
 import java.nio.file.Path;
+import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.util.Collections;
 import java.util.List;
@@ -29,17 +30,16 @@ public class UpdateContext {
 	private List<Library> updated;
 	private Path tempDir;
 
-	private Certificate certificate;
+	private PublicKey key;
 
 	UpdateContext(Configuration config, List<Library> requiresUpdate, List<Library> updated, Path tempDir,
-					Certificate cert) {
+					PublicKey key) {
 		configuration = Objects.requireNonNull(config);
 
 		this.requiresUpdate = Collections.unmodifiableList(requiresUpdate);
 		this.updated = Collections.unmodifiableList(updated);
 		this.tempDir = tempDir;
-
-		certificate = cert;
+		this.key = key;
 	}
 
 	public Configuration getConfiguration() {
@@ -58,7 +58,16 @@ public class UpdateContext {
 		return tempDir;
 	}
 
+	public PublicKey getPublicKey() {
+		return key;
+	}
+
+	/**
+	 * @deprecated In favor of {@link #getPublicKey()}. Calling this method always
+	 *             returns {@code null}.
+	 */
+	@Deprecated(forRemoval = true)
 	public Certificate getCertificate() {
-		return certificate;
+		return null;
 	}
 }
