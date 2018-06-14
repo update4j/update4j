@@ -21,9 +21,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import org.update4j.ImplicationType;
 import org.update4j.OS;
 import org.update4j.Property;
 
@@ -141,6 +144,119 @@ public class PropertyUtils {
 
 	public static String trySystemProperty(String key) {
 		return trySystemProperty(key, false);
+	}
+	
+	/**
+	 * ignoreForeignProperty will not throw an exception if the key is found in an
+	 * unresolved foreign property.
+	 */
+	public static String resolvePlaceholders(Map<String, String> resolvedProperties, Collection<? extends Property> properties, String str, boolean ignoreForeignProperty) {
+		if (str == null) {
+			return null;
+		}
+
+		Matcher match = PLACEHOLDER.matcher(str);
+
+		while (match.find()) {
+			String key = match.group(1);
+			String value = resolvedProperties.get(key);
+
+			if (value == null) {
+				Property p = getUserProperty(properties, key);
+				if (p != null && p.getOs() != null && p.getOs() != OS.CURRENT && ignoreForeignProperty) {
+					continue;
+				}
+
+				value = trySystemProperty(key);
+				resolvedProperties.put(key, value);
+			}
+
+			str = str.replace(wrap(key), value);
+		}
+
+		return str;
+	}
+	
+	public static Property getUserProperty(Collection<? extends Property> properties, String key) {
+		return properties.stream().filter(p -> key.equals(p.getKey())).findAny().orElse(null);
+	}
+	
+
+	public static String getUserPropertyForCurrent(Collection<? extends Property> properties, String key) {
+		return properties.stream() // First try to locate os specific properties
+						.filter(p -> key.equals(p.getKey()) && p.getOs() == OS.CURRENT)
+						.map(Property::getValue)
+						.findAny()
+						.orElseGet(() -> properties.stream()
+										.filter(p -> key.equals(p.getKey()) && p.getOs() == null)
+										.map(Property::getValue)
+										.findAny()
+										.orElse(null));
+	}
+	
+	public static String implyPlaceholders(Map<String, String> resolvedProperties, String str, ImplicationType implication, boolean isPath) {
+		if (str == null) {
+			return null;
+		}
+
+		Objects.requireNonNull(implication);
+
+		if (isPath) {
+			str = str.replace("\\", "/");
+		}
+
+		if (implication == ImplicationType.NONE) {
+			return str;
+		}
+
+		// Get a list sorted by longest value
+
+		List<Map.Entry<String, String>> resolved = resolvedProperties.entrySet()
+						.stream()
+						.sorted((e1, e2) -> e2.getValue().length() - e1.getValue().length())
+						.peek(e -> {
+							if (isPath) {
+								e.setValue(e.getValue().replace("\\", "/"));
+							}
+						})
+						.collect(Collectors.toList());
+
+		if (implication == ImplicationType.FULL_MATCH) {
+			for (Map.Entry<String, String> e : resolved) {
+				if (str.equals(e.getValue())) {
+					return wrap(e.getKey());
+				}
+			}
+
+			return str;
+		}
+
+		/*
+		 * https://stackoverflow.com/a/34464459/1751640
+		 * 
+		 * This regex will not replace characters inside an existing placeholder.
+		 */
+		if (implication == ImplicationType.EVERY_OCCURRENCE) {
+			for (Map.Entry<String, String> e : resolved) {
+				String pattern = "(?<!\\$\\{[^{}]{0,500})" + Pattern.quote(e.getValue());
+
+				str = str.replaceAll(pattern, Matcher.quoteReplacement(wrap(e.getKey())));
+			}
+
+			return str;
+		}
+
+		if (implication == ImplicationType.WHOLE_WORD) {
+			for (Map.Entry<String, String> e : resolved) {
+				String pattern = "(?<!\\$\\{[^{}]{0,500})\\b" + Pattern.quote(e.getValue()) + "\\b";
+				str = str.replaceAll(pattern, Matcher.quoteReplacement(wrap(e.getKey())));
+			}
+
+			return str;
+		}
+
+		// In case we rename this enum, lets stay safe the IDE will automatically fix this
+		throw new UnsupportedOperationException("Unknown " + ImplicationType.class.getSimpleName());
 	}
 
 	public static String wrap(String key) {

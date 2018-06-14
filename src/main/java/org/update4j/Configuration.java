@@ -48,15 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.xml.bind.DataBindingException;
-import javax.xml.bind.JAXB;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-
 import org.update4j.binding.BaseBinding;
 import org.update4j.binding.ConfigBinding;
 import org.update4j.binding.ProviderBinding;
@@ -123,19 +115,11 @@ public class Configuration {
 	}
 
 	public Property getUserProperty(String key) {
-		return properties.stream().filter(p -> key.equals(p.getKey())).findAny().orElse(null);
+		return PropertyUtils.getUserProperty(properties, key);
 	}
 
 	public String getUserPropertyForCurrent(String key) {
-		return properties.stream() // First try to locate os specific properties
-						.filter(p -> key.equals(p.getKey()) && p.getOs() == OS.CURRENT)
-						.map(Property::getValue)
-						.findAny()
-						.orElseGet(() -> properties.stream()
-										.filter(p -> key.equals(p.getKey()) && p.getOs() == null)
-										.map(Property::getValue)
-										.findAny()
-										.orElse(null));
+		return PropertyUtils.getUserPropertyForCurrent(properties, key);
 	}
 
 	public Map<String, String> getResolvedProperties() {
@@ -151,34 +135,11 @@ public class Configuration {
 	}
 
 	/*
-	 * igonreForeignProperty will not throw an exception if the key is found in an
+	 * ignoreForeignProperty will not throw an exception if the key is found in an
 	 * unresolved foreign property.
 	 */
 	public String resolvePlaceholders(String str, boolean ignoreForeignProperty) {
-		if (str == null) {
-			return null;
-		}
-
-		Matcher match = PropertyUtils.PLACEHOLDER.matcher(str);
-
-		while (match.find()) {
-			String key = match.group(1);
-			String value = getResolvedProperty(key);
-
-			if (value == null) {
-				Property p = getUserProperty(key);
-				if (p != null && p.getOs() != null && p.getOs() != OS.CURRENT && ignoreForeignProperty) {
-					continue;
-				}
-
-				value = PropertyUtils.trySystemProperty(key);
-				resolvedProperties.put(key, value);
-			}
-
-			str = str.replace(PropertyUtils.wrap(key), value);
-		}
-
-		return str;
+		return PropertyUtils.resolvePlaceholders(resolvedProperties, properties, str, ignoreForeignProperty);
 	}
 
 	public String implyPlaceholders(String str) {
@@ -194,67 +155,7 @@ public class Configuration {
 	}
 
 	public String implyPlaceholders(String str, ImplicationType implication, boolean isPath) {
-		if (str == null) {
-			return null;
-		}
-
-		Objects.requireNonNull(implication);
-
-		if (isPath) {
-			str = str.replace("\\", "/");
-		}
-
-		if (implication == ImplicationType.NONE) {
-			return str;
-		}
-
-		// Get a list sorted by longest value
-
-		List<Map.Entry<String, String>> resolved = resolvedProperties.entrySet()
-						.stream()
-						.sorted((e1, e2) -> e2.getValue().length() - e1.getValue().length())
-						.peek(e -> {
-							if (isPath) {
-								e.setValue(e.getValue().replace("\\", "/"));
-							}
-						})
-						.collect(Collectors.toList());
-
-		if (implication == ImplicationType.FULL_MATCH) {
-			for (Map.Entry<String, String> e : resolved) {
-				if (str.equals(e.getValue())) {
-					return PropertyUtils.wrap(e.getKey());
-				}
-			}
-
-			return str;
-		}
-
-		/*
-		 * https://stackoverflow.com/a/34464459/1751640
-		 * 
-		 * This regex will not replace characters inside an existing placeholder.
-		 */
-		if (implication == ImplicationType.EVERY_OCCURRENCE) {
-			for (Map.Entry<String, String> e : resolved) {
-				String pattern = "(?<!\\$\\{[^{}]{0,500})" + Pattern.quote(e.getValue());
-
-				str = str.replaceAll(pattern, Matcher.quoteReplacement(PropertyUtils.wrap(e.getKey())));
-			}
-
-			return str;
-		}
-
-		if (implication == ImplicationType.WHOLE_WORD) {
-			for (Map.Entry<String, String> e : resolved) {
-				String pattern = "(?<!\\$\\{[^{}]{0,500})\\b" + Pattern.quote(e.getValue()) + "\\b";
-				str = str.replaceAll(pattern, Matcher.quoteReplacement(PropertyUtils.wrap(e.getKey())));
-			}
-
-			return str;
-		}
-
-		throw new UnsupportedOperationException("Unknown implication type");
+		return PropertyUtils.implyPlaceholders(resolvedProperties, str, implication, isPath);
 	}
 
 	public boolean requiresUpdate() throws IOException {
@@ -562,16 +463,7 @@ public class Configuration {
 	}
 
 	public static Configuration read(Reader reader) throws IOException {
-		ConfigBinding configBinding = null;
-		try {
-			configBinding = JAXB.unmarshal(reader, ConfigBinding.class);
-		} catch (DataBindingException e) {
-			if (e.getCause() instanceof IOException) {
-				throw (IOException) e.getCause();
-			}
-
-			throw new IOException(e);
-		}
+		ConfigBinding configBinding = ConfigBinding.read(reader);
 
 		Map<String, String> resolved = PropertyUtils.extractPropertiesForCurrentMachine(null, configBinding.properties);
 		resolved = PropertyUtils.resolveDependencies(resolved);
@@ -768,30 +660,7 @@ public class Configuration {
 			}
 		}
 
-		/*
-		 * https://stackoverflow.com/a/16959146/1751640
-		 */
-		writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n\n");
-		writer.write("<!-- Generated by update4j. Licensed under Apache Software License 2.0 -->\n");
-
-		try {
-			JAXBContext jc = JAXBContext.newInstance(ConfigBinding.class);
-
-			Marshaller marshaller = jc.createMarshaller();
-			marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-			marshaller.setProperty(Marshaller.JAXB_FRAGMENT, true);
-			marshaller.marshal(binding, writer);
-		} catch (DataBindingException e) {
-			if (e.getCause() instanceof IOException) {
-				throw (IOException) e.getCause();
-			}
-
-			throw new IOException(e);
-		} catch (JAXBException e) {
-			throw new IOException(e);
-		}
-
-		//	JAXB.marshal(configBinding, writer);
+		binding.write(writer);
 	}
 
 	public String toString() {
