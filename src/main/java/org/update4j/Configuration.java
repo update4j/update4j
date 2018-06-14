@@ -450,8 +450,14 @@ public class Configuration {
 		if (launcherSetup != null) {
 			launcherSetup.accept(launcher);
 		}
+		
+		ClassLoader contextClassLoader = null;
+		if(mods.size() > 0) {
+			contextClassLoader = layer.findLoader(mods.get(0));
+		}
 
 		Thread t = new Thread(() -> launcher.run(ctx));
+		t.setContextClassLoader(contextClassLoader);
 		t.start();
 
 		while (t.isAlive()) {
