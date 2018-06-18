@@ -1,35 +1,36 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	
+
 	<groupId>org.update4j</groupId>
 	<artifactId>update4j</artifactId>
 	<version>1.1.2-beta</version>
 	<name>update4j</name>
 	<description>Updates and launches Java 9+ Applications</description>
 	<url>https://github.com/update4j/update4j</url>
-	
+
 	<licenses>
 		<license>
 			<name>The Apache License, Version 2.0</name>
 			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
 		</license>
 	</licenses>
-	
-	 <developers>
+
+	<developers>
 		<developer>
-		<name>Mordechai Meisels</name>
-		<email>mordechai112@gmail.com</email>
-		<organization>update4j</organization>
-		<organizationUrl>http://update4j.org/</organizationUrl>
+			<name>Mordechai Meisels</name>
+			<email>mordechai112@gmail.com</email>
+			<organization>update4j</organization>
+			<organizationUrl>http://update4j.org/</organizationUrl>
 		</developer>
 	</developers>
-	
+
 	<scm>
-        <url>https://github.com/update4j/update4j/tree/master</url>
-        <connection>scm:git:https://github.com/update4j/update4j.git</connection>
-        <developerConnection>scm:git:https://github.com:update4j/update4j.git</developerConnection>
-    </scm>
+		<url>https://github.com/update4j/update4j/tree/master</url>
+		<connection>scm:git:https://github.com/update4j/update4j.git</connection>
+		<developerConnection>scm:git:https://github.com:update4j/update4j.git</developerConnection>
+	</scm>
 
 
 	<dependencies>
@@ -53,6 +54,37 @@
 						</manifest>
 					</archive>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.1.0</version>
+			</plugin>
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.8</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<configuration>
+							<target>
+								<exec executable="${java.home}/bin/jar" failonerror="true">
+									<arg value="--main-class" />
+									<arg value="org.update4j.Bootstrap" />
+									<arg value="--module-version" />
+									<arg value="${project.version}" />
+									<arg value="--update" />
+									<arg value="--file" />
+									<arg
+										value="${project.build.directory}/${project.artifactId}-${project.version}.jar" />
+								</exec>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
