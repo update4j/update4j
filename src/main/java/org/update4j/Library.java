@@ -327,19 +327,19 @@ public class Library {
 			}
 
 			public Builder exports(String pkg, String targetModule) {
-				addExports.add(new AddPackage(pkg, targetModule));
+				addExports.add(new AddPackage(Objects.requireNonNull(pkg), Objects.requireNonNull(targetModule)));
 
 				return this;
 			}
 
 			public Builder opens(String pkg, String targetModule) {
-				addOpens.add(new AddPackage(pkg, targetModule));
+				addOpens.add(new AddPackage(Objects.requireNonNull(pkg), Objects.requireNonNull(targetModule)));
 
 				return this;
 			}
 
 			public Builder reads(String module) {
-				addReads.add(module);
+				addReads.add(Objects.requireNonNull(module));
 
 				return this;
 			}
@@ -456,19 +456,46 @@ public class Library {
 			return signature(Base64.getDecoder().decode(signature));
 		}
 
+		private void validateAddReads(List<String> list) {
+			for (String read : list) {
+				Objects.requireNonNull(read);
+				if (read.isEmpty()) {
+					throw new IllegalArgumentException("Missing module name.");
+				}
+			}
+		}
+
+		private void validateAddPackages(List<AddPackage> list) {
+			for (AddPackage add : list) {
+				Objects.requireNonNull(add);
+				if (add.getPackageName() == null || add.getPackageName().isEmpty()) {
+					throw new IllegalArgumentException("Missing package name.");
+				}
+				if (add.getTargetModule() == null || add.getTargetModule().isEmpty()) {
+					throw new IllegalArgumentException("Missing module name.");
+				}
+			}
+		}
+
 		Builder exports(List<AddPackage> exports) {
+			validateAddPackages(exports);
+
 			addExports.addAll(exports);
 
 			return this;
 		}
 
 		Builder opens(List<AddPackage> opens) {
+			validateAddPackages(opens);
+
 			addOpens.addAll(opens);
 
 			return this;
 		}
 
 		Builder reads(List<String> reads) {
+			validateAddReads(reads);
+
 			addReads.addAll(reads);
 
 			return this;
