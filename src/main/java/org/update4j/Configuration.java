@@ -510,10 +510,9 @@ public class Configuration {
 			contextClassLoader = layer.findLoader(moduleNames.get(0));
 		}
 
-		Thread.currentThread().setContextClassLoader(contextClassLoader);
-		LaunchContext ctx = new LaunchContext(layer, this, args);
+		LaunchContext ctx = new LaunchContext(layer, contextClassLoader, this, args);
 
-		Launcher launcher = Service.loadService(layer, Launcher.class, this.launcher);
+		Launcher launcher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
 		if (launcherSetup != null) {
 			launcherSetup.accept(launcher);
 		}

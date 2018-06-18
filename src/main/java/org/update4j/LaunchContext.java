@@ -22,11 +22,13 @@ import java.util.Objects;
 public class LaunchContext {
 
 	private ModuleLayer layer;
+	private ClassLoader classLoader;
 	private Configuration config;
 	private List<String> args;
 
-	LaunchContext(ModuleLayer layer, Configuration config, List<String> args) {
+	LaunchContext(ModuleLayer layer, ClassLoader classLoader, Configuration config, List<String> args) {
 		this.layer = Objects.requireNonNull(layer);
+		this.classLoader = Objects.requireNonNull(classLoader);
 		this.config = Objects.requireNonNull(config);
 
 		this.args = args == null ? List.of() : Collections.unmodifiableList(args);
@@ -34,6 +36,10 @@ public class LaunchContext {
 
 	public ModuleLayer getModuleLayer() {
 		return layer;
+	}
+	
+	public ClassLoader getClassLoader() {
+		return classLoader;
 	}
 
 	public Configuration getConfiguration() {

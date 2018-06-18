@@ -27,20 +27,25 @@ public interface Service {
 
 	long version();
 
-	public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type, String override) {
+	public static <T extends Service> T loadService(ModuleLayer layer, ClassLoader classLoader, Class<T> type,
+					String override) {
 		if (override != null && !StringUtils.isClassName(override)) {
 			throw new IllegalArgumentException(override + " is not a valid Java class name.");
 		}
 
+		if (classLoader == null) {
+			classLoader = Thread.currentThread().getContextClassLoader();
+		}
+
 		ServiceLoader<T> loader;
 		List<Provider<T>> providers = new ArrayList<>();
-		
+
 		if (layer != null) {
 			loader = ServiceLoader.load(layer, type);
 			providers.addAll(loader.stream().collect(Collectors.toList()));
 		}
 
-		loader = ServiceLoader.load(type);
+		loader = ServiceLoader.load(type, classLoader);
 		providers.addAll(loader.stream().collect(Collectors.toList()));
 
 		if (providers.isEmpty()) {
@@ -75,12 +80,28 @@ public interface Service {
 		return maxValue;
 	}
 
-	public static <T extends Service> T loadService(Class<T> type, String override) {
-		return loadService(null, type, override);
+	public static <T extends Service> T loadService(ModuleLayer layer, ClassLoader classLoader, Class<T> type) {
+		return loadService(layer, classLoader, type, null);
+	}
+
+	public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type, String override) {
+		return loadService(layer, null, type, override);
 	}
 
 	public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type) {
-		return loadService(layer, type, null);
+		return loadService(layer, null, type, null);
+	}
+
+	public static <T extends Service> T loadService(ClassLoader classLoader, Class<T> type, String override) {
+		return loadService(null, classLoader, type, override);
+	}
+
+	public static <T extends Service> T loadService(ClassLoader classLoader, Class<T> type) {
+		return loadService(null, classLoader, type, null);
+	}
+
+	public static <T extends Service> T loadService(Class<T> type, String override) {
+		return loadService(null, null, type, override);
 	}
 
 	public static <T extends Service> T loadService(Class<T> type) {

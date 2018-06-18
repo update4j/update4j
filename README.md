@@ -1,4 +1,4 @@
-# update4j &nbsp; &nbsp; &nbsp; [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.1.0--beta-yellow.svg)](https://mvnrepository.com/artifact/org.update4j/update4j/1.1.0-beta)
+# update4j &nbsp; &nbsp; &nbsp; [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.1.1--beta-yellow.svg)](https://search.maven.org/#search%7Cga%7C1%7Cupdate4j)
 
 **Documentation available at the [wiki](https://github.com/update4j/update4j/wiki/Documentation).**
 
@@ -34,17 +34,6 @@ each and every downloaded file. It will forcefully reject any files without or w
 As a side feature, update4j allows you to make your application running as a single instance. Any new instance of
 the application would pass its command-line arguments to the existing running instance and shut down.
 
-## Change Log
-
-* **1.1.0-beta**
-  * Added support to mix classpath and modulepath.
-  * Added add exports/opens/reads support.
-  * Renamed `ImplicationType` to `PlaceholderMatchType`.
-* **1.0.0-beta.1**
-  * Deprecated verification via a `Certificate`, use `PublicKey` instead. Will be removed completely once it graduates beta.
-* **1.0.0-beta**
-  * Initial release.
-
 ## Installation & Usage
 
 Install using Maven:
@@ -53,13 +42,11 @@ Install using Maven:
 <dependency>
     <groupId>org.update4j</groupId>
     <artifactId>update4j</artifactId>
-    <version>1.1.0-beta</version>
+    <version>1.1.1-beta</version>
 </dependency>
 ```
 
-Or alternatively download the JAR file from the latest [release](https://github.com/update4j/update4j/releases).
-
-You can use it as a regular dependency, or you may run it as a runnable JAR file in modular mode. In the latter case you must also provide a [`Delegate`](https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers) in the module-path.
+You can use it as a regular dependency, or you may run it as a runnable JAR file. In the latter case you must also provide a [`Delegate`](https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers) in the classpath or modulepath.
 
 To run it as a runnable JAR as a module:
 
@@ -73,7 +60,23 @@ Or in shorthand:
 $ java -p . -m org.update4j
 ```
 
-You can also start it the conventional way on the classpath using the `-jar` flag.
+You can also start it the conventional way on the classpath using the `-cp` or `-jar` flags.
+
+For more information refer to the [Starting the Application](https://github.com/update4j/update4j/wiki/Documentation#starting-the-application) in the wiki.
+
+
+## Change Log
+
+* **1.1.1-beta**
+  * Added `LaunchContext.getClassLoader()` method.
+* **1.1.0-beta**
+  * Added full support of loading jars into the classpath.
+  * Added "add exports/opens/reads" support.
+  * Renamed `ImplicationType` to `PlaceholderMatchType`.
+* **1.0.0-beta.1**
+  * Deprecated verification via a `Certificate`, use `PublicKey` instead. Will be removed completely once it graduates beta.
+* **1.0.0-beta**
+  * Initial release.
 
 
 ## Attribution
