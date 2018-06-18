@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 
 import org.update4j.PlaceholderMatchType;
 import org.update4j.OS;
-import org.update4j.PlaceholderMatchType;
 import org.update4j.Property;
 
 public class PropertyUtils {
