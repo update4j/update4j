@@ -21,7 +21,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.PrivateKey;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import org.update4j.util.FileUtils;
 
@@ -32,15 +35,21 @@ public class Library {
 	private final OS os;
 	private final long checksum;
 	private final long size;
+	private final boolean classpath;
 	private final boolean modulepath;
 	private final String comment;
 	private final byte[] signature;
 
-	private Library(URI uri, Path path, OS os, long checksum, long size, boolean modulepath, String comment,
-					byte[] signature, boolean fromFile) {
+	private final List<AddPackage> addExports;
+	private final List<AddPackage> addOpens;
+	private final List<String> addReads;
+
+	private Library(URI uri, Path path, OS os, long checksum, long size, boolean classpath, boolean modulepath,
+					String comment, byte[] signature, List<AddPackage> addExports, List<AddPackage> addOpens,
+					List<String> addReads, boolean fromFile) {
 
 		this.uri = uri;
-		
+
 		// parsing properties might fail sometimes when not on current os, so let it through
 		if (!fromFile || os == null || os == OS.CURRENT) {
 			Objects.requireNonNull(uri, "uri");
@@ -63,17 +72,22 @@ public class Library {
 		this.os = os;
 
 		if (checksum < 0)
-			throw new IllegalArgumentException("Negetive checksum: " + checksum);
+			throw new IllegalArgumentException("Negative checksum: " + checksum);
 
 		this.checksum = checksum;
 
 		if (size < 0)
-			throw new IllegalArgumentException("Negetive file size: " + size);
+			throw new IllegalArgumentException("Negative file size: " + size);
 
 		this.size = size;
+		this.classpath = classpath;
 		this.modulepath = modulepath;
 		this.comment = comment;
 		this.signature = signature;
+
+		this.addExports = Collections.unmodifiableList(addExports);
+		this.addOpens = Collections.unmodifiableList(addOpens);
+		this.addReads = Collections.unmodifiableList(addReads);
 	}
 
 	public URI getUri() {
@@ -96,6 +110,10 @@ public class Library {
 		return size;
 	}
 
+	public boolean isClasspath() {
+		return classpath;
+	}
+
 	public boolean isModulepath() {
 		return modulepath;
 	}
@@ -106,6 +124,18 @@ public class Library {
 
 	public byte[] getSignature() {
 		return signature;
+	}
+
+	public List<AddPackage> getAddExports() {
+		return addExports;
+	}
+
+	public List<AddPackage> getAddOpens() {
+		return addOpens;
+	}
+
+	public List<String> getAddReads() {
+		return addReads;
 	}
 
 	public boolean requiresUpdate() throws IOException {
@@ -121,16 +151,27 @@ public class Library {
 		private URI uri;
 		private Path path;
 		private OS os;
+		private Boolean classpath;
 		private Boolean modulepath;
 		private String comment;
 
-		private Reference(Path location, URI uri, Path path, OS os, Boolean modulepath, String comment) {
+		private List<AddPackage> addExports;
+		private List<AddPackage> addOpens;
+		private List<String> addReads;
+
+		private Reference(Path location, URI uri, Path path, OS os, Boolean classpath, Boolean modulepath,
+						String comment, List<AddPackage> addExports, List<AddPackage> addOpens, List<String> addReads) {
 			this.location = location;
 			this.uri = uri;
 			this.path = path;
 			this.os = os;
+			this.classpath = classpath;
 			this.modulepath = modulepath;
 			this.comment = comment;
+
+			this.addExports = addExports;
+			this.addOpens = addOpens;
+			this.addReads = addReads;
 		}
 
 		public Path getLocation() {
@@ -161,6 +202,12 @@ public class Library {
 			return Files.size(location);
 		}
 
+		public boolean isClasspath() {
+			// Non-null and set to true
+			// null defaults to false
+			return Boolean.TRUE.equals(classpath);
+		}
+
 		public boolean isModulepath() throws IOException {
 			// Non-null and set to false
 			if (Boolean.FALSE.equals(modulepath)) {
@@ -168,6 +215,10 @@ public class Library {
 			}
 
 			// modulepath can only be null or true at this point
+			// modulepath overrides the classpath so it should default if on cp
+			if (modulepath == null && isClasspath())
+				return false;
+
 			// If not a jar, completely ignore modulepath
 			return FileUtils.isJarFile(getLocation());
 		}
@@ -177,6 +228,18 @@ public class Library {
 				return null;
 
 			return FileUtils.sign(location, key);
+		}
+
+		public List<AddPackage> getAddExports() {
+			return addExports;
+		}
+
+		public List<AddPackage> getAddOpens() {
+			return addOpens;
+		}
+
+		public List<String> getAddReads() {
+			return addReads;
 		}
 
 		Library getLibrary(URI baseUri, Path basePath, PrivateKey key) throws IOException {
@@ -191,9 +254,13 @@ public class Library {
 							.os(getOs())
 							.size(getSize())
 							.checksum(getChecksum())
+							.classpath(isClasspath())
 							.modulepath(isModulepath())
 							.signature(getSignature(key))
 							.comment(getComment())
+							.exports(getAddExports())
+							.opens(getAddOpens())
+							.reads(getAddReads())
 							.build(false);
 
 		}
@@ -207,11 +274,20 @@ public class Library {
 			private Path path;
 			private URI uri;
 			private OS os;
+			private Boolean classpath;
 			private Boolean modulepath;
 			private String comment;
 
+			private List<AddPackage> addExports;
+			private List<AddPackage> addOpens;
+			private List<String> addReads;
+
 			private Builder(Path location) {
 				this.location = location;
+
+				addExports = new ArrayList<>();
+				addOpens = new ArrayList<>();
+				addReads = new ArrayList<>();
 			}
 
 			public Builder uri(URI uri) {
@@ -232,6 +308,12 @@ public class Library {
 				return this;
 			}
 
+			public Builder classpath(Boolean cp) {
+				this.classpath = cp;
+
+				return this;
+			}
+
 			public Builder modulepath(Boolean mp) {
 				this.modulepath = mp;
 
@@ -244,8 +326,27 @@ public class Library {
 				return this;
 			}
 
+			public Builder exports(String pkg, String targetModule) {
+				addExports.add(new AddPackage(pkg, targetModule));
+
+				return this;
+			}
+
+			public Builder opens(String pkg, String targetModule) {
+				addOpens.add(new AddPackage(pkg, targetModule));
+
+				return this;
+			}
+
+			public Builder reads(String module) {
+				addReads.add(module);
+
+				return this;
+			}
+
 			public Reference build() {
-				return new Reference(location, uri, path, os, modulepath, comment);
+				return new Reference(location, uri, path, os, classpath, modulepath, comment, addExports, addOpens,
+								addReads);
 			}
 		}
 	}
@@ -275,13 +376,22 @@ public class Library {
 		private OS os;
 		private long checksum;
 		private long size;
+		private boolean classpath;
 		private boolean modulepath;
 		private String comment;
 		private byte[] signature;
 
+		private List<AddPackage> addExports;
+		private List<AddPackage> addOpens;
+		private List<String> addReads;
+
 		private Builder(URI uri, Path path) {
 			this.baseUri = uri;
 			this.basePath = path;
+
+			addExports = new ArrayList<>();
+			addOpens = new ArrayList<>();
+			addReads = new ArrayList<>();
 		}
 
 		Builder uri(URI uri) {
@@ -318,6 +428,12 @@ public class Library {
 			return this;
 		}
 
+		Builder classpath(boolean cp) {
+			this.classpath = cp;
+
+			return this;
+		}
+
 		Builder modulepath(boolean mp) {
 			this.modulepath = mp;
 
@@ -338,6 +454,24 @@ public class Library {
 
 		Builder signature(String signature) {
 			return signature(Base64.getDecoder().decode(signature));
+		}
+
+		Builder exports(List<AddPackage> exports) {
+			addExports.addAll(exports);
+
+			return this;
+		}
+
+		Builder opens(List<AddPackage> opens) {
+			addOpens.addAll(opens);
+
+			return this;
+		}
+
+		Builder reads(List<String> reads) {
+			addReads.addAll(reads);
+
+			return this;
 		}
 
 		Library build(boolean fromFile) {
@@ -369,7 +503,8 @@ public class Library {
 				this.path = basePath.resolve(path);
 			}
 
-			return new Library(uri, path, os, checksum, size, modulepath, comment, signature, fromFile);
+			return new Library(uri, path, os, checksum, size, classpath, modulepath, comment, signature, addExports,
+							addOpens, addReads, fromFile);
 		}
 	}
 }

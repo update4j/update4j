@@ -15,6 +15,7 @@
  */
 package org.update4j.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
@@ -27,18 +28,20 @@ public interface Service {
 	long version();
 
 	public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type, String override) {
-		if(override != null && !StringUtils.isClassName(override)) {
+		if (override != null && !StringUtils.isClassName(override)) {
 			throw new IllegalArgumentException(override + " is not a valid Java class name.");
 		}
-		
+
 		ServiceLoader<T> loader;
+		List<Provider<T>> providers = new ArrayList<>();
+		
 		if (layer != null) {
 			loader = ServiceLoader.load(layer, type);
-		} else {
-			loader = ServiceLoader.load(type);
+			providers.addAll(loader.stream().collect(Collectors.toList()));
 		}
 
-		List<Provider<T>> providers = loader.stream().collect(Collectors.toList());
+		loader = ServiceLoader.load(type);
+		providers.addAll(loader.stream().collect(Collectors.toList()));
 
 		if (providers.isEmpty()) {
 			throw new IllegalStateException("No provider found for " + type.getCanonicalName());

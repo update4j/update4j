@@ -15,11 +15,16 @@
  */
 package org.update4j.binding;
 
+import java.util.List;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.update4j.AddPackage;
 import org.update4j.OS;
 
 @XmlRootElement
@@ -40,6 +45,9 @@ public class LibraryBinding {
 
 	@XmlAttribute
 	public OS os;
+	
+	@XmlAttribute
+	public Boolean classpath;
 
 	@XmlAttribute
 	public Boolean modulepath;
@@ -49,4 +57,16 @@ public class LibraryBinding {
 
 	@XmlAttribute
 	public String signature;
+	
+	@XmlElementWrapper
+	@XmlElement(name = "exports")
+	public List<AddPackage> addExports;
+
+	@XmlElementWrapper
+	@XmlElement(name = "opens")
+	public List<AddPackage> addOpens;
+
+	@XmlElementWrapper
+	@XmlElement(name = "reads")
+	public List<ReadsBinding> addReads;
 }

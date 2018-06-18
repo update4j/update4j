@@ -26,8 +26,11 @@ import java.io.Writer;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -52,6 +55,7 @@ import java.util.stream.Collectors;
 import org.update4j.binding.BaseBinding;
 import org.update4j.binding.ConfigBinding;
 import org.update4j.binding.ProviderBinding;
+import org.update4j.binding.ReadsBinding;
 import org.update4j.binding.LibraryBinding;
 import org.update4j.service.Launcher;
 import org.update4j.service.Service;
@@ -426,34 +430,92 @@ public class Configuration {
 	public void launch(List<String> args, Consumer<? super Launcher> launcherSetup) {
 		args = args == null ? List.of() : Collections.unmodifiableList(args);
 
-		List<Path> paths = getLibraries().stream()
+		List<Library> modules = getLibraries().stream()
 						.filter(lib -> lib.getOs() == null || lib.getOs() == OS.CURRENT)
 						.filter(Library::isModulepath)
-						.map(Library::getPath)
 						.collect(Collectors.toList());
 
-		ModuleFinder finder = ModuleFinder.of(paths.toArray(new Path[paths.size()]));
-		List<String> mods = finder.findAll()
+		List<Path> modulepaths = modules.stream().map(Library::getPath).collect(Collectors.toList());
+
+		List<URL> classpaths = getLibraries().stream()
+						.filter(lib -> lib.getOs() == null || lib.getOs() == OS.CURRENT)
+						.filter(Library::isClasspath)
+						.map(Library::getPath)
+						.map(path -> {
+							try {
+								return path.toUri().toURL();
+							} catch (MalformedURLException e) {
+								throw new RuntimeException(e);
+							}
+						})
+						.collect(Collectors.toList());
+
+		ModuleFinder finder = ModuleFinder.of(modulepaths.toArray(new Path[modulepaths.size()]));
+		List<String> moduleNames = finder.findAll()
 						.stream()
 						.map(ModuleReference::descriptor)
 						.map(ModuleDescriptor::name)
 						.collect(Collectors.toList());
 
 		ModuleLayer parent = ModuleLayer.boot();
-		java.lang.module.Configuration cf = parent.configuration().resolveAndBind(ModuleFinder.of(), finder, mods);
-		ClassLoader scl = ClassLoader.getSystemClassLoader();
-		ModuleLayer layer = parent.defineModulesWithOneLoader(cf, scl);
+		java.lang.module.Configuration cf = parent.configuration().resolveAndBind(ModuleFinder.of(), finder,
+						moduleNames);
 
+		ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+		ClassLoader classpathLoader = new URLClassLoader("classpath", classpaths.toArray(new URL[classpaths.size()]),
+						systemClassLoader);
+
+		ModuleLayer.Controller controller = ModuleLayer.defineModulesWithOneLoader(cf, List.of(parent),
+						classpathLoader);
+		ModuleLayer layer = controller.layer();
+
+		// manipulate exports, opens and reads
+		for (Library mod : modules) {
+			if (!mod.getAddExports().isEmpty() || !mod.getAddOpens().isEmpty() || !mod.getAddReads().isEmpty()) {
+				ModuleReference reference = finder.findAll()
+								.stream()
+								.filter(ref -> new File(ref.location().get()).toPath().equals(mod.getPath()))
+								.findFirst()
+								.orElseThrow(IllegalStateException::new);
+
+				Module source = layer.findModule(reference.descriptor().name()).orElseThrow(IllegalStateException::new);
+
+				for (AddPackage export : mod.getAddExports()) {
+					Module target = layer.findModule(export.getTargetModule())
+									.orElseThrow(() -> new IllegalStateException("Module '" + export.getTargetModule()
+													+ "' is not known to the layer."));
+
+					controller.addExports(source, export.getPackageName(), target);
+				}
+
+				for (AddPackage open : mod.getAddOpens()) {
+					Module target = layer.findModule(open.getTargetModule())
+									.orElseThrow(() -> new IllegalStateException("Module '" + open.getTargetModule()
+													+ "' is not known to the layer."));
+
+					controller.addOpens(source, open.getPackageName(), target);
+				}
+
+				for (String read : mod.getAddReads()) {
+					Module target = layer.findModule(read).orElseThrow(() -> new IllegalStateException(
+									"Module '" + read + "' is not known to the layer."));
+
+					controller.addReads(source, target);
+				}
+			}
+		}
+
+		ClassLoader contextClassLoader = classpathLoader;
+		if (moduleNames.size() > 0) {
+			contextClassLoader = layer.findLoader(moduleNames.get(0));
+		}
+
+		Thread.currentThread().setContextClassLoader(contextClassLoader);
 		LaunchContext ctx = new LaunchContext(layer, this, args);
 
 		Launcher launcher = Service.loadService(layer, Launcher.class, this.launcher);
 		if (launcherSetup != null) {
 			launcherSetup.accept(launcher);
-		}
-		
-		ClassLoader contextClassLoader = null;
-		if(mods.size() > 0) {
-			contextClassLoader = layer.findLoader(mods.get(0));
 		}
 
 		Thread t = new Thread(() -> launcher.run(ctx));
@@ -546,12 +608,23 @@ public class Configuration {
 
 			// defaults to false
 			libBuilder.modulepath(lib.modulepath != null && lib.modulepath);
+			libBuilder.classpath(lib.classpath != null && lib.classpath);
 
 			if (lib.comment != null)
 				libBuilder.comment(config.resolvePlaceholders(lib.comment));
 
 			if (lib.signature != null)
 				libBuilder.signature(lib.signature);
+
+			if (lib.addExports != null) {
+				libBuilder.exports(lib.addExports);
+			}
+			if (lib.addOpens != null) {
+				libBuilder.opens(lib.addOpens);
+			}
+			if (lib.addReads != null) {
+				libBuilder.reads(lib.addReads.stream().map(read -> read.module).collect(Collectors.toList()));
+			}
 
 			libraries.add(libBuilder.build(true));
 		}
@@ -653,11 +726,20 @@ public class Configuration {
 					libBinding.checksum = Long.toHexString(lib.getChecksum());
 					libBinding.size = lib.getSize();
 					libBinding.os = lib.getOs();
+					libBinding.classpath = lib.isClasspath() ? true : null;
 					libBinding.modulepath = lib.isModulepath() ? true : null;
 					libBinding.comment = implyPlaceholders(lib.getComment(), implication, false);
 
 					if (lib.getSignature() != null)
 						libBinding.signature = Base64.getEncoder().encodeToString(lib.getSignature());
+
+					if (!lib.getAddExports().isEmpty())
+						libBinding.addExports = lib.getAddExports();
+					if (!lib.getAddOpens().isEmpty())
+						libBinding.addOpens = lib.getAddOpens();
+					if (!lib.getAddReads().isEmpty())
+						libBinding.addReads = lib.getAddReads().stream().map(ReadsBinding::new).collect(
+										Collectors.toList());
 
 					libraries.add(libBinding);
 				}
