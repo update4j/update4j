@@ -151,15 +151,15 @@ public class Configuration {
 	}
 
 	public String implyPlaceholders(String str, boolean isPath) {
-		return implyPlaceholders(str, ImplicationType.WHOLE_WORD, isPath);
+		return implyPlaceholders(str, PlaceholderMatchType.WHOLE_WORD, isPath);
 	}
 
-	public String implyPlaceholders(String str, ImplicationType implication) {
-		return implyPlaceholders(str, implication, false);
+	public String implyPlaceholders(String str, PlaceholderMatchType matchType) {
+		return implyPlaceholders(str, matchType, false);
 	}
 
-	public String implyPlaceholders(String str, ImplicationType implication, boolean isPath) {
-		return PropertyUtils.implyPlaceholders(resolvedProperties, str, implication, isPath);
+	public String implyPlaceholders(String str, PlaceholderMatchType matchType, boolean isPath) {
+		return PropertyUtils.implyPlaceholders(resolvedProperties, str, matchType, isPath);
 	}
 
 	public boolean requiresUpdate() throws IOException {
@@ -638,10 +638,10 @@ public class Configuration {
 	}
 
 	public void write(Writer writer) throws IOException {
-		write(writer, ImplicationType.WHOLE_WORD);
+		write(writer, PlaceholderMatchType.WHOLE_WORD);
 	}
 
-	public void write(Writer writer, ImplicationType implication) throws IOException {
+	public void write(Writer writer, PlaceholderMatchType matchType) throws IOException {
 		if (binding == null) {
 			binding = new ConfigBinding();
 
@@ -650,7 +650,7 @@ public class Configuration {
 					binding.base = new BaseBinding();
 				}
 
-				binding.base.uri = implyPlaceholders(getBaseUri().toString(), implication, true);
+				binding.base.uri = implyPlaceholders(getBaseUri().toString(), matchType, true);
 			}
 
 			if (!getBasePath().equals(Paths.get(""))) {
@@ -658,7 +658,7 @@ public class Configuration {
 					binding.base = new BaseBinding();
 				}
 
-				binding.base.path = implyPlaceholders(getBasePath().toString().replace("\\", "/"), implication, true);
+				binding.base.path = implyPlaceholders(getBasePath().toString().replace("\\", "/"), matchType, true);
 			}
 
 			if (getTimestamp() != null)
@@ -666,7 +666,7 @@ public class Configuration {
 
 			if (getUpdateHandler() != null) {
 				binding.provider = new ProviderBinding();
-				binding.provider.updateHandler = implyPlaceholders(getUpdateHandler(), implication, false);
+				binding.provider.updateHandler = implyPlaceholders(getUpdateHandler(), matchType, false);
 			}
 
 			if (getLauncher() != null) {
@@ -674,7 +674,7 @@ public class Configuration {
 					binding.provider = new ProviderBinding();
 				}
 
-				binding.provider.launcher = implyPlaceholders(getLauncher(), implication, false);
+				binding.provider.launcher = implyPlaceholders(getLauncher(), matchType, false);
 			}
 
 			if (getUserProperties().size() > 0)
@@ -718,17 +718,17 @@ public class Configuration {
 					}
 
 					if (uri != null)
-						libBinding.uri = implyPlaceholders(uri.toString(), implication, true);
+						libBinding.uri = implyPlaceholders(uri.toString(), matchType, true);
 
 					if (pathStr != null)
-						libBinding.path = implyPlaceholders(pathStr, implication, true);
+						libBinding.path = implyPlaceholders(pathStr, matchType, true);
 
 					libBinding.checksum = Long.toHexString(lib.getChecksum());
 					libBinding.size = lib.getSize();
 					libBinding.os = lib.getOs();
 					libBinding.classpath = lib.isClasspath() ? true : null;
 					libBinding.modulepath = lib.isModulepath() ? true : null;
-					libBinding.comment = implyPlaceholders(lib.getComment(), implication, false);
+					libBinding.comment = implyPlaceholders(lib.getComment(), matchType, false);
 
 					if (lib.getSignature() != null)
 						libBinding.signature = Base64.getEncoder().encodeToString(lib.getSignature());

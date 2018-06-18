@@ -15,6 +15,6 @@
  */
 package org.update4j;
 
-public enum ImplicationType {
+public enum PlaceholderMatchType {
 	EVERY_OCCURRENCE, WHOLE_WORD, FULL_MATCH, NONE;
 }

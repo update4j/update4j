@@ -26,8 +26,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.update4j.ImplicationType;
+import org.update4j.PlaceholderMatchType;
 import org.update4j.OS;
+import org.update4j.PlaceholderMatchType;
 import org.update4j.Property;
 
 public class PropertyUtils {
@@ -145,12 +146,13 @@ public class PropertyUtils {
 	public static String trySystemProperty(String key) {
 		return trySystemProperty(key, false);
 	}
-	
+
 	/**
 	 * ignoreForeignProperty will not throw an exception if the key is found in an
 	 * unresolved foreign property.
 	 */
-	public static String resolvePlaceholders(Map<String, String> resolvedProperties, Collection<? extends Property> properties, String str, boolean ignoreForeignProperty) {
+	public static String resolvePlaceholders(Map<String, String> resolvedProperties,
+					Collection<? extends Property> properties, String str, boolean ignoreForeignProperty) {
 		if (str == null) {
 			return null;
 		}
@@ -176,11 +178,10 @@ public class PropertyUtils {
 
 		return str;
 	}
-	
+
 	public static Property getUserProperty(Collection<? extends Property> properties, String key) {
 		return properties.stream().filter(p -> key.equals(p.getKey())).findAny().orElse(null);
 	}
-	
 
 	public static String getUserPropertyForCurrent(Collection<? extends Property> properties, String key) {
 		return properties.stream() // First try to locate os specific properties
@@ -193,19 +194,20 @@ public class PropertyUtils {
 										.findAny()
 										.orElse(null));
 	}
-	
-	public static String implyPlaceholders(Map<String, String> resolvedProperties, String str, ImplicationType implication, boolean isPath) {
+
+	public static String implyPlaceholders(Map<String, String> resolvedProperties, String str,
+					PlaceholderMatchType matchType, boolean isPath) {
 		if (str == null) {
 			return null;
 		}
 
-		Objects.requireNonNull(implication);
+		Objects.requireNonNull(matchType);
 
 		if (isPath) {
 			str = str.replace("\\", "/");
 		}
 
-		if (implication == ImplicationType.NONE) {
+		if (matchType == PlaceholderMatchType.NONE) {
 			return str;
 		}
 
@@ -221,7 +223,7 @@ public class PropertyUtils {
 						})
 						.collect(Collectors.toList());
 
-		if (implication == ImplicationType.FULL_MATCH) {
+		if (matchType == PlaceholderMatchType.FULL_MATCH) {
 			for (Map.Entry<String, String> e : resolved) {
 				if (str.equals(e.getValue())) {
 					return wrap(e.getKey());
@@ -236,7 +238,7 @@ public class PropertyUtils {
 		 * 
 		 * This regex will not replace characters inside an existing placeholder.
 		 */
-		if (implication == ImplicationType.EVERY_OCCURRENCE) {
+		if (matchType == PlaceholderMatchType.EVERY_OCCURRENCE) {
 			for (Map.Entry<String, String> e : resolved) {
 				String pattern = "(?<!\\$\\{[^{}]{0,500})" + Pattern.quote(e.getValue());
 
@@ -246,7 +248,7 @@ public class PropertyUtils {
 			return str;
 		}
 
-		if (implication == ImplicationType.WHOLE_WORD) {
+		if (matchType == PlaceholderMatchType.WHOLE_WORD) {
 			for (Map.Entry<String, String> e : resolved) {
 				String pattern = "(?<!\\$\\{[^{}]{0,500})\\b" + Pattern.quote(e.getValue()) + "\\b";
 				str = str.replaceAll(pattern, Matcher.quoteReplacement(wrap(e.getKey())));
@@ -256,13 +258,13 @@ public class PropertyUtils {
 		}
 
 		// In case we rename this enum, lets stay safe the IDE will automatically fix this
-		throw new UnsupportedOperationException("Unknown " + ImplicationType.class.getSimpleName());
+		throw new UnsupportedOperationException("Unknown " + PlaceholderMatchType.class.getSimpleName());
 	}
 
 	public static String wrap(String key) {
 		return "${" + key + "}";
 	}
-	
+
 	public static boolean containsPlaceholder(String str) {
 		return PLACEHOLDER.matcher(str).find();
 	}
