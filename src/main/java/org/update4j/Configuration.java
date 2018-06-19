@@ -86,7 +86,7 @@ public class Configuration {
 	private Configuration() {
 		timestamp = Instant.now();
 
-		baseUri = URI.create(""); // if null
+		baseUri = URI.create("");  // if null
 		basePath = Paths.get("");
 	}
 
@@ -893,8 +893,11 @@ public class Configuration {
 
 			Configuration config = new Configuration();
 
-			config.baseUri = uri;
-			config.basePath = path;
+			if (uri != null)
+				config.baseUri = uri;
+			if (path != null)
+				config.basePath = path;
+			
 			config.updateHandler = updateHandler;
 			config.launcher = launcher;
 
