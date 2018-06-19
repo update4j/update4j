@@ -209,15 +209,9 @@ public class Library {
 		}
 
 		public boolean isModulepath() throws IOException {
-			// Non-null and set to false
-			if (Boolean.FALSE.equals(modulepath)) {
+			if (modulepath == null || !modulepath) {
 				return false;
 			}
-
-			// modulepath can only be null or true at this point
-			// modulepath overrides the classpath so it should default if on cp
-			if (modulepath == null && isClasspath())
-				return false;
 
 			// If not a jar, completely ignore modulepath
 			return FileUtils.isJarFile(getLocation());
@@ -313,6 +307,10 @@ public class Library {
 
 				return this;
 			}
+			
+			public Builder classpath() {
+				return classpath(true);
+			}
 
 			public Builder modulepath(Boolean mp) {
 				this.modulepath = mp;
@@ -320,6 +318,10 @@ public class Library {
 				return this;
 			}
 
+			public Builder modulepath() {
+				return modulepath(true);
+			}
+			
 			public Builder comment(String c) {
 				comment = c;
 

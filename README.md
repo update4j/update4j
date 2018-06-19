@@ -67,6 +67,9 @@ For more information refer to the [Starting the Application](https://github.com/
 
 ## Change Log
 
+* **Upcoming Release**
+  * `Library.Reference.Builder` no longer automatically sets `modulepath` to true.
+  * Warn on `Configuration::launch` if there is no library that has set either `classpath` or `modulepath` to true.
 * **1.1.2-beta**
   * Added `LaunchContext.getClassLoader()` method.
 * **1.1.0-beta**

@@ -449,6 +449,15 @@ public class Configuration {
 							}
 						})
 						.collect(Collectors.toList());
+		
+		//Warn potential problems
+		if(modulepaths.isEmpty() && classpaths.isEmpty()) {
+			if(!"true".equals(System.getProperty("suppress.warning.path"))) {
+				System.err.println("WARNING: No libraries were found that are set with 'classpath' or 'modulepath' to true; although perfectly valid it's rarely what you want."
+								+ "\nPlease refer to: https://github.com/update4j/update4j/wiki/Documentation#classpath-and-modulepath");
+			}
+		}
+		
 
 		ModuleFinder finder = ModuleFinder.of(modulepaths.toArray(new Path[modulepaths.size()]));
 		List<String> moduleNames = finder.findAll()
