@@ -5,7 +5,7 @@
 
 	<groupId>org.update4j</groupId>
 	<artifactId>update4j</artifactId>
-	<version>1.1.2-beta</version>
+	<version>1.1.3-beta</version>
 	<name>update4j</name>
 	<description>Updates and launches Java 9+ Applications</description>
 	<url>https://github.com/update4j/update4j</url>

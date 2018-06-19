@@ -1,4 +1,4 @@
-# update4j &nbsp; &nbsp; &nbsp; [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.1.2--beta-yellow.svg)](https://search.maven.org/#search%7Cga%7C1%7Cupdate4j)
+# update4j &nbsp; &nbsp; &nbsp; [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.1.3--beta-yellow.svg)](https://search.maven.org/#search%7Cga%7C1%7Cupdate4j)
 
 **Documentation available at the [wiki](https://github.com/update4j/update4j/wiki/Documentation).**
 
@@ -42,7 +42,7 @@ Install using Maven:
 <dependency>
     <groupId>org.update4j</groupId>
     <artifactId>update4j</artifactId>
-    <version>1.1.2-beta</version>
+    <version>1.1.3-beta</version>
 </dependency>
 ```
 
@@ -67,9 +67,10 @@ For more information refer to the [Starting the Application](https://github.com/
 
 ## Change Log
 
-* **Upcoming Release**
+* **1.1.3-beta**
   * `Library.Reference.Builder` no longer automatically sets `modulepath` to true.
   * Warn on `Configuration::launch` if there is no library that has set either `classpath` or `modulepath` to true.
+  * Fixed `NullPointerException` when creating configuration without both base-uri and base-path.
 * **1.1.2-beta**
   * Added `LaunchContext.getClassLoader()` method.
 * **1.1.0-beta**
