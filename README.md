@@ -27,6 +27,8 @@ The update4j framework is the first auto-update and launcher framework completel
 files anywhere in the cloud accesible via a URL (even Google Drive, Dropbox, Amazon S3, or Maven Central)
 and you can synchronize them with all your distributed applications.
 
+It is built to be extremely extensible and updateable. You can even update the code doing the update logic! Using the newest code practices in Java 9, as service and service providers, this framework is by far superior to legacy frameworks.
+
 Update4j has made security its priority. Signing your files is as easy as providing your private key to the framework on your dev machine,
 and it will do the job itself. On the client side, you should load the public key into the framework and it will automatically verify 
 each and every downloaded file. It will forcefully reject any files without or with invalid signatures. This is an optional feature.
@@ -62,7 +64,7 @@ $ java -p . -m org.update4j
 
 You can also start it the conventional way on the classpath using the `-cp` or `-jar` flags.
 
-For more information refer to the [Starting the Application](https://github.com/update4j/update4j/wiki/Documentation#starting-the-application) in the wiki.
+For more information refer to [Starting the Application](https://github.com/update4j/update4j/wiki/Documentation#starting-the-application) in the wiki.
 
 
 ## Change Log
