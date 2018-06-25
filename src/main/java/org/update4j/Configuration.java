@@ -470,9 +470,9 @@ public class Configuration {
 		java.lang.module.Configuration cf = parent.configuration().resolveAndBind(ModuleFinder.of(), finder,
 						moduleNames);
 
-		ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+		ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
 		ClassLoader classpathLoader = new URLClassLoader("classpath", classpaths.toArray(new URL[classpaths.size()]),
-						systemClassLoader);
+						parentClassLoader);
 
 		ModuleLayer.Controller controller = ModuleLayer.defineModulesWithOneLoader(cf, List.of(parent),
 						classpathLoader);
