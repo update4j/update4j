@@ -892,7 +892,7 @@ public class Configuration {
 				Library file = ref.getLibrary(uri, path, signer);
 
 				for (Library l : libs) {
-					if (Files.isSameFile(l.getPath(), file.getPath())) {
+					if (l.getPath().equals(file.getPath())) {
 						throw new IllegalStateException("2 files resolve to same path: " + l.getPath());
 					}
 				}
