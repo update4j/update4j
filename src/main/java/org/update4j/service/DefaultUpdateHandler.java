@@ -17,6 +17,7 @@ package org.update4j.service;
 
 import org.update4j.Library;
 import org.update4j.UpdateContext;
+import org.update4j.util.FileUtils;
 
 public class DefaultUpdateHandler implements UpdateHandler {
 
@@ -42,7 +43,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
 
 	@Override
 	public void doneCheckUpdateLibrary(Library lib, boolean requires) throws Throwable {
-		System.out.print(context.getConfiguration().getBasePath().relativize(lib.getPath()));
+		System.out.print(FileUtils.relativize(context.getConfiguration().getBasePath(), lib.getPath()));
 		if (requires) {
 			System.out.println(":  UPDATE");
 		} else {
@@ -64,8 +65,8 @@ public class DefaultUpdateHandler implements UpdateHandler {
 
 	@Override
 	public void startDownloadLibrary(Library lib) throws Throwable {
-		System.out.print("Downloading: " + context.getConfiguration().getBasePath().relativize(lib.getPath()) + " <"
-						+ lib.getUri() + "> ");
+		System.out.print("Downloading: " + FileUtils.relativize(context.getConfiguration().getBasePath(), lib.getPath())
+						+ " <" + lib.getUri() + "> ");
 	}
 
 	private String percent;

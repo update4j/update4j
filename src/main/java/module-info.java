@@ -21,16 +21,16 @@ module org.update4j {
 	exports org.update4j;
 	exports org.update4j.service;
 	
-	exports org.update4j.binding to org.update4j.maven;
-	exports org.update4j.util to org.update4j.maven;
+	/*
+	 * For use by automated clients.
+	 */
+	exports org.update4j.binding;
 
 	/*
-	 * We list all system modules to make it available to layers requiring them;
+	 * We list all system modules to make it available to layers requiring them.
 	 */
-//	requires java.jnlp;
 	requires java.se;
 	requires java.se.ee;
-//	requires java.smartcardio;
 	requires javafx.base;
 	requires javafx.controls;
 	requires javafx.fxml;
@@ -40,6 +40,11 @@ module org.update4j {
 	requires javafx.web;
 	requires java.xml.bind;
 
+	/*
+	 * Rarely used. If you want them resolved, require it in bootstrap application module.
+	 */
+	//	requires java.jnlp;
+	//	requires java.smartcardio;
 	//	requires jdk.attach;
 	//	requires jdk.accessibility;
 	//	requires jdk.charsets;

@@ -85,9 +85,6 @@ public class Configuration {
 
 	private Configuration() {
 		timestamp = Instant.now();
-
-		baseUri = URI.create("");  // if null
-		basePath = Paths.get("");
 	}
 
 	public Instant getTimestamp() {
@@ -449,15 +446,15 @@ public class Configuration {
 							}
 						})
 						.collect(Collectors.toList());
-		
+
 		//Warn potential problems
-		if(modulepaths.isEmpty() && classpaths.isEmpty()) {
-			if(!"true".equals(System.getProperty("suppress.warning.path"))) {
-				System.err.println("WARNING: No libraries were found that are set with 'classpath' or 'modulepath' to true; although perfectly valid it's rarely what you want."
-								+ "\nPlease refer to: https://github.com/update4j/update4j/wiki/Documentation#classpath-and-modulepath");
+		if (modulepaths.isEmpty() && classpaths.isEmpty()) {
+			if (!"true".equals(System.getProperty("suppress.warning.path"))) {
+				System.err.println(
+								"WARNING: No libraries were found that are set with 'classpath' or 'modulepath' to true; although perfectly valid it's rarely what you want."
+												+ "\nPlease refer to: https://github.com/update4j/update4j/wiki/Documentation#classpath-and-modulepath");
 			}
 		}
-		
 
 		ModuleFinder finder = ModuleFinder.of(modulepaths.toArray(new Path[modulepaths.size()]));
 		List<String> moduleNames = finder.findAll()
@@ -653,7 +650,7 @@ public class Configuration {
 		if (binding == null) {
 			binding = new ConfigBinding();
 
-			if (!getBaseUri().equals(URI.create(""))) {
+			if (getBaseUri() != null) {
 				if (binding.base == null) {
 					binding.base = new BaseBinding();
 				}
@@ -661,7 +658,7 @@ public class Configuration {
 				binding.base.uri = implyPlaceholders(getBaseUri().toString(), matchType, true);
 			}
 
-			if (!getBasePath().equals(Paths.get(""))) {
+			if (getBasePath() != null) {
 				if (binding.base == null) {
 					binding.base = new BaseBinding();
 				}
@@ -695,8 +692,8 @@ public class Configuration {
 				for (Library lib : getLibraries()) {
 					LibraryBinding libBinding = new LibraryBinding();
 
-					URI uri = getBaseUri().relativize(lib.getUri());
-					Path path = getBasePath().relativize(lib.getPath());
+					URI uri = FileUtils.relativize(getBaseUri(), lib.getUri());
+					Path path = FileUtils.relativize(getBasePath(), lib.getPath());
 
 					// just the path part, for comparison with path string
 					String uriStr = uri.getPath();
@@ -785,15 +782,27 @@ public class Configuration {
 	}
 
 	public static Builder absolute() {
-		return withBase(null, null);
+		return withBase((URI) null, null);
 	}
 
 	public static Builder withBase(URI uri) {
 		return withBase(uri, null);
 	}
 
+	public static Builder withBaseUri(String uri) {
+		return withBase(uri, null);
+	}
+
 	public static Builder withBase(Path path) {
 		return withBase(null, path);
+	}
+
+	public static Builder withBasePath(String path) {
+		return withBase(null, path);
+	}
+
+	public static Builder withBase(String uri, String path) {
+		return withBase(URI.create(uri), Paths.get(path));
 	}
 
 	public static Builder withBase(URI uri, Path path) {
@@ -832,6 +841,9 @@ public class Configuration {
 			libraries = new ArrayList<>();
 			properties = new ArrayList<>();
 			systemProperties = new ArrayList<>();
+
+			resolveSystemProperty("user.home");
+			resolveSystemProperty("user.dir");
 		}
 
 		public Builder signer(PrivateKey key) {
@@ -878,10 +890,30 @@ public class Configuration {
 			return this;
 		}
 
+		public Builder updateHandler(String className) {
+			if (StringUtils.isClassName(className)) {
+				this.updateHandler = className;
+
+				return this;
+			}
+
+			throw new IllegalArgumentException("'" + className + "' is not a valid Java class name");
+		}
+
 		public Builder launcher(Class<? extends Launcher> clazz) {
 			this.launcher = clazz.getCanonicalName();
 
 			return this;
+		}
+
+		public Builder launcher(String className) {
+			if (StringUtils.isClassName(className)) {
+				this.launcher = className;
+
+				return this;
+			}
+
+			throw new IllegalArgumentException("'" + className + "' is not a valid Java class name");
 		}
 
 		public Configuration build() throws IOException {
@@ -906,7 +938,7 @@ public class Configuration {
 				config.baseUri = uri;
 			if (path != null)
 				config.basePath = path;
-			
+
 			config.updateHandler = updateHandler;
 			config.launcher = launcher;
 

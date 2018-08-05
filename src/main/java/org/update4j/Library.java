@@ -262,6 +262,10 @@ public class Library {
 		public static Builder at(Path location) {
 			return new Builder(location);
 		}
+		
+		public static Builder at(String location) {
+			return at(Paths.get(location));
+		}
 
 		public static class Builder {
 			private Path location;
@@ -289,6 +293,10 @@ public class Library {
 
 				return this;
 			}
+			
+			public Builder uri(String uri) {
+				return uri(URI.create(uri));
+			}
 
 			public Builder path(Path path) {
 				this.path = path;
@@ -296,13 +304,17 @@ public class Library {
 				return this;
 			}
 
+			public Builder path(String path) {
+				return path(Paths.get(path));
+			}
+			
 			public Builder os(OS os) {
 				this.os = os;
 
 				return this;
 			}
 
-			public Builder classpath(Boolean cp) {
+			public Builder classpath(boolean cp) {
 				this.classpath = cp;
 
 				return this;
@@ -312,7 +324,7 @@ public class Library {
 				return classpath(true);
 			}
 
-			public Builder modulepath(Boolean mp) {
+			public Builder modulepath(boolean mp) {
 				this.modulepath = mp;
 
 				return this;

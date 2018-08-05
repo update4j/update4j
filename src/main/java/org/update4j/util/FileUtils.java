@@ -121,7 +121,7 @@ public class FileUtils {
 
 		try {
 			String uri = URLEncoder.encode(path.toString().replace("\\", "/"), "UTF-8");
-			
+
 			uri = uri.replace("%2F", "/") // We still need directory structure
 							.replace("+", "%20"); // "+" only means space in queries, not in paths
 			return URI.create(uri);
@@ -129,6 +129,25 @@ public class FileUtils {
 			throw new AssertionError(e);
 		}
 
+	}
+
+	public static URI relativize(URI base, URI other) {
+		if (base == null || other == null)
+			return other;
+
+		return base.relativize(other);
+	}
+
+	public static Path relativize(Path base, Path other) {
+		if (base == null || other == null)
+			return other;
+
+		try {
+			return base.relativize(other);
+		} catch (IllegalArgumentException e) {
+		}
+
+		return other;
 	}
 
 	public static OS fromFilename(String filename) {

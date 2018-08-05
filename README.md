@@ -2,7 +2,7 @@
 
 **Documentation available at the [wiki](https://github.com/update4j/update4j/wiki/Documentation).**
 
-Auto-updater and launcher for your distributed applications. Built on top of Java 9's module system.
+Auto-updater and launcher for your distributed applications. Built with Java 9's module system in mind.
 
 
 
@@ -26,8 +26,6 @@ Auto-updater and launcher for your distributed applications. Built on top of Jav
 The update4j framework is the first auto-update and launcher framework completely compatible with Java 9. Easily host your application
 files anywhere in the cloud accesible via a URL (even Google Drive, Dropbox, Amazon S3, or Maven Central)
 and you can synchronize them with all your distributed applications.
-
-It is built to be extremely extensible and updateable. You can even update the code doing the update logic! Using the newest code practices in Java 9, as service and service providers, this framework is by far superior to legacy frameworks.
 
 Update4j has made security its priority. Signing your files is as easy as providing your private key to the framework on your dev machine,
 and it will do the job itself. On the client side, you should load the public key into the framework and it will automatically verify 
@@ -69,6 +67,9 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 ## Change Log
 
+* *Upcoming Release*
+  * Bug fixes.
+  * Reduce verboseness in configuration builder API by allowing string URI, path, and class names.
 * **1.1.3-beta**
   * `Library.Reference.Builder` no longer automatically sets `modulepath` to true.
   * Warn on `Configuration::launch` if there is no library that has set either `classpath` or `modulepath` to true.
