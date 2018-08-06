@@ -33,6 +33,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,6 +65,14 @@ import org.update4j.util.FileUtils;
 import org.update4j.util.PropertyUtils;
 import org.update4j.util.StringUtils;
 
+/**
+ * This class is the heart of the framework. It essentially wraps around a
+ * configuration XML file and does the update/launch logic.
+ * 
+ * 
+ * @author Mordechai Meisels
+ *
+ */
 public class Configuration {
 
 	private Instant timestamp;
@@ -87,60 +96,218 @@ public class Configuration {
 		timestamp = Instant.now();
 	}
 
+	/**
+	 * Returns the timestamp this configuration was last updated, using the
+	 * {@link Configuration.Builder} API. This is read from the {@code timestamp}
+	 * attribute in the root element. It does not have any effect on the behavior of
+	 * anything else; it is rather just for reference purposes (i.e. "Last Updated:
+	 * 2 Weeks Ago"), or for clients willing to act according to this value.
+	 * 
+	 * 
+	 * @return The timestamp this configuration was last updated.
+	 */
 	public Instant getTimestamp() {
 		return timestamp;
 	}
 
+	/**
+	 * Returns the base URI against whom all <i>relative</i> URIs in individual
+	 * libraries are resolved. The URI points to the remote (or if it has a
+	 * {@code file:///} schema, local) location from where the file should be
+	 * downloaded.
+	 * 
+	 * 
+	 * <p>
+	 * This is read from the {@code uri} attribute from the {@code <base>} element.
+	 * If the attribute is missing this will return {@code null}.
+	 * 
+	 * @return The base URI.
+	 */
 	public URI getBaseUri() {
 		return baseUri;
 	}
 
+	/**
+	 * Returns the base path against whom all <i>relative</i> paths in individual
+	 * libraries are resolved. The path points to the location the files should be
+	 * saved to on the client's local machine.
+	 * 
+	 * <p>
+	 * This is read from the {@code path} attribute from the {@code <base>} element.
+	 * If the attribute is missing this will return {@code null}.
+	 * 
+	 * @return The base path.
+	 */
 	public Path getBasePath() {
 		return basePath;
 	}
 
+	/**
+	 * Returns the {@link UpdateHandler} class name that should be used instead of
+	 * of the default highest version currently present in the classpath or
+	 * modulepath.
+	 * 
+	 * <p>
+	 * <b>Note:</b> This is completely optional. If this is missing the framework
+	 * will automatically load the highest version currently present in the
+	 * classpath or modulepath. Please refer to <a
+	 * href=https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers>
+	 * Dealing with Providers</a> for more info.
+	 * 
+	 * 
+	 * <p>
+	 * This is read from the {@code updateHandler} attribute from the
+	 * {@code <provider>} element. If the attribute is missing this will return
+	 * {@code null}.
+	 * 
+	 * @return The {@link UpdateHandler} class name that should be used instead of
+	 *         of the default highest version.
+	 */
 	public String getUpdateHandler() {
 		return updateHandler;
 	}
 
+	/**
+	 * Returns the {@link Launcher} class name that should be used instead of of the
+	 * default highest version currently present in the classpath or modulepath.
+	 * 
+	 * <p>
+	 * <b>Note:</b> This is completely optional. If this is missing the framework
+	 * will automatically load the highest version currently present in the
+	 * classpath or modulepath. Please refer to <a
+	 * href=https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers>
+	 * Dealing with Providers</a> for more info.
+	 * 
+	 * 
+	 * <p>
+	 * This is read from the {@code launcher} attribute from the {@code <provider>}
+	 * element. If the attribute is missing this will return {@code null}.
+	 * 
+	 * @return The {@link Launcher} class name that should be used instead of of the
+	 *         default highest version.
+	 */
 	public String getLauncher() {
 		return launcher;
 	}
 
+	/**
+	 * Returns the list of libraries -- or files -- listed in the configuration
+	 * file. This will never return {@code null}.
+	 * 
+	 * <p>
+	 * These are read from the {@code <libraries>} element.
+	 * 
+	 * @return The {@link Library} instances listed in the configuration file.
+	 */
 	public List<Library> getLibraries() {
 		return unmodifiableLibraries;
 	}
 
+	/**
+	 * Returns an unmodifiable list of properties listed in the configuration file.
+	 * This will never return {@code null}.
+	 * 
+	 * <p>
+	 * This is read from the {@code <properties>} element.
+	 * 
+	 * @return The {@link Property} instances listed in the configuration file.
+	 */
 	public List<Property> getUserProperties() {
 		return unmodifiableProperties;
 	}
 
+	/**
+	 * Returns the {@link Property} with the corresponding key, or {@code null} if
+	 * missing. If there are more than one property with the given key (if they are
+	 * platform specific), only one will be returned.
+	 * 
+	 * @param key
+	 *            The key of the property.
+	 * @return The {@link Property} with the given key.
+	 */
 	public Property getUserProperty(String key) {
 		return PropertyUtils.getUserProperty(properties, key);
 	}
 
+	/**
+	 * Returns a list of properties with the corresponding key, or empty if non are
+	 * found. There might be more than one property with the given key, if they are
+	 * platform specific.
+	 * 
+	 * @param key
+	 *            The key of the property.
+	 * @return A list of properties with the given key.
+	 */
+	public List<Property> getUserProperties(String key) {
+		return PropertyUtils.getUserProperties(properties, key);
+	}
+
+	/**
+	 * Returns the value of the property with the corresponding key, or {@code null}
+	 * if missing. This method will ignore properties marked for foreign operating
+	 * systems.
+	 * 
+	 * @param key
+	 *            The key of the property.
+	 * @return The value of the property with the given key.
+	 */
 	public String getUserPropertyForCurrent(String key) {
 		return PropertyUtils.getUserPropertyForCurrent(properties, key);
 	}
 
+	/**
+	 * Returns an unmodifiable map of keys and values after resolving the
+	 * placeholders. This will not include properties marked for foreign operating
+	 * systems.
+	 * 
+	 * @return A map of the keys and real values of the properties, after resolving
+	 *         the placeholders.
+	 */
 	public Map<String, String> getResolvedProperties() {
 		return unmodifiableResolvedProperties;
 	}
 
+	/**
+	 * Returns the real value of the property with the given key, after resolving
+	 * the placeholders.
+	 * 
+	 * @param key
+	 *            The key of the property.
+	 * @return The real value of the property after resolving the placeholders.
+	 */
 	public String getResolvedProperty(String key) {
 		return resolvedProperties.get(key);
 	}
 
+	/**
+	 * Returns a string where all placeholders are replaced with the real values.
+	 * 
+	 * <p>
+	 * If it includes a reference to a foreign property that could not be resolved
+	 * (as if that property refers to a system dependent system property), the
+	 * placeholder will not be replaced.
+	 * 
+	 * @param str
+	 *            The source string to try to resolve.
+	 * @return The resolved string.
+	 * @throws IllegalArgumentException
+	 *             if the source string contains a placeholder that could not be
+	 *             resolved.
+	 */
 	public String resolvePlaceholders(String str) {
 		return resolvePlaceholders(str, false);
+	}
+
+	public String resolvePlaceholders(String str, boolean isPath) {
+		return resolvePlaceholders(str, isPath, false);
 	}
 
 	/*
 	 * ignoreForeignProperty will not throw an exception if the key is found in an
 	 * unresolved foreign property.
 	 */
-	public String resolvePlaceholders(String str, boolean ignoreForeignProperty) {
-		return PropertyUtils.resolvePlaceholders(resolvedProperties, properties, str, ignoreForeignProperty);
+	public String resolvePlaceholders(String str, boolean isPath, boolean ignoreForeignProperty) {
+		return PropertyUtils.resolvePlaceholders(resolvedProperties, properties, str, isPath, ignoreForeignProperty);
 	}
 
 	public String implyPlaceholders(String str) {
@@ -402,6 +569,32 @@ public class Configuration {
 				}
 			}
 
+			if (t instanceof FileSystemException) {
+				FileSystemException fse = (FileSystemException) t;
+
+				String msg = t.getMessage();
+				if (msg.contains("another process") || msg.contains("lock") || msg.contains("use")) {
+					if (!"true".equals(System.getProperty("suppress.warning.lock"))) {
+						System.err.println("WARNING: " + fse.getFile()
+										+ " is locked by another process, there are a few common causes for this:\n"
+										+ "\t- Another application accesses this file:\n"
+										+ "\t\tNothing you can do about it, it's out of your control.\n"
+										+ "\t- 2 instances of this application run simultaneously:\n"
+										+ "\t\tUse SingleInstanceManager to restrict running more than one instance.\n"
+										+ "\t- You are calling update() after launch() and files are already loaded onto JVM:\n"
+										+ "\t\tUse updateTemp() instead. Call Update.finalizeUpdate() upon next restart\n"
+										+ "\t\tto complete the update process.\n"
+										+ "\t- You are attempting to update a file that runs in the bootstrap application:\n"
+										+ "\t\tBootstrap dependencies cannot typically be updated. For services, leave\n"
+										+ "\t\tthe old in place, just release a newer version with a higher version\n"
+										+ "\t\tnumber and make it available to the boot classpath or modulepath.\n"
+										+ "\t- A file that's required in the business application was added to the boot classpath or modulepath:\n"
+										+ "\t\tMuch care must be taken that business application files should NOT be\n"
+										+ "\t\tloaded in the boot, the JVM locks them and prevents them from being updated.");
+					}
+				}
+			}
+
 			handler.failed(t);
 			success = false;
 		}
@@ -519,6 +712,19 @@ public class Configuration {
 		LaunchContext ctx = new LaunchContext(layer, contextClassLoader, this, args);
 
 		Launcher launcher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
+		
+		if(launcher.getClass().getClassLoader() == ClassLoader.getSystemClassLoader()) {
+			if (!"true".equals(System.getProperty("suppress.warning.access"))) {
+				System.err.println("WARNING: This Launcher was loaded from the boot classpath.\n"
+								+ "This may prevent accessing classes in the business application, and will\n"
+								+ "throw NoClassDefFoundErrors.\n"
+								+ "To prevent this, make sure the launcher is NOT loaded onto the boot\n"
+								+ "classpath and mark it with 'classpath=\"true\"' or 'modulepath=\"true\"' in the\n"
+								+ "configuration file.");
+			}
+		}
+		
+		
 		if (launcherSetup != null) {
 			launcherSetup.accept(launcher);
 		}
@@ -554,7 +760,7 @@ public class Configuration {
 
 		if (configBinding.base != null) {
 			if (configBinding.base.uri != null) {
-				String uri = config.resolvePlaceholders(configBinding.base.uri);
+				String uri = config.resolvePlaceholders(configBinding.base.uri, true);
 				if (!uri.endsWith("/"))
 					uri = uri + "/";
 
@@ -562,18 +768,18 @@ public class Configuration {
 			}
 
 			if (configBinding.base.path != null)
-				config.basePath = Paths.get(config.resolvePlaceholders(configBinding.base.path));
+				config.basePath = Paths.get(config.resolvePlaceholders(configBinding.base.path, true));
 		}
 
 		if (configBinding.provider != null) {
 			if (configBinding.provider.updateHandler != null) {
-				config.updateHandler = config.resolvePlaceholders(configBinding.provider.updateHandler);
+				config.updateHandler = config.resolvePlaceholders(configBinding.provider.updateHandler, false);
 				if (!StringUtils.isClassName(config.updateHandler)) {
 					throw new IllegalStateException(config.updateHandler + " is not a valid Java class name.");
 				}
 			}
 			if (configBinding.provider.launcher != null) {
-				config.launcher = config.resolvePlaceholders(configBinding.provider.launcher);
+				config.launcher = config.resolvePlaceholders(configBinding.provider.launcher, false);
 				if (!StringUtils.isClassName(config.launcher)) {
 					throw new IllegalStateException(config.launcher + " is not a valid Java class name.");
 				}
@@ -586,7 +792,7 @@ public class Configuration {
 			Library.Builder libBuilder = Library.withBase(config.getBaseUri(), config.getBasePath());
 
 			if (lib.uri != null) {
-				String s = config.resolvePlaceholders(lib.uri, lib.os != null && lib.os != OS.CURRENT);
+				String s = config.resolvePlaceholders(lib.uri, true, lib.os != null && lib.os != OS.CURRENT);
 
 				// Might happen when trying to parse foreign os properties
 				if (!PropertyUtils.containsPlaceholder(s)) {
@@ -595,7 +801,7 @@ public class Configuration {
 			}
 
 			if (lib.path != null) {
-				String s = config.resolvePlaceholders(lib.path, lib.os != null && lib.os != OS.CURRENT);
+				String s = config.resolvePlaceholders(lib.path, true, lib.os != null && lib.os != OS.CURRENT);
 
 				if (!PropertyUtils.containsPlaceholder(s)) {
 					libBuilder.path(Paths.get(s));
@@ -616,7 +822,7 @@ public class Configuration {
 			libBuilder.classpath(lib.classpath != null && lib.classpath);
 
 			if (lib.comment != null)
-				libBuilder.comment(config.resolvePlaceholders(lib.comment));
+				libBuilder.comment(config.resolvePlaceholders(lib.comment, false));
 
 			if (lib.signature != null)
 				libBuilder.signature(lib.signature);
@@ -924,7 +1130,9 @@ public class Configuration {
 				Library file = ref.getLibrary(uri, path, signer);
 
 				for (Library l : libs) {
-					if (l.getPath().equals(file.getPath())) {
+					if ((l.getOs() == null || l.getOs() == OS.CURRENT)
+									&& (file.getOs() == null || file.getOs() == OS.CURRENT)
+									&& l.getPath().equals(file.getPath())) {
 						throw new IllegalStateException("2 files resolve to same path: " + l.getPath());
 					}
 				}
