@@ -24,8 +24,8 @@ import org.update4j.service.Service;
 import org.update4j.util.StringUtils;
 
 /**
- * This class consists of convenience methods and the module's main method
- * to locate and start the bootstrap application in <a href=
+ * This class consists of convenience methods and the module's main method to
+ * locate and start the bootstrap application in <a href=
  * "https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers">Delegate
  * Mode</a>.
  * 
@@ -39,7 +39,7 @@ public class Bootstrap {
 	 * command-line.
 	 * 
 	 * <p>
-	 * Here's how you should run the application:
+	 * Here's how you should run the application as a module:
 	 * 
 	 * <pre>
 	 * $ java --module-path . --module org.update4j
@@ -50,25 +50,28 @@ public class Bootstrap {
 	 * <pre>
 	 * $ java -p . -m org.update4j
 	 * </pre>
+	 *
+	 * For more info consult <a
+	 * href=https://github.com/update4j/update4j/wiki/Documentation#starting-the-application>Starting
+	 * the Application</a>
 	 * 
 	 * <p>
 	 * By default it will try to locate the highest versioned provider of
-	 * {@link Delegate}
-	 * (specified by {@link Service#version()}). You may override this behavior by
-	 * passing the delegate class name using the {@code --delegate} option:
+	 * {@link Delegate} (specified by {@link Service#version()}) currently present
+	 * in the classpath or modulepath. You may override this behavior by passing the
+	 * delegate class name using the {@code --delegate} option:
 	 * 
 	 * <pre>
 	 * $ java --module-path . --module org.update4j --delegate=com.example.MyDelegate
 	 * </pre>
 	 * 
 	 * The class name should be the <i>Canonical Class Name</i> i.e. the String
-	 * returned
-	 * when calling {@link Class#getCanonicalName()}.
+	 * returned when calling {@link Class#getCanonicalName()}.
 	 * 
 	 * 
 	 * <p>
-	 * If the system cannot locate the passed class it will fall back to the default,
-	 * i.e. the highest version.
+	 * If the system cannot locate the passed class it will fall back to the
+	 * default, i.e. the highest version.
 	 * 
 	 */
 	public static void main(String[] args) throws Throwable {
@@ -88,8 +91,8 @@ public class Bootstrap {
 
 	/**
 	 * Starts the bootstrap by locating the highest versioned provider of
-	 * {@link Delegate}
-	 * (specified by {@link Service#version()}).
+	 * {@link Delegate} (specified by {@link Service#version()}) currently present
+	 * in the classpath or modulepath.
 	 * 
 	 * @throws Throwable
 	 *             Any throwable thrown in the bootstrap.
@@ -99,15 +102,14 @@ public class Bootstrap {
 	}
 
 	/**
-	 * Starts the bootstrap by locating the class between the list of registered
-	 * providers
-	 * of {@link Delegate}.
+	 * Starts the bootstrap by locating the class between the list of advertised
+	 * providers of {@link Delegate} currently present in the classpath or
+	 * modulepath.
 	 * 
-	 * <p>If the system cannot locate any registered provider with the given name, the
-	 * highest versioned provider
-	 * (specified by {@link Service#version()}) will be used instead.
-	 * 
-	 * 
+	 * <p>
+	 * If the system cannot locate any registered provider with the given name, the
+	 * highest versioned provider (specified by {@link Service#version()}) will be
+	 * used instead.
 	 * 
 	 * @throws Throwable
 	 *             Any throwable thrown in the bootstrap.
@@ -116,18 +118,53 @@ public class Bootstrap {
 		start(override, List.of());
 	}
 
+	/**
+	 * Starts the bootstrap running the given {@link Delegate}.
+	 * 
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
+	 */
 	public static void start(Delegate delegate) throws Throwable {
 		start(delegate, List.of());
 	}
 
+	/**
+	 * Starts the bootstrap by locating the highest versioned provider of
+	 * {@link Delegate} (specified by {@link Service#version()}) currently present
+	 * in the classpath or modulepath, with the given list as command-line
+	 * arguments.
+	 * 
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
+	 */
 	public static void start(List<String> args) throws Throwable {
 		start((String) null, args);
 	}
 
+	/**
+	 * Starts the bootstrap by locating the class between the list of advertised
+	 * providers of {@link Delegate} currently present in the classpath or
+	 * modulepath, with the given list as command-line arguments.
+	 * 
+	 * <p>
+	 * If the system cannot locate any registered provider with the given name, the
+	 * highest versioned provider (specified by {@link Service#version()}) will be
+	 * used instead.
+	 * 
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
+	 */
 	public static void start(String override, List<String> args) throws Throwable {
 		start(Service.loadService(Delegate.class, override), args);
 	}
 
+	/**
+	 * Starts the bootstrap running the given {@link Delegate}, with the given list
+	 * as command-line arguments.
+	 * 
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
+	 */
 	public static void start(Delegate delegate, List<String> args) throws Throwable {
 		delegate.main(args);
 	}

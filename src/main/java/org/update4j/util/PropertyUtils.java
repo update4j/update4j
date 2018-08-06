@@ -151,7 +151,8 @@ public class PropertyUtils {
 	 * unresolved foreign property.
 	 */
 	public static String resolvePlaceholders(Map<String, String> resolvedProperties,
-					Collection<? extends Property> properties, String str, boolean ignoreForeignProperty) {
+					Collection<? extends Property> properties, String str, boolean isPath,
+					boolean ignoreForeignProperty) {
 		if (str == null) {
 			return null;
 		}
@@ -174,12 +175,19 @@ public class PropertyUtils {
 
 			str = str.replace(wrap(key), value);
 		}
+		
+		if(isPath)
+			str = str.replace("\\", "/");
 
 		return str;
 	}
 
 	public static Property getUserProperty(Collection<? extends Property> properties, String key) {
 		return properties.stream().filter(p -> key.equals(p.getKey())).findAny().orElse(null);
+	}
+
+	public static List<Property> getUserProperties(Collection<? extends Property> properties, String key) {
+		return properties.stream().filter(p -> key.equals(p.getKey())).collect(Collectors.toList());
 	}
 
 	public static String getUserPropertyForCurrent(Collection<? extends Property> properties, String key) {

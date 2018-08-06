@@ -18,31 +18,53 @@ package org.update4j;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
+/**
+ * This class is a simple POJO that represents "Add Exports" and "Add Opens" in
+ * the configuration file.
+ * 
+ * @author Mordechai Meisels
+ *
+ */
 @XmlRootElement
 public class AddPackage {
 
 	@XmlAttribute(name = "package")
 	private String packageName;
-	
+
 	@XmlAttribute(name = "target")
 	private String targetModule;
-	
+
 	/*
 	 * Used by JAXB
 	 */
 	@SuppressWarnings("unused")
 	private AddPackage() {
 	}
-	
+
+	/**
+	 * Constructs a new {@link AddPackage} with the given source package name to be
+	 * added to the given target module.
+	 */
 	public AddPackage(String pkg, String mod) {
 		packageName = pkg;
 		targetModule = mod;
 	}
-	
+
+	/**
+	 * Returns the package name that is being added.
+	 * 
+	 * @return The package name that is being added.
+	 */
 	public String getPackageName() {
 		return packageName;
 	}
-	
+
+
+	/**
+	 * Returns the target module name that the package is added to.
+	 * 
+	 * @return The target module name that the package is added to.
+	 */
 	public String getTargetModule() {
 		return targetModule;
 	}
