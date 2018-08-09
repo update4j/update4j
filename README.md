@@ -69,9 +69,11 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 * *Upcoming Release*
   * Bug fixes.
-  * Reduce verboseness in configuration builder API by allowing string URI, path, and class names.
+  * Reduce verboseness in configuration builder API by allowing string URI, path, and class names and other improvements.
+  * In builder API, directly reference system or user properties in URI, path, class name and comment.
   * In builder API, system properties `user.home` and `user.dir` are now automatically resolved.
   * Warnings if files were incorrectly added to the boot classpath.
+  * Reject download if module name or package name conflicts with a module on the boot modulepath.
 * **1.1.3-beta**
   * `Library.Reference.Builder` no longer automatically sets `modulepath` to true.
   * Warn on `Configuration::launch` if there is no library that has set either `classpath` or `modulepath` to true.
