@@ -17,7 +17,6 @@ package org.update4j;
 
 import java.nio.file.Path;
 import java.security.PublicKey;
-import java.security.cert.Certificate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -60,14 +59,5 @@ public class UpdateContext {
 
 	public PublicKey getPublicKey() {
 		return key;
-	}
-
-	/**
-	 * @deprecated In favor of {@link #getPublicKey()}. Calling this method always
-	 *             returns {@code null}.
-	 */
-	@Deprecated(forRemoval = true)
-	public Certificate getCertificate() {
-		return null;
 	}
 }

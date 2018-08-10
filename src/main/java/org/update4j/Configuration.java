@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.update4j.binding.BaseBinding;
@@ -64,6 +65,7 @@ import org.update4j.service.UpdateHandler;
 import org.update4j.util.FileUtils;
 import org.update4j.util.PropertyUtils;
 import org.update4j.util.StringUtils;
+import org.update4j.util.Warning;
 
 /**
  * This class is the heart of the framework. It essentially wraps around a
@@ -298,7 +300,7 @@ public class Configuration {
 		return resolvePlaceholders(str, false);
 	}
 
-	public String resolvePlaceholders(String str, boolean isPath) {
+	protected String resolvePlaceholders(String str, boolean isPath) {
 		return resolvePlaceholders(str, isPath, false);
 	}
 
@@ -306,7 +308,7 @@ public class Configuration {
 	 * ignoreForeignProperty will not throw an exception if the key is found in an
 	 * unresolved foreign property.
 	 */
-	public String resolvePlaceholders(String str, boolean isPath, boolean ignoreForeignProperty) {
+	protected String resolvePlaceholders(String str, boolean isPath, boolean ignoreForeignProperty) {
 		return PropertyUtils.resolvePlaceholders(resolvedProperties, properties, str, isPath, ignoreForeignProperty);
 	}
 
@@ -347,24 +349,8 @@ public class Configuration {
 		return update(key, null);
 	}
 
-	/**
-	 * @deprecated In favor of {@link #update(PublicKey)}
-	 */
-	@Deprecated(forRemoval = true)
-	public boolean update(Certificate cert) {
-		return update(cert.getPublicKey());
-	}
-
 	public boolean update(PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
 		return updateImpl(null, key, handlerSetup);
-	}
-
-	/**
-	 * @deprecated In favor of {@link #update(PublicKey, Consumer)}
-	 */
-	@Deprecated(forRemoval = true)
-	public boolean update(Certificate cert, Consumer<? super UpdateHandler> handlerSetup) {
-		return update(cert.getPublicKey(), handlerSetup);
 	}
 
 	public boolean updateTemp(Path tempDir) {
@@ -379,24 +365,8 @@ public class Configuration {
 		return updateTemp(tempDir, key, null);
 	}
 
-	/**
-	 * @deprecated In favor of {@link #updateTemp(Path, PublicKey)}
-	 */
-	@Deprecated(forRemoval = true)
-	public boolean updateTemp(Path tempDir, Certificate cert) {
-		return updateTemp(tempDir, cert.getPublicKey());
-	}
-
 	public boolean updateTemp(Path tempDir, PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
 		return updateImpl(Objects.requireNonNull(tempDir), key, handlerSetup);
-	}
-
-	/**
-	 * @deprecated In favor of {@link #updateTemp(Path, PublicKey, Consumer)}
-	 */
-	@Deprecated(forRemoval = true)
-	public boolean updateTemp(Path tempDir, Certificate cert, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateTemp(Objects.requireNonNull(tempDir), cert.getPublicKey(), handlerSetup);
 	}
 
 	private boolean updateImpl(Path tempDir, PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
@@ -514,6 +484,10 @@ public class Configuration {
 								throw new SecurityException("Signature verification failed.");
 						}
 
+						if (lib.getPath().toString().endsWith(".jar") && !lib.isIgnoreBootConflict()) {
+							checkConflicts(output);
+						}
+
 						if (tempDir == null) {
 							Files.move(output, lib.getPath(), StandardCopyOption.REPLACE_EXISTING);
 						}
@@ -574,24 +548,7 @@ public class Configuration {
 
 				String msg = t.getMessage();
 				if (msg.contains("another process") || msg.contains("lock") || msg.contains("use")) {
-					if (!"true".equals(System.getProperty("suppress.warning.lock"))) {
-						System.err.println("WARNING: " + fse.getFile()
-										+ " is locked by another process, there are a few common causes for this:\n"
-										+ "\t- Another application accesses this file:\n"
-										+ "\t\tNothing you can do about it, it's out of your control.\n"
-										+ "\t- 2 instances of this application run simultaneously:\n"
-										+ "\t\tUse SingleInstanceManager to restrict running more than one instance.\n"
-										+ "\t- You are calling update() after launch() and files are already loaded onto JVM:\n"
-										+ "\t\tUse updateTemp() instead. Call Update.finalizeUpdate() upon next restart\n"
-										+ "\t\tto complete the update process.\n"
-										+ "\t- You are attempting to update a file that runs in the bootstrap application:\n"
-										+ "\t\tBootstrap dependencies cannot typically be updated. For services, leave\n"
-										+ "\t\tthe old in place, just release a newer version with a higher version\n"
-										+ "\t\tnumber and make it available to the boot classpath or modulepath.\n"
-										+ "\t- A file that's required in the business application was added to the boot classpath or modulepath:\n"
-										+ "\t\tMuch care must be taken that business application files should NOT be\n"
-										+ "\t\tloaded in the boot, the JVM locks them and prevents them from being updated.");
-					}
+					Warning.lock(fse.getFile());
 				}
 			}
 
@@ -603,6 +560,42 @@ public class Configuration {
 
 		return success;
 
+	}
+
+	private void checkConflicts(Path download) throws IOException {
+
+		Set<Module> modules = ModuleLayer.boot().modules();
+		Set<String> moduleNames = modules.stream().map(Module::getName).collect(Collectors.toSet());
+
+		ModuleDescriptor newMod = null;
+		Path newPath = download.getParent().resolve(download.getFileName().toString() + ".jar");
+
+		try {
+			// ModuleFinder will not cooperate otherwise
+			Files.move(download, newPath);
+			newMod = ModuleFinder.of(newPath).findAll().stream().map(ModuleReference::descriptor).findAny().orElse(
+							null);
+		} finally {
+			Files.move(newPath, download, StandardCopyOption.REPLACE_EXISTING);
+		}
+
+		if (newMod == null)
+			return;
+
+		if (moduleNames.contains(newMod.name())) {
+			Warning.moduleConflict(newMod.name());
+			throw new IllegalStateException(
+							"Module '" + newMod.name() + "' conflicts with a module in the boot modulepath");
+		}
+
+		Set<String> packages = modules.stream().flatMap(m -> m.getPackages().stream()).collect(Collectors.toSet());
+		for (String p : newMod.packages()) {
+			if (packages.contains(p)) {
+				Warning.packageConflict(p);
+				throw new IllegalStateException("Package '" + p + "' conflicts with a package in the boot modulepath");
+
+			}
+		}
 	}
 
 	public void launch() {
@@ -642,11 +635,7 @@ public class Configuration {
 
 		//Warn potential problems
 		if (modulepaths.isEmpty() && classpaths.isEmpty()) {
-			if (!"true".equals(System.getProperty("suppress.warning.path"))) {
-				System.err.println(
-								"WARNING: No libraries were found that are set with 'classpath' or 'modulepath' to true; although perfectly valid it's rarely what you want."
-												+ "\nPlease refer to: https://github.com/update4j/update4j/wiki/Documentation#classpath-and-modulepath");
-			}
+			Warning.path();
 		}
 
 		ModuleFinder finder = ModuleFinder.of(modulepaths.toArray(new Path[modulepaths.size()]));
@@ -712,24 +701,22 @@ public class Configuration {
 		LaunchContext ctx = new LaunchContext(layer, contextClassLoader, this, args);
 
 		Launcher launcher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
-		
-		if(launcher.getClass().getClassLoader() == ClassLoader.getSystemClassLoader()) {
-			if (!"true".equals(System.getProperty("suppress.warning.access"))) {
-				System.err.println("WARNING: This Launcher was loaded from the boot classpath.\n"
-								+ "This may prevent accessing classes in the business application, and will\n"
-								+ "throw NoClassDefFoundErrors.\n"
-								+ "To prevent this, make sure the launcher is NOT loaded onto the boot\n"
-								+ "classpath and mark it with 'classpath=\"true\"' or 'modulepath=\"true\"' in the\n"
-								+ "configuration file.");
-			}
-		}
-		
-		
+
 		if (launcherSetup != null) {
 			launcherSetup.accept(launcher);
 		}
 
-		Thread t = new Thread(() -> launcher.run(ctx));
+		Thread t = new Thread(() -> {
+			try {
+				launcher.run(ctx);
+			} catch (NoClassDefFoundError e) {
+				if (launcher.getClass().getClassLoader() == ClassLoader.getSystemClassLoader()) {
+					Warning.access(launcher);
+				}
+				
+				throw e;
+			}
+		});
 		t.setContextClassLoader(contextClassLoader);
 		t.start();
 
@@ -820,6 +807,7 @@ public class Configuration {
 			// defaults to false
 			libBuilder.modulepath(lib.modulepath != null && lib.modulepath);
 			libBuilder.classpath(lib.classpath != null && lib.classpath);
+			libBuilder.ignoreBootConflict(lib.ignoreBootConflict != null && lib.ignoreBootConflict);
 
 			if (lib.comment != null)
 				libBuilder.comment(config.resolvePlaceholders(lib.comment, false));
@@ -939,6 +927,7 @@ public class Configuration {
 					libBinding.os = lib.getOs();
 					libBinding.classpath = lib.isClasspath() ? true : null;
 					libBinding.modulepath = lib.isModulepath() ? true : null;
+					libBinding.ignoreBootConflict = lib.isIgnoreBootConflict() ? true : null;
 					libBinding.comment = implyPlaceholders(lib.getComment(), matchType, false);
 
 					if (lib.getSignature() != null)
@@ -988,7 +977,7 @@ public class Configuration {
 	}
 
 	public static Builder absolute() {
-		return withBase((URI) null, null);
+		return withBase((String) null, null);
 	}
 
 	public static Builder withBase(URI uri) {
@@ -1007,17 +996,17 @@ public class Configuration {
 		return withBase(null, path);
 	}
 
-	public static Builder withBase(String uri, String path) {
-		return withBase(URI.create(uri), Paths.get(path));
+	public static Builder withBase(URI uri, Path path) {
+		return withBase(uri == null ? null : uri.toString(), path == null ? null : path.toString());
 	}
 
-	public static Builder withBase(URI uri, Path path) {
+	public static Builder withBase(String uri, String path) {
 		return new Builder(uri, path);
 	}
 
 	public static class Builder {
-		private URI uri;
-		private Path path;
+		private String uri;
+		private String path;
 		private String updateHandler;
 		private String launcher;
 
@@ -1028,19 +1017,7 @@ public class Configuration {
 
 		private PrivateKey signer;
 
-		private Builder(URI uri, Path path) {
-			if (uri != null) {
-				if (!uri.getPath() // relativization gets messed up if trailing slash is missing
-								.endsWith("/")) {
-					try {
-						uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(),
-										uri.getPath() + "/", uri.getQuery(), uri.getFragment());
-					} catch (URISyntaxException e) {
-						throw new AssertionError(e);
-					}
-				}
-			}
-
+		private Builder(String uri, String path) {
 			this.uri = uri;
 			this.path = path;
 
@@ -1060,6 +1037,12 @@ public class Configuration {
 
 		public Builder library(Library.Reference reference) {
 			libraries.add(reference);
+
+			return this;
+		}
+
+		public Builder library(Library.Reference.Builder builder) {
+			libraries.add(builder.build());
 
 			return this;
 		}
@@ -1123,11 +1106,37 @@ public class Configuration {
 		}
 
 		public Configuration build() throws IOException {
-			// should check if 2 files resolve to same location;
+
+			Configuration config = new Configuration();
+
+			// Resolves for "this" machine only!
+			Map<String, String> resolved = PropertyUtils.extractPropertiesForCurrentMachine(systemProperties,
+							properties);
+			resolved = PropertyUtils.resolveDependencies(resolved);
+			config.resolvedProperties = resolved;
+			config.unmodifiableResolvedProperties = Collections.unmodifiableMap(config.resolvedProperties);
+			config.properties = properties;
+			config.unmodifiableProperties = Collections.unmodifiableList(config.properties);
+
+			if (uri != null) {
+				uri = config.resolvePlaceholders(uri, true);
+
+				// relativization gets messed up if trailing slash is missing
+				if (!uri.endsWith("/"))
+					uri = uri + "/";
+
+				config.baseUri = URI.create(uri);
+			}
+			if (path != null) {
+				config.basePath = Paths.get(config.resolvePlaceholders(path, true));
+			}
+
+			config.updateHandler = config.resolvePlaceholders(updateHandler);
+			config.launcher = config.resolvePlaceholders(launcher);
 
 			List<Library> libs = new ArrayList<>();
 			for (Library.Reference ref : libraries) {
-				Library file = ref.getLibrary(uri, path, signer);
+				Library file = ref.getLibrary(config, signer);
 
 				for (Library l : libs) {
 					if ((l.getOs() == null || l.getOs() == OS.CURRENT)
@@ -1140,29 +1149,8 @@ public class Configuration {
 				libs.add(file);
 			}
 
-			Configuration config = new Configuration();
-
-			if (uri != null)
-				config.baseUri = uri;
-			if (path != null)
-				config.basePath = path;
-
-			config.updateHandler = updateHandler;
-			config.launcher = launcher;
-
 			config.libraries = libs;
 			config.unmodifiableLibraries = Collections.unmodifiableList(config.libraries);
-			config.properties = properties;
-			config.unmodifiableProperties = Collections.unmodifiableList(config.properties);
-
-			// Resolves for "this" machine only!
-
-			Map<String, String> resolved = PropertyUtils.extractPropertiesForCurrentMachine(systemProperties,
-							properties);
-			resolved = PropertyUtils.resolveDependencies(resolved);
-
-			config.resolvedProperties = resolved;
-			config.unmodifiableResolvedProperties = Collections.unmodifiableMap(config.resolvedProperties);
 
 			return config;
 

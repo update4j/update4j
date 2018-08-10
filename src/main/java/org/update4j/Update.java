@@ -19,12 +19,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.update4j.util.Warning;
 
 public class Update {
 
@@ -59,7 +62,16 @@ public class Update {
 			return false;
 
 		for (Map.Entry<Path, Path> e : files.entrySet()) {
-			Files.move(e.getKey(), e.getValue(), StandardCopyOption.REPLACE_EXISTING);
+			try {
+				Files.move(e.getKey(), e.getValue(), StandardCopyOption.REPLACE_EXISTING);
+			} catch (FileSystemException fse) {
+				String msg = fse.getMessage();
+				if (msg.contains("another process") || msg.contains("lock") || msg.contains("use")) {
+					Warning.lockFinalize(fse.getFile());
+				}
+
+				throw fse;
+			}
 		}
 
 		Files.deleteIfExists(updateData);
