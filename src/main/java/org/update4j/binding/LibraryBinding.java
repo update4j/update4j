@@ -54,6 +54,9 @@ public class LibraryBinding {
 
 	@XmlAttribute
 	public String comment;
+	
+	@XmlAttribute
+	public Boolean ignoreBootConflict;
 
 	@XmlAttribute
 	public String signature;

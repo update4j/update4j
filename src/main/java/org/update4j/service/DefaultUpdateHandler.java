@@ -15,6 +15,8 @@
  */
 package org.update4j.service;
 
+import java.nio.file.Path;
+
 import org.update4j.Library;
 import org.update4j.UpdateContext;
 import org.update4j.util.FileUtils;
@@ -43,7 +45,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
 
 	@Override
 	public void doneCheckUpdateLibrary(Library lib, boolean requires) throws Throwable {
-		System.out.print(FileUtils.relativize(context.getConfiguration().getBasePath(), lib.getPath()));
+		System.out.print(compactName(context.getConfiguration().getBasePath(), lib.getPath()));
 		if (requires) {
 			System.out.println(":  UPDATE");
 		} else {
@@ -65,7 +67,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
 
 	@Override
 	public void startDownloadLibrary(Library lib) throws Throwable {
-		System.out.print("Downloading: " + FileUtils.relativize(context.getConfiguration().getBasePath(), lib.getPath())
+		System.out.print("Downloading: " + compactName(context.getConfiguration().getBasePath(), lib.getPath())
 						+ " <" + lib.getUri() + "> ");
 	}
 
@@ -123,4 +125,9 @@ public class DefaultUpdateHandler implements UpdateHandler {
 	public void stop() {
 	}
 
+	private static String compactName(Path base, Path name) {
+		Path relative = FileUtils.relativize(base, name);
+
+		return relative.isAbsolute() ? relative.getFileName().toString() : relative.toString();
+	}
 }

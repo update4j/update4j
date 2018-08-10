@@ -38,6 +38,7 @@ public class Library {
 	private final boolean classpath;
 	private final boolean modulepath;
 	private final String comment;
+	private final boolean ignoreBootConflict;
 	private final byte[] signature;
 
 	private final List<AddPackage> addExports;
@@ -45,8 +46,8 @@ public class Library {
 	private final List<String> addReads;
 
 	private Library(URI uri, Path path, OS os, long checksum, long size, boolean classpath, boolean modulepath,
-					String comment, byte[] signature, List<AddPackage> addExports, List<AddPackage> addOpens,
-					List<String> addReads, boolean fromFile) {
+					String comment, boolean ignoreBootConflict, byte[] signature, List<AddPackage> addExports,
+					List<AddPackage> addOpens, List<String> addReads, boolean fromFile) {
 
 		this.uri = uri;
 
@@ -83,6 +84,7 @@ public class Library {
 		this.classpath = classpath;
 		this.modulepath = modulepath;
 		this.comment = comment;
+		this.ignoreBootConflict = ignoreBootConflict;
 		this.signature = signature;
 
 		this.addExports = Collections.unmodifiableList(addExports);
@@ -122,6 +124,10 @@ public class Library {
 		return comment;
 	}
 
+	public boolean isIgnoreBootConflict() {
+		return ignoreBootConflict;
+	}
+
 	public byte[] getSignature() {
 		return signature;
 	}
@@ -146,21 +152,31 @@ public class Library {
 						|| FileUtils.getChecksum(getPath()) != getChecksum();
 	}
 
+	public static Reference.Builder at(Path location) {
+		return Library.Reference.at(location);
+	}
+
+	public static Reference.Builder at(String location) {
+		return Library.Reference.at(location);
+	}
+
 	public static class Reference {
 		private Path location;
-		private URI uri;
-		private Path path;
+		private String uri;
+		private String path;
 		private OS os;
 		private Boolean classpath;
 		private Boolean modulepath;
 		private String comment;
+		private Boolean ignoreBootConflict;
 
 		private List<AddPackage> addExports;
 		private List<AddPackage> addOpens;
 		private List<String> addReads;
 
-		private Reference(Path location, URI uri, Path path, OS os, Boolean classpath, Boolean modulepath,
-						String comment, List<AddPackage> addExports, List<AddPackage> addOpens, List<String> addReads) {
+		private Reference(Path location, String uri, String path, OS os, Boolean classpath, Boolean modulepath,
+						String comment, Boolean ignoreBootConflict, List<AddPackage> addExports,
+						List<AddPackage> addOpens, List<String> addReads) {
 			this.location = location;
 			this.uri = uri;
 			this.path = path;
@@ -168,6 +184,7 @@ public class Library {
 			this.classpath = classpath;
 			this.modulepath = modulepath;
 			this.comment = comment;
+			this.ignoreBootConflict = ignoreBootConflict;
 
 			this.addExports = addExports;
 			this.addOpens = addOpens;
@@ -177,21 +194,39 @@ public class Library {
 		public Path getLocation() {
 			return location;
 		}
-
-		public URI getUri() {
+		
+		public String getUri() {
 			return uri;
 		}
 
-		public Path getPath() {
+		public URI getUriResolved(Configuration config) {
+			if (getUri() == null)
+				return null;
+
+			return URI.create(config.resolvePlaceholders(getUri(), true, os != null && os != OS.CURRENT));
+		}
+		
+		public String getPath() {
 			return path;
+		}
+
+		public Path getPathResolved(Configuration config) {
+			if (getPath() == null)
+				return null;
+
+			return Paths.get(config.resolvePlaceholders(getPath(), true, os != null && os != OS.CURRENT));
 		}
 
 		public OS getOs() {
 			return os;
 		}
-
+		
 		public String getComment() {
 			return comment;
+		}
+
+		public String getCommentResolved(Configuration config) {
+			return config.resolvePlaceholders(getComment());
 		}
 
 		public long getChecksum() throws IOException {
@@ -203,7 +238,7 @@ public class Library {
 		}
 
 		public boolean isClasspath() {
-			// Non-null and set to true
+			// Non-null and true
 			// null defaults to false
 			return Boolean.TRUE.equals(classpath);
 		}
@@ -215,6 +250,10 @@ public class Library {
 
 			// If not a jar, completely ignore modulepath
 			return FileUtils.isJarFile(getLocation());
+		}
+
+		public boolean isIgnoreBootConflict() {
+			return Boolean.TRUE.equals(ignoreBootConflict);
 		}
 
 		public byte[] getSignature(PrivateKey key) throws IOException {
@@ -236,22 +275,23 @@ public class Library {
 			return addReads;
 		}
 
-		Library getLibrary(URI baseUri, Path basePath, PrivateKey key) throws IOException {
+		Library getLibrary(Configuration config, PrivateKey key) throws IOException {
 
-			if (getUri() == null && getPath() == null) {
-				path = location;
+			if (getUriResolved(config) == null && getPathResolved(config) == null) {
+				path = location.toString();
 			}
 
-			return Library.withBase(baseUri, basePath)
-							.uri(getUri())
-							.path(getPath())
+			return Library.withBase(config.getBaseUri(), config.getBasePath())
+							.uri(getUriResolved(config))
+							.path(getPathResolved(config))
 							.os(getOs())
 							.size(getSize())
 							.checksum(getChecksum())
 							.classpath(isClasspath())
 							.modulepath(isModulepath())
+							.ignoreBootConflict(isIgnoreBootConflict())
 							.signature(getSignature(key))
-							.comment(getComment())
+							.comment(getCommentResolved(config))
 							.exports(getAddExports())
 							.opens(getAddOpens())
 							.reads(getAddReads())
@@ -262,19 +302,20 @@ public class Library {
 		public static Builder at(Path location) {
 			return new Builder(location);
 		}
-		
+
 		public static Builder at(String location) {
 			return at(Paths.get(location));
 		}
 
 		public static class Builder {
 			private Path location;
-			private Path path;
-			private URI uri;
+			private String path;
+			private String uri;
 			private OS os;
 			private Boolean classpath;
 			private Boolean modulepath;
 			private String comment;
+			private Boolean ignoreBootConflict;
 
 			private List<AddPackage> addExports;
 			private List<AddPackage> addOpens;
@@ -289,25 +330,25 @@ public class Library {
 			}
 
 			public Builder uri(URI uri) {
+				return uri(uri == null ? null : uri.toString());
+			}
+
+			public Builder uri(String uri) {
 				this.uri = uri;
 
 				return this;
 			}
-			
-			public Builder uri(String uri) {
-				return uri(URI.create(uri));
-			}
 
 			public Builder path(Path path) {
+				return path(path == null ? null : path.toString());
+			}
+
+			public Builder path(String path) {
 				this.path = path;
 
 				return this;
 			}
 
-			public Builder path(String path) {
-				return path(Paths.get(path));
-			}
-			
 			public Builder os(OS os) {
 				this.os = os;
 
@@ -319,7 +360,7 @@ public class Library {
 
 				return this;
 			}
-			
+
 			public Builder classpath() {
 				return classpath(true);
 			}
@@ -333,11 +374,21 @@ public class Library {
 			public Builder modulepath() {
 				return modulepath(true);
 			}
-			
+
 			public Builder comment(String c) {
 				comment = c;
 
 				return this;
+			}
+
+			public Builder ignoreBootConflict(boolean b) {
+				ignoreBootConflict = b;
+
+				return this;
+			}
+
+			public Builder ignoreBootConflict() {
+				return ignoreBootConflict(true);
 			}
 
 			public Builder exports(String pkg, String targetModule) {
@@ -359,8 +410,8 @@ public class Library {
 			}
 
 			public Reference build() {
-				return new Reference(location, uri, path, os, classpath, modulepath, comment, addExports, addOpens,
-								addReads);
+				return new Reference(location, uri, path, os, classpath, modulepath, comment, ignoreBootConflict,
+								addExports, addOpens, addReads);
 			}
 		}
 	}
@@ -393,6 +444,7 @@ public class Library {
 		private boolean classpath;
 		private boolean modulepath;
 		private String comment;
+		private boolean ignoreBootConflict;
 		private byte[] signature;
 
 		private List<AddPackage> addExports;
@@ -450,6 +502,12 @@ public class Library {
 
 		Builder modulepath(boolean mp) {
 			this.modulepath = mp;
+
+			return this;
+		}
+
+		Builder ignoreBootConflict(boolean b) {
+			this.ignoreBootConflict = b;
 
 			return this;
 		}
@@ -544,8 +602,8 @@ public class Library {
 				this.path = basePath.resolve(path);
 			}
 
-			return new Library(uri, path, os, checksum, size, classpath, modulepath, comment, signature, addExports,
-							addOpens, addReads, fromFile);
+			return new Library(uri, path, os, checksum, size, classpath, modulepath, comment, ignoreBootConflict,
+							signature, addExports, addOpens, addReads, fromFile);
 		}
 	}
 }
