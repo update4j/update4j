@@ -26,9 +26,12 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.update4j.util.FileUtils;
 
-public class Library {
+import org.update4j.mapper.FileMapper;
+import org.update4j.util.FileUtils;
+import org.update4j.util.PropertyManager;
+
+public class FileMetadata {
 
 	private final URI uri;
 	private final Path path;
@@ -45,14 +48,14 @@ public class Library {
 	private final List<AddPackage> addOpens;
 	private final List<String> addReads;
 
-	private Library(URI uri, Path path, OS os, long checksum, long size, boolean classpath, boolean modulepath,
+	private FileMetadata(URI uri, Path path, OS os, long checksum, long size, boolean classpath, boolean modulepath,
 					String comment, boolean ignoreBootConflict, byte[] signature, List<AddPackage> addExports,
-					List<AddPackage> addOpens, List<String> addReads, boolean fromFile) {
+					List<AddPackage> addOpens, List<String> addReads) {
 
 		this.uri = uri;
 
 		// parsing properties might fail sometimes when not on current os, so let it through
-		if (!fromFile || os == null || os == OS.CURRENT) {
+		if (os == null || os == OS.CURRENT) {
 			Objects.requireNonNull(uri, "uri");
 
 			if (!uri.isAbsolute()) {
@@ -62,7 +65,7 @@ public class Library {
 
 		this.path = path;
 
-		if (!fromFile || os == null || os == OS.CURRENT) {
+		if (os == null || os == OS.CURRENT) {
 			Objects.requireNonNull(path, "path");
 
 			if (!path.isAbsolute()) {
@@ -152,12 +155,12 @@ public class Library {
 						|| FileUtils.getChecksum(getPath()) != getChecksum();
 	}
 
-	public static Reference.Builder at(Path location) {
-		return Library.Reference.at(location);
+	public static Reference.Builder readFrom(Path location) {
+		return new FileMetadata.Reference.Builder(location);
 	}
 
-	public static Reference.Builder at(String location) {
-		return Library.Reference.at(location);
+	public static Reference.Builder readFrom(String location) {
+		return readFrom(Paths.get(location));
 	}
 
 	public static class Reference {
@@ -194,39 +197,21 @@ public class Library {
 		public Path getLocation() {
 			return location;
 		}
-		
+
 		public String getUri() {
 			return uri;
 		}
 
-		public URI getUriResolved(Configuration config) {
-			if (getUri() == null)
-				return null;
-
-			return URI.create(config.resolvePlaceholders(getUri(), true, os != null && os != OS.CURRENT));
-		}
-		
 		public String getPath() {
 			return path;
-		}
-
-		public Path getPathResolved(Configuration config) {
-			if (getPath() == null)
-				return null;
-
-			return Paths.get(config.resolvePlaceholders(getPath(), true, os != null && os != OS.CURRENT));
 		}
 
 		public OS getOs() {
 			return os;
 		}
-		
+
 		public String getComment() {
 			return comment;
-		}
-
-		public String getCommentResolved(Configuration config) {
-			return config.resolvePlaceholders(getComment());
 		}
 
 		public long getChecksum() throws IOException {
@@ -275,36 +260,34 @@ public class Library {
 			return addReads;
 		}
 
-		Library getLibrary(Configuration config, PrivateKey key) throws IOException {
+		FileMapper getFileMapper(PropertyManager pm, PlaceholderMatchType matchType, PrivateKey key) throws IOException {
 
-			if (getUriResolved(config) == null && getPathResolved(config) == null) {
+			if (getUri() == null && getPath() == null) {
 				path = location.toString();
 			}
 
-			return Library.withBase(config.getBaseUri(), config.getBasePath())
-							.uri(getUriResolved(config))
-							.path(getPathResolved(config))
-							.os(getOs())
-							.size(getSize())
-							.checksum(getChecksum())
-							.classpath(isClasspath())
-							.modulepath(isModulepath())
-							.ignoreBootConflict(isIgnoreBootConflict())
-							.signature(getSignature(key))
-							.comment(getCommentResolved(config))
-							.exports(getAddExports())
-							.opens(getAddOpens())
-							.reads(getAddReads())
-							.build(false);
+			FileMapper mapper = new FileMapper();
 
-		}
+			mapper.uri = pm.implyPlaceholders(getUri(), matchType, true);
+			mapper.path = pm.implyPlaceholders(getPath(), matchType, true);
+			mapper.os = getOs();
+			mapper.size = getSize();
+			mapper.checksum = Long.toHexString(getChecksum());
+			mapper.classpath = isClasspath();
+			mapper.modulepath = isModulepath();
+			mapper.ignoreBootConflict = isIgnoreBootConflict();
 
-		public static Builder at(Path location) {
-			return new Builder(location);
-		}
+			byte[] sig = getSignature(key);
+			if (sig != null)
+				mapper.signature = Base64.getEncoder()
+								.encodeToString(sig);
+			
+			mapper.comment = pm.implyPlaceholders(getComment(), matchType, false);
+			mapper.addExports = getAddExports();
+			mapper.addOpens = getAddOpens();
+			mapper.addReads = getAddReads();
 
-		public static Builder at(String location) {
-			return at(Paths.get(location));
+			return mapper;
 		}
 
 		public static class Builder {
@@ -416,20 +399,8 @@ public class Library {
 		}
 	}
 
-	static Builder absolute() {
-		return withBase(null, null);
-	}
-
-	static Builder withBase(Path path) {
-		return withBase(null, path);
-	}
-
-	static Builder withBase(URI uri) {
-		return withBase(uri, null);
-	}
-
-	static Builder withBase(URI uri, Path path) {
-		return new Builder(uri, path);
+	static Builder builder() {
+		return new Builder();
 	}
 
 	static class Builder {
@@ -451,13 +422,22 @@ public class Library {
 		private List<AddPackage> addOpens;
 		private List<String> addReads;
 
-		private Builder(URI uri, Path path) {
-			this.baseUri = uri;
-			this.basePath = path;
-
+		private Builder() {
 			addExports = new ArrayList<>();
 			addOpens = new ArrayList<>();
 			addReads = new ArrayList<>();
+		}
+
+		Builder baseUri(URI uri) {
+			this.baseUri = uri;
+
+			return this;
+		}
+
+		Builder basePath(Path path) {
+			this.basePath = path;
+
+			return this;
 		}
 
 		Builder uri(URI uri) {
@@ -525,7 +505,8 @@ public class Library {
 		}
 
 		Builder signature(String signature) {
-			return signature(Base64.getDecoder().decode(signature));
+			return signature(Base64.getDecoder()
+							.decode(signature));
 		}
 
 		private void validateAddReads(List<String> list) {
@@ -540,10 +521,12 @@ public class Library {
 		private void validateAddPackages(List<AddPackage> list) {
 			for (AddPackage add : list) {
 				Objects.requireNonNull(add);
-				if (add.getPackageName() == null || add.getPackageName().isEmpty()) {
+				if (add.getPackageName() == null || add.getPackageName()
+								.isEmpty()) {
 					throw new IllegalArgumentException("Missing package name.");
 				}
-				if (add.getTargetModule() == null || add.getTargetModule().isEmpty()) {
+				if (add.getTargetModule() == null || add.getTargetModule()
+								.isEmpty()) {
 					throw new IllegalArgumentException("Missing module name.");
 				}
 			}
@@ -573,7 +556,7 @@ public class Library {
 			return this;
 		}
 
-		Library build(boolean fromFile) {
+		FileMetadata build() {
 			if (path == null && uri != null) {
 				path(FileUtils.fromUri(uri));
 			}
@@ -582,12 +565,15 @@ public class Library {
 			}
 
 			// relativization gets messed up if relative path has a leading slash
-			if (uri != null && !uri.isAbsolute() && uri.getPath().startsWith("/")) {
-				uri = URI.create("/").relativize(uri);
+			if (uri != null && !uri.isAbsolute() && uri.getPath()
+							.startsWith("/")) {
+				uri = URI.create("/")
+								.relativize(uri);
 			}
 
 			if (path != null && !path.isAbsolute() && path.startsWith("/")) {
-				path = Paths.get("/").relativize(path);
+				path = Paths.get("/")
+								.relativize(path);
 			}
 
 			if (os == null && path != null) {
@@ -602,8 +588,8 @@ public class Library {
 				this.path = basePath.resolve(path);
 			}
 
-			return new Library(uri, path, os, checksum, size, classpath, modulepath, comment, ignoreBootConflict,
-							signature, addExports, addOpens, addReads, fromFile);
+			return new FileMetadata(uri, path, os, checksum, size, classpath, modulepath, comment, ignoreBootConflict,
+							signature, addExports, addOpens, addReads);
 		}
 	}
 }

@@ -15,30 +15,11 @@
  */
 package org.update4j;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.FIELD)
 public class Property {
 
-	@XmlAttribute
 	private String key;
-
-	@XmlAttribute
 	private String value;
-
-	@XmlAttribute
 	private OS os;
-
-	/*
-	 * Used by Jaxb
-	 */
-	@SuppressWarnings("unused")
-	private Property() {
-	}
 
 	public Property(String key, String value, OS os) {
 		this.key = key;
@@ -49,7 +30,7 @@ public class Property {
 	public Property(String key, String value) {
 		this(key, value, null);
 	}
-
+	
 	public String getKey() {
 		return key;
 	}

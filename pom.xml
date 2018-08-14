@@ -32,15 +32,6 @@
 		<developerConnection>scm:git:https://github.com:update4j/update4j.git</developerConnection>
 	</scm>
 
-
-	<dependencies>
-		<dependency>
-			<groupId>javax.xml.bind</groupId>
-			<artifactId>jaxb-api</artifactId>
-			<version>2.3.0</version>
-		</dependency>
-	</dependencies>
-
 	<build>
 		<plugins>
 			<plugin>

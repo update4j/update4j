@@ -25,13 +25,13 @@ public class UpdateContext {
 
 	private Configuration configuration;
 
-	private List<Library> requiresUpdate;
-	private List<Library> updated;
+	private List<FileMetadata> requiresUpdate;
+	private List<FileMetadata> updated;
 	private Path tempDir;
 
 	private PublicKey key;
 
-	UpdateContext(Configuration config, List<Library> requiresUpdate, List<Library> updated, Path tempDir,
+	UpdateContext(Configuration config, List<FileMetadata> requiresUpdate, List<FileMetadata> updated, Path tempDir,
 					PublicKey key) {
 		configuration = Objects.requireNonNull(config);
 
@@ -45,11 +45,11 @@ public class UpdateContext {
 		return configuration;
 	}
 
-	public List<Library> getRequiresUpdate() {
+	public List<FileMetadata> getRequiresUpdate() {
 		return requiresUpdate;
 	}
 
-	public List<Library> getUpdated() {
+	public List<FileMetadata> getUpdated() {
 		return updated;
 	}
 

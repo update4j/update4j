@@ -15,9 +15,6 @@
  */
 package org.update4j;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-
 /**
  * This class is a simple POJO that represents "Add Exports" and "Add Opens" in
  * the configuration file.
@@ -25,21 +22,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author Mordechai Meisels
  *
  */
-@XmlRootElement
 public class AddPackage {
 
-	@XmlAttribute(name = "package")
 	private String packageName;
-
-	@XmlAttribute(name = "target")
 	private String targetModule;
-
-	/*
-	 * Used by JAXB
-	 */
-	@SuppressWarnings("unused")
-	private AddPackage() {
-	}
 
 	/**
 	 * Constructs a new {@link AddPackage} with the given source package name to be
@@ -58,7 +44,6 @@ public class AddPackage {
 	public String getPackageName() {
 		return packageName;
 	}
-
 
 	/**
 	 * Returns the target module name that the package is added to.

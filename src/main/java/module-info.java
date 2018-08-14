@@ -22,9 +22,9 @@ module org.update4j {
 	exports org.update4j.service;
 	
 	/*
-	 * For use by automated clients.
+	 * For use especially by automated clients.
 	 */
-	exports org.update4j.binding;
+	exports org.update4j.mapper;
 
 	/*
 	 * We list all system modules to make it available to layers requiring them.
@@ -38,7 +38,7 @@ module org.update4j {
 	requires javafx.media;
 	requires javafx.swing;
 	requires javafx.web;
-	requires java.xml.bind;
+	requires transitive java.xml;
 
 	/*
 	 * Rarely used. If you want them resolved, require it in bootstrap application module.
@@ -111,7 +111,7 @@ module org.update4j {
 	 * JAXB framework for Configuration read/write
 	 */
 	opens org.update4j to java.xml.bind;
-	opens org.update4j.binding to java.xml.bind;
+	opens org.update4j.mapper to java.xml.bind;
 
 	uses org.update4j.service.Delegate;
 	uses org.update4j.service.UpdateHandler;

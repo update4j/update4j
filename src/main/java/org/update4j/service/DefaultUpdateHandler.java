@@ -17,7 +17,7 @@ package org.update4j.service;
 
 import java.nio.file.Path;
 
-import org.update4j.Library;
+import org.update4j.FileMetadata;
 import org.update4j.UpdateContext;
 import org.update4j.util.FileUtils;
 
@@ -40,11 +40,11 @@ public class DefaultUpdateHandler implements UpdateHandler {
 	}
 
 	@Override
-	public void startCheckUpdateLibrary(Library lib) throws Throwable {
+	public void startCheckUpdateLibrary(FileMetadata lib) throws Throwable {
 	}
 
 	@Override
-	public void doneCheckUpdateLibrary(Library lib, boolean requires) throws Throwable {
+	public void doneCheckUpdateLibrary(FileMetadata lib, boolean requires) throws Throwable {
 		System.out.print(compactName(context.getConfiguration().getBasePath(), lib.getPath()));
 		if (requires) {
 			System.out.println(":  UPDATE");
@@ -66,7 +66,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
 	}
 
 	@Override
-	public void startDownloadLibrary(Library lib) throws Throwable {
+	public void startDownloadLibrary(FileMetadata lib) throws Throwable {
 		System.out.print("Downloading: " + compactName(context.getConfiguration().getBasePath(), lib.getPath())
 						+ " <" + lib.getUri() + "> ");
 	}
@@ -74,7 +74,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
 	private String percent;
 
 	@Override
-	public void updateDownloadLibraryProgress(Library lib, float frac) throws InterruptedException {
+	public void updateDownloadLibraryProgress(FileMetadata lib, float frac) throws InterruptedException {
 		if (frac == 0) {
 			System.out.print("(");
 		}
@@ -99,11 +99,11 @@ public class DefaultUpdateHandler implements UpdateHandler {
 	}
 
 	@Override
-	public void verifyingLibrary(Library lib) throws Throwable {
+	public void verifyingLibrary(FileMetadata lib) throws Throwable {
 	}
 
 	@Override
-	public void doneDownloadLibrary(Library lib) throws Throwable {
+	public void doneDownloadLibrary(FileMetadata lib) throws Throwable {
 	}
 
 	@Override

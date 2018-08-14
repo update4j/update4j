@@ -13,20 +13,24 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.update4j.binding;
+package org.update4j.mapper;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
+import org.w3c.dom.Node;
 
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.FIELD)
-public class ProviderBinding {
+public abstract class XmlMapper {
 
-	@XmlAttribute
-	public String updateHandler;
-	@XmlAttribute
-	public String launcher;
-
+	public abstract void parse(Node node);
+		
+//	public abstract Node toNode(Document doc);
+	
+	public abstract String toXml();
+	
+	public static String getAttributeValue(Node node, String key) {
+		Node n = node.getAttributes().getNamedItem(key);
+		
+		if(n != null)
+			return n.getNodeValue();
+		
+		return null;
+	}
 }

@@ -15,21 +15,14 @@
  */
 package org.update4j;
 
-import javax.xml.bind.annotation.XmlEnum;
-import javax.xml.bind.annotation.XmlEnumValue;
-
-@XmlEnum
 public enum OS {
-	@XmlEnumValue("win")
-	WINDOWS, @XmlEnumValue("mac")
-	MAC, @XmlEnumValue("linux")
-	LINUX, @XmlEnumValue("other")
-	OTHER;
+	WINDOWS("win"), MAC("mac"), LINUX("linux"), OTHER("other");
 
 	public static final OS CURRENT;
 
 	static {
-		String os = System.getProperty("os.name", "generic").toLowerCase();
+		String os = System.getProperty("os.name", "generic")
+						.toLowerCase();
 
 		if ((os.contains("mac")) || (os.contains("darwin")))
 			CURRENT = MAC;
@@ -39,5 +32,30 @@ public enum OS {
 			CURRENT = LINUX;
 		else
 			CURRENT = OTHER;
+	}
+
+	private String name;
+
+	OS(String name) {
+		this.name = name;
+	}
+
+	public String getShortName() {
+		return name;
+	}
+
+	public static OS fromShortName(String name) {
+		switch (name) {
+		case "win":
+			return WINDOWS;
+		case "mac":
+			return MAC;
+		case "linux":
+			return LINUX;
+		case "other":
+			return OTHER;
+		default:
+			throw new IllegalArgumentException("Unknown type: " + name);
+		}
 	}
 }
