@@ -118,7 +118,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
 	}
 
 	@Override
-	public void succedded() {
+	public void succeeded() {
 	}
 
 	@Override
