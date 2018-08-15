@@ -49,7 +49,7 @@ public interface UpdateHandler extends Service {
 
 	void failed(Throwable t);
 
-	void succedded();
+	void succeeded();
 	
 	void stop();
 }

@@ -519,7 +519,7 @@ public class Configuration {
 				handler.doneDownloads();
 			}
 
-			handler.succedded();
+			handler.succeeded();
 			success = true;
 
 		} catch (Throwable t) {
