@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.update4j.PlaceholderMatchType;
 import org.update4j.Property;
 
@@ -34,8 +33,28 @@ public class PropertyManager {
 	public PropertyManager(List<Property> properties, List<String> systemProperties) {
 		this.properties = properties == null ? new ArrayList<>() : properties;
 		this.unmodifiableProperties = Collections.unmodifiableList(this.properties);
-		
+
 		List<String> sysProperties = systemProperties == null ? new ArrayList<>() : systemProperties;
+
+		for (int i = 1; i < this.properties.size(); i++) {
+			for (int j = 0; j < i; j++) {
+				Property ip = properties.get(i);
+				Property jp = properties.get(j);
+
+				if (ip.getKey()
+								.equals(jp.getKey()) && ip.getOs() == jp.getOs()) {
+					throw new IllegalArgumentException("Duplicate property: " + ip.getKey());
+				}
+			}
+		}
+
+		for (int i = 1; i < sysProperties.size(); i++) {
+			for (int j = 0; j < i; j++) {
+				if (sysProperties.get(i)
+								.equals(sysProperties.get(j)))
+					throw new IllegalArgumentException("Duplicate system property: " + sysProperties.get(i));
+			}
+		}
 
 		resolvedProperties = PropertyUtils.extractPropertiesForCurrentMachine(sysProperties, this.properties);
 		resolvedProperties = PropertyUtils.resolveDependencies(resolvedProperties);

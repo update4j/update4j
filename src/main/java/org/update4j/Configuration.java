@@ -43,6 +43,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -105,8 +106,8 @@ public class Configuration {
 
 	/**
 	 * Returns the base URI against whom all <i>relative</i> URIs in individual
-	 * libraries are resolved. The URI points to the remote (or if it has a
-	 * {@code file:///} schema, local) location from where the file should be
+	 * files are resolved. The URI points to the remote (or if it has a
+	 * {@code file:///} scheme, local) location from where the file should be
 	 * downloaded.
 	 * 
 	 * 
@@ -122,8 +123,8 @@ public class Configuration {
 
 	/**
 	 * Returns the base path against whom all <i>relative</i> paths in individual
-	 * libraries are resolved. The path points to the location the files should be
-	 * saved to on the client's local machine.
+	 * files are resolved. The path points to the location the files should be saved
+	 * to on the client's local machine.
 	 * 
 	 * <p>
 	 * This is read from the {@code path} attribute from the {@code <base>} element.
@@ -184,11 +185,11 @@ public class Configuration {
 	}
 
 	/**
-	 * Returns the list of libraries -- or files -- listed in the configuration
-	 * file. This will never return {@code null}.
+	 * Returns the list of files listed in the configuration file. This will never
+	 * return {@code null}.
 	 * 
 	 * <p>
-	 * These are read from the {@code <libraries>} element.
+	 * These are read from the {@code <files>} element.
 	 * 
 	 * @return The {@link FileMetadata} instances listed in the configuration file.
 	 */
@@ -320,8 +321,8 @@ public class Configuration {
 	}
 
 	public boolean requiresUpdate() throws IOException {
-		for (FileMetadata lib : getFiles()) {
-			if (lib.requiresUpdate())
+		for (FileMetadata file : getFiles()) {
+			if (file.requiresUpdate())
 				return true;
 		}
 
@@ -381,26 +382,26 @@ public class Configuration {
 			handler.startCheckUpdates();
 			handler.updateCheckUpdatesProgress(0f);
 
-			List<FileMetadata> osLibs = getFiles().stream()
-							.filter(lib -> lib.getOs() == null || lib.getOs() == OS.CURRENT)
+			List<FileMetadata> osFiles = getFiles().stream()
+							.filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
 							.collect(Collectors.toList());
 
-			long updateJobSize = osLibs.stream()
+			long updateJobSize = osFiles.stream()
 							.mapToLong(FileMetadata::getSize)
 							.sum();
 			double updateJobCompleted = 0;
 
-			for (FileMetadata lib : osLibs) {
-				handler.startCheckUpdateLibrary(lib);
+			for (FileMetadata file : osFiles) {
+				handler.startCheckUpdateFile(file);
 
-				boolean needsUpdate = lib.requiresUpdate();
+				boolean needsUpdate = file.requiresUpdate();
 
 				if (needsUpdate)
-					requiresUpdate.add(lib);
+					requiresUpdate.add(file);
 
-				handler.doneCheckUpdateLibrary(lib, needsUpdate);
+				handler.doneCheckUpdateFile(file, needsUpdate);
 
-				updateJobCompleted += lib.getSize();
+				updateJobCompleted += file.getSize();
 				handler.updateCheckUpdatesProgress((float) (updateJobCompleted / updateJobSize));
 			}
 
@@ -424,8 +425,8 @@ public class Configuration {
 			if (!requiresUpdate.isEmpty()) {
 				handler.startDownloads();
 
-				for (FileMetadata lib : requiresUpdate) {
-					handler.startDownloadLibrary(lib);
+				for (FileMetadata file : requiresUpdate) {
+					handler.startDownloadFile(file);
 
 					int read = 0;
 					double currentCompleted = 0;
@@ -433,18 +434,18 @@ public class Configuration {
 
 					Path output;
 					if (tempDir == null) {
-						Files.createDirectories(lib.getPath()
+						Files.createDirectories(file.getPath()
 										.getParent());
-						output = Files.createTempFile(lib.getPath()
+						output = Files.createTempFile(file.getPath()
 										.getParent(), null, null);
 					} else {
 						Files.createDirectories(tempDir);
 						output = Files.createTempFile(tempDir, null, null);
-						updateData.put(output.toFile(), lib.getPath()
+						updateData.put(output.toFile(), file.getPath()
 										.toFile());
 					}
 
-					URLConnection connection = lib.getUri()
+					URLConnection connection = file.getUri()
 									.toURL()
 									.openConnection();
 
@@ -458,7 +459,7 @@ public class Configuration {
 						if (downloadJobCompleted == 0) {
 							handler.updateDownloadProgress(0f);
 						}
-						handler.updateDownloadLibraryProgress(lib, 0f);
+						handler.updateDownloadFileProgress(file, 0f);
 
 						while ((read = in.read(buffer, 0, buffer.length)) > -1) {
 							out.write(buffer, 0, read);
@@ -470,32 +471,32 @@ public class Configuration {
 							downloadJobCompleted += read;
 							currentCompleted += read;
 
-							handler.updateDownloadLibraryProgress(lib, (float) (currentCompleted / lib.getSize()));
+							handler.updateDownloadFileProgress(file, (float) (currentCompleted / file.getSize()));
 							handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
 						}
 
 						if (sig != null) {
-							handler.verifyingLibrary(lib);
+							handler.verifyingFileSignature(file);
 
-							if (lib.getSignature() == null)
+							if (file.getSignature() == null)
 								throw new SecurityException("Missing signature.");
 
-							if (!sig.verify(lib.getSignature()))
+							if (!sig.verify(file.getSignature()))
 								throw new SecurityException("Signature verification failed.");
 						}
 
-						if (lib.getPath()
+						if (file.getPath()
 										.toString()
-										.endsWith(".jar") && !lib.isIgnoreBootConflict()) {
+										.endsWith(".jar") && !file.isIgnoreBootConflict()) {
 							checkConflicts(output);
 						}
 
 						if (tempDir == null) {
-							Files.move(output, lib.getPath(), StandardCopyOption.REPLACE_EXISTING);
+							Files.move(output, file.getPath(), StandardCopyOption.REPLACE_EXISTING);
 						}
 
-						updated.add(lib);
-						handler.doneDownloadLibrary(lib);
+						updated.add(file);
+						handler.doneDownloadFile(file);
 
 					} finally {
 						// clean up if it failed
@@ -629,7 +630,7 @@ public class Configuration {
 		args = args == null ? List.of() : Collections.unmodifiableList(args);
 
 		List<FileMetadata> modules = getFiles().stream()
-						.filter(lib -> lib.getOs() == null || lib.getOs() == OS.CURRENT)
+						.filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
 						.filter(FileMetadata::isModulepath)
 						.collect(Collectors.toList());
 
@@ -638,7 +639,7 @@ public class Configuration {
 						.collect(Collectors.toList());
 
 		List<URL> classpaths = getFiles().stream()
-						.filter(lib -> lib.getOs() == null || lib.getOs() == OS.CURRENT)
+						.filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
 						.filter(FileMetadata::isClasspath)
 						.map(FileMetadata::getPath)
 						.map(path -> {
@@ -763,12 +764,12 @@ public class Configuration {
 		return parse(configMapper);
 	}
 
-	public static Configuration parse(ConfigMapper mapper) throws IOException {
+	public static Configuration parse(ConfigMapper mapper) {
 		PropertyManager propManager = new PropertyManager(mapper.properties, null);
 		return parse(mapper, propManager);
 	}
 
-	static Configuration parse(ConfigMapper configMapper, PropertyManager propManager) throws IOException {
+	static Configuration parse(ConfigMapper configMapper, PropertyManager propManager) {
 		Configuration config = new Configuration();
 		config.propertyManager = propManager;
 
@@ -918,6 +919,7 @@ public class Configuration {
 		private List<String> systemProperties;
 
 		private PrivateKey signer;
+		private PlaceholderMatchType matcher = PlaceholderMatchType.WHOLE_WORD;
 
 		private Builder() {
 			files = new ArrayList<>();
@@ -938,6 +940,10 @@ public class Configuration {
 			return this.baseUri(uri.toString());
 		}
 
+		public String getBaseUri() {
+			return baseUri;
+		}
+
 		public Builder basePath(String path) {
 			this.basePath = path;
 
@@ -948,10 +954,18 @@ public class Configuration {
 			return basePath(path.toString());
 		}
 
+		public String getBasePath() {
+			return basePath;
+		}
+
 		public Builder signer(PrivateKey key) {
 			this.signer = key;
 
 			return this;
+		}
+
+		public PrivateKey getSigner() {
+			return signer;
 		}
 
 		public Builder file(FileMetadata.Reference reference) {
@@ -960,10 +974,14 @@ public class Configuration {
 			return this;
 		}
 
-		public Builder file(FileMetadata.Reference.Builder builder) {
-			files.add(builder.build());
+		public Builder files(Collection<FileMetadata.Reference> files) {
+			files.addAll(files);
 
 			return this;
+		}
+
+		public List<FileMetadata.Reference> getFiles() {
+			return files;
 		}
 
 		public Builder property(String key, String value) {
@@ -984,12 +1002,36 @@ public class Configuration {
 			return this;
 		}
 
-		public Builder resolveSystemProperty(String str) {
-			if (!systemProperties.add(Objects.requireNonNull(str))) {
-				throw new IllegalArgumentException("Duplicate system property: " + str);
-			}
+		public Builder property(Property p) {
+			properties.add(p);
 
 			return this;
+		}
+
+		public Builder properties(Collection<Property> p) {
+			properties.addAll(p);
+
+			return this;
+		}
+
+		public List<Property> getProperties() {
+			return properties;
+		}
+
+		public Builder resolveSystemProperty(String str) {
+			systemProperties.add(str);
+
+			return this;
+		}
+
+		public Builder resolveSystemProperties(Collection<String> p) {
+			systemProperties.addAll(p);
+
+			return this;
+		}
+
+		public List<String> getSystemPropertiesToResolve() {
+			return systemProperties;
 		}
 
 		public Builder updateHandler(Class<? extends UpdateHandler> clazz) {
@@ -999,13 +1041,13 @@ public class Configuration {
 		}
 
 		public Builder updateHandler(String className) {
-			if (StringUtils.isClassName(className)) {
-				this.updateHandler = className;
+			this.updateHandler = className;
 
-				return this;
-			}
+			return this;
+		}
 
-			throw new IllegalArgumentException("'" + className + "' is not a valid Java class name");
+		public String getUpdateHandler() {
+			return updateHandler;
 		}
 
 		public Builder launcher(Class<? extends Launcher> clazz) {
@@ -1015,20 +1057,26 @@ public class Configuration {
 		}
 
 		public Builder launcher(String className) {
-			if (StringUtils.isClassName(className)) {
-				this.launcher = className;
+			this.launcher = className;
 
-				return this;
-			}
-
-			throw new IllegalArgumentException("'" + className + "' is not a valid Java class name");
+			return this;
 		}
 
-		public Configuration build() throws IOException {
-			return build(PlaceholderMatchType.WHOLE_WORD);
+		public String getLauncher() {
+			return launcher;
 		}
 
-		public Configuration build(PlaceholderMatchType matchType) throws IOException {
+		public Builder matching(PlaceholderMatchType matcher) {
+			this.matcher = matcher;
+
+			return this;
+		}
+
+		public PlaceholderMatchType getMatcher() {
+			return matcher;
+		}
+
+		public Configuration build() {
 			ConfigMapper mapper = new ConfigMapper();
 			PropertyManager pm = new PropertyManager(properties, systemProperties);
 
@@ -1036,16 +1084,16 @@ public class Configuration {
 							.toString();
 
 			if (baseUri != null)
-				mapper.baseUri = pm.implyPlaceholders(baseUri, matchType, true);
+				mapper.baseUri = pm.implyPlaceholders(baseUri, matcher, true);
 
 			if (basePath != null)
-				mapper.basePath = pm.implyPlaceholders(basePath.replace("\\", "/"), matchType, true);
+				mapper.basePath = pm.implyPlaceholders(basePath.replace("\\", "/"), matcher, true);
 
 			if (updateHandler != null)
-				mapper.updateHandler = pm.implyPlaceholders(updateHandler, matchType, false);
+				mapper.updateHandler = pm.implyPlaceholders(updateHandler, matcher, false);
 
 			if (launcher != null)
-				mapper.launcher = pm.implyPlaceholders(launcher, matchType, false);
+				mapper.launcher = pm.implyPlaceholders(launcher, matcher, false);
 
 			if (properties.size() > 0)
 				mapper.properties = properties;
@@ -1053,7 +1101,11 @@ public class Configuration {
 			if (files.size() > 0) {
 				mapper.files = new ArrayList<>();
 				for (FileMetadata.Reference fileRef : files) {
-					mapper.files.add(fileRef.getFileMapper(pm, matchType, signer));
+					try {
+						mapper.files.add(fileRef.getFileMapper(pm, matcher, signer));
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
 				}
 			}
 

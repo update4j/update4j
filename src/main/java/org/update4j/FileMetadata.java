@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -155,18 +156,18 @@ public class FileMetadata {
 						|| FileUtils.getChecksum(getPath()) != getChecksum();
 	}
 
-	public static Reference.Builder readFrom(Path location) {
-		return new FileMetadata.Reference.Builder(location);
+	public static Reference readFrom(Path location) {
+		return new Reference(location);
 	}
 
-	public static Reference.Builder readFrom(String location) {
+	public static Reference readFrom(String location) {
 		return readFrom(Paths.get(location));
 	}
 
 	public static class Reference {
 		private Path location;
-		private String uri;
 		private String path;
+		private String uri;
 		private OS os;
 		private Boolean classpath;
 		private Boolean modulepath;
@@ -177,59 +178,88 @@ public class FileMetadata {
 		private List<AddPackage> addOpens;
 		private List<String> addReads;
 
-		private Reference(Path location, String uri, String path, OS os, Boolean classpath, Boolean modulepath,
-						String comment, Boolean ignoreBootConflict, List<AddPackage> addExports,
-						List<AddPackage> addOpens, List<String> addReads) {
-			this.location = location;
-			this.uri = uri;
-			this.path = path;
-			this.os = os;
-			this.classpath = classpath;
-			this.modulepath = modulepath;
-			this.comment = comment;
-			this.ignoreBootConflict = ignoreBootConflict;
+		private PlaceholderMatchType matcher;
 
-			this.addExports = addExports;
-			this.addOpens = addOpens;
-			this.addReads = addReads;
+		private Reference(Path location) {
+			this.location = location;
+
+			addExports = new ArrayList<>();
+			addOpens = new ArrayList<>();
+			addReads = new ArrayList<>();
 		}
 
 		public Path getLocation() {
 			return location;
 		}
 
+		public Reference uri(URI uri) {
+			return uri(uri == null ? null : uri.toString());
+		}
+
+		public Reference uri(String uri) {
+			this.uri = uri;
+
+			return this;
+		}
+
 		public String getUri() {
 			return uri;
+		}
+
+		public Reference path(Path path) {
+			return path(path == null ? null : path.toString());
+		}
+
+		public Reference path(String path) {
+			this.path = path;
+
+			return this;
 		}
 
 		public String getPath() {
 			return path;
 		}
 
+		public Reference os(OS os) {
+			this.os = os;
+
+			return this;
+		}
+
 		public OS getOs() {
 			return os;
 		}
 
-		public String getComment() {
-			return comment;
+		public Reference classpath(boolean cp) {
+			this.classpath = cp;
+
+			return this;
 		}
 
-		public long getChecksum() throws IOException {
-			return FileUtils.getChecksum(location);
-		}
-
-		public long getSize() throws IOException {
-			return Files.size(location);
+		public Reference classpath() {
+			return classpath(true);
 		}
 
 		public boolean isClasspath() {
-			// Non-null and true
-			// null defaults to false
 			return Boolean.TRUE.equals(classpath);
 		}
 
-		public boolean isModulepath() throws IOException {
-			if (modulepath == null || !modulepath) {
+		public Reference modulepath(boolean mp) {
+			this.modulepath = mp;
+
+			return this;
+		}
+
+		public Reference modulepath() {
+			return modulepath(true);
+		}
+
+		public boolean isModulepath() {
+			return Boolean.TRUE.equals(modulepath);
+		}
+
+		private boolean isFinalModulepath() throws IOException {
+			if (!isModulepath()) {
 				return false;
 			}
 
@@ -237,8 +267,94 @@ public class FileMetadata {
 			return FileUtils.isJarFile(getLocation());
 		}
 
+		public Reference comment(String c) {
+			comment = c;
+
+			return this;
+		}
+
+		public String getComment() {
+			return comment;
+		}
+
+		public Reference ignoreBootConflict(boolean b) {
+			ignoreBootConflict = b;
+
+			return this;
+		}
+
+		public Reference ignoreBootConflict() {
+			return ignoreBootConflict(true);
+		}
+
 		public boolean isIgnoreBootConflict() {
 			return Boolean.TRUE.equals(ignoreBootConflict);
+		}
+
+		public Reference exports(String pkg, String targetModule) {
+			addExports.add(new AddPackage(Objects.requireNonNull(pkg), Objects.requireNonNull(targetModule)));
+
+			return this;
+		}
+
+		public Reference exports(Collection<AddPackage> exports) {
+			addExports.addAll(exports);
+
+			return this;
+		}
+
+		public List<AddPackage> getAddExports() {
+			return addExports;
+		}
+
+		public Reference opens(String pkg, String targetModule) {
+			addOpens.add(new AddPackage(Objects.requireNonNull(pkg), Objects.requireNonNull(targetModule)));
+
+			return this;
+		}
+
+		public Reference opens(Collection<AddPackage> opens) {
+			addOpens.addAll(opens);
+
+			return this;
+		}
+
+		public List<AddPackage> getAddOpens() {
+			return addOpens;
+		}
+
+		public Reference reads(String module) {
+			addReads.add(Objects.requireNonNull(module));
+
+			return this;
+		}
+
+		public Reference reads(Collection<String> reads) {
+			addReads.addAll(reads);
+
+			return this;
+		}
+
+		public List<String> getAddReads() {
+			return addReads;
+		}
+
+		public Reference matching(PlaceholderMatchType matcher) {
+			this.matcher = matcher;
+
+			return this;
+		}
+
+		public PlaceholderMatchType getMatcher() {
+			return matcher;
+		}
+
+		public long getSize() throws IOException {
+			return Files.size(location);
+		}
+
+		public long getChecksum() throws IOException {
+			return FileUtils.getChecksum(location);
 		}
 
 		public byte[] getSignature(PrivateKey key) throws IOException {
@@ -248,41 +364,36 @@ public class FileMetadata {
 			return FileUtils.sign(location, key);
 		}
 
-		public List<AddPackage> getAddExports() {
-			return addExports;
-		}
+		FileMapper getFileMapper(PropertyManager pm, PlaceholderMatchType matchType, PrivateKey key)
+						throws IOException {
 
-		public List<AddPackage> getAddOpens() {
-			return addOpens;
-		}
-
-		public List<String> getAddReads() {
-			return addReads;
-		}
-
-		FileMapper getFileMapper(PropertyManager pm, PlaceholderMatchType matchType, PrivateKey key) throws IOException {
-
+			String path = getPath();
 			if (getUri() == null && getPath() == null) {
 				path = location.toString();
 			}
 
+			PlaceholderMatchType matcher = getMatcher();
+			if (matcher == null) {
+				matcher = matchType;
+			}
+
 			FileMapper mapper = new FileMapper();
 
-			mapper.uri = pm.implyPlaceholders(getUri(), matchType, true);
-			mapper.path = pm.implyPlaceholders(getPath(), matchType, true);
+			mapper.uri = pm.implyPlaceholders(getUri(), matcher, true);
+			mapper.path = pm.implyPlaceholders(path, matcher, true);
 			mapper.os = getOs();
 			mapper.size = getSize();
 			mapper.checksum = Long.toHexString(getChecksum());
 			mapper.classpath = isClasspath();
-			mapper.modulepath = isModulepath();
+			mapper.modulepath = isFinalModulepath();
 			mapper.ignoreBootConflict = isIgnoreBootConflict();
 
 			byte[] sig = getSignature(key);
 			if (sig != null)
 				mapper.signature = Base64.getEncoder()
 								.encodeToString(sig);
-			
-			mapper.comment = pm.implyPlaceholders(getComment(), matchType, false);
+
+			mapper.comment = pm.implyPlaceholders(getComment(), matcher, false);
 			mapper.addExports = getAddExports();
 			mapper.addOpens = getAddOpens();
 			mapper.addReads = getAddReads();
@@ -290,113 +401,6 @@ public class FileMetadata {
 			return mapper;
 		}
 
-		public static class Builder {
-			private Path location;
-			private String path;
-			private String uri;
-			private OS os;
-			private Boolean classpath;
-			private Boolean modulepath;
-			private String comment;
-			private Boolean ignoreBootConflict;
-
-			private List<AddPackage> addExports;
-			private List<AddPackage> addOpens;
-			private List<String> addReads;
-
-			private Builder(Path location) {
-				this.location = location;
-
-				addExports = new ArrayList<>();
-				addOpens = new ArrayList<>();
-				addReads = new ArrayList<>();
-			}
-
-			public Builder uri(URI uri) {
-				return uri(uri == null ? null : uri.toString());
-			}
-
-			public Builder uri(String uri) {
-				this.uri = uri;
-
-				return this;
-			}
-
-			public Builder path(Path path) {
-				return path(path == null ? null : path.toString());
-			}
-
-			public Builder path(String path) {
-				this.path = path;
-
-				return this;
-			}
-
-			public Builder os(OS os) {
-				this.os = os;
-
-				return this;
-			}
-
-			public Builder classpath(boolean cp) {
-				this.classpath = cp;
-
-				return this;
-			}
-
-			public Builder classpath() {
-				return classpath(true);
-			}
-
-			public Builder modulepath(boolean mp) {
-				this.modulepath = mp;
-
-				return this;
-			}
-
-			public Builder modulepath() {
-				return modulepath(true);
-			}
-
-			public Builder comment(String c) {
-				comment = c;
-
-				return this;
-			}
-
-			public Builder ignoreBootConflict(boolean b) {
-				ignoreBootConflict = b;
-
-				return this;
-			}
-
-			public Builder ignoreBootConflict() {
-				return ignoreBootConflict(true);
-			}
-
-			public Builder exports(String pkg, String targetModule) {
-				addExports.add(new AddPackage(Objects.requireNonNull(pkg), Objects.requireNonNull(targetModule)));
-
-				return this;
-			}
-
-			public Builder opens(String pkg, String targetModule) {
-				addOpens.add(new AddPackage(Objects.requireNonNull(pkg), Objects.requireNonNull(targetModule)));
-
-				return this;
-			}
-
-			public Builder reads(String module) {
-				addReads.add(Objects.requireNonNull(module));
-
-				return this;
-			}
-
-			public Reference build() {
-				return new Reference(location, uri, path, os, classpath, modulepath, comment, ignoreBootConflict,
-								addExports, addOpens, addReads);
-			}
-		}
 	}
 
 	static Builder builder() {
@@ -521,14 +525,6 @@ public class FileMetadata {
 		private void validateAddPackages(List<AddPackage> list) {
 			for (AddPackage add : list) {
 				Objects.requireNonNull(add);
-				if (add.getPackageName() == null || add.getPackageName()
-								.isEmpty()) {
-					throw new IllegalArgumentException("Missing package name.");
-				}
-				if (add.getTargetModule() == null || add.getTargetModule()
-								.isEmpty()) {
-					throw new IllegalArgumentException("Missing module name.");
-				}
 			}
 		}
 

@@ -22,6 +22,12 @@ public class Property {
 	private OS os;
 
 	public Property(String key, String value, OS os) {
+		if(key.isEmpty())
+			throw new IllegalArgumentException("Key must not be empty.");
+		
+		if(value.isEmpty())
+			throw new IllegalArgumentException("Value must not be empty.");
+		
 		this.key = key;
 		this.value = value;
 		this.os = os;
