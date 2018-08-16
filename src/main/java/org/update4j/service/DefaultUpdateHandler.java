@@ -40,12 +40,12 @@ public class DefaultUpdateHandler implements UpdateHandler {
 	}
 
 	@Override
-	public void startCheckUpdateLibrary(FileMetadata lib) throws Throwable {
+	public void startCheckUpdateFile(FileMetadata file) throws Throwable {
 	}
 
 	@Override
-	public void doneCheckUpdateLibrary(FileMetadata lib, boolean requires) throws Throwable {
-		System.out.print(compactName(context.getConfiguration().getBasePath(), lib.getPath()));
+	public void doneCheckUpdateFile(FileMetadata file, boolean requires) throws Throwable {
+		System.out.print(compactName(context.getConfiguration().getBasePath(), file.getPath()));
 		if (requires) {
 			System.out.println(":  UPDATE");
 		} else {
@@ -66,18 +66,19 @@ public class DefaultUpdateHandler implements UpdateHandler {
 	}
 
 	@Override
-	public void startDownloadLibrary(FileMetadata lib) throws Throwable {
-		System.out.print("Downloading: " + compactName(context.getConfiguration().getBasePath(), lib.getPath())
-						+ " <" + lib.getUri() + "> ");
+	public void startDownloadFile(FileMetadata file) throws Throwable {
+		System.out.print("Downloading: " + compactName(context.getConfiguration().getBasePath(), file.getPath())
+						+ " <" + file.getUri() + "> ");
 	}
 
 	private String percent;
 
 	@Override
-	public void updateDownloadLibraryProgress(FileMetadata lib, float frac) throws InterruptedException {
+	public void updateDownloadFileProgress(FileMetadata file, float frac) throws InterruptedException {
 		if (frac == 0) {
 			System.out.print("(");
 		}
+		
 		String percent = ((int) (frac * 100)) + "%)   ";
 		percent = percent.substring(0, 5);
 
@@ -99,11 +100,11 @@ public class DefaultUpdateHandler implements UpdateHandler {
 	}
 
 	@Override
-	public void verifyingLibrary(FileMetadata lib) throws Throwable {
+	public void verifyingFileSignature(FileMetadata file) throws Throwable {
 	}
 
 	@Override
-	public void doneDownloadLibrary(FileMetadata lib) throws Throwable {
+	public void doneDownloadFile(FileMetadata file) throws Throwable {
 	}
 
 	@Override

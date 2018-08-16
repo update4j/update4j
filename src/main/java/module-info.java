@@ -107,12 +107,6 @@ module org.update4j {
 	//	requires oracle.desktop;
 	//	requires oracle.net;
 
-	/*
-	 * JAXB framework for Configuration read/write
-	 */
-	opens org.update4j to java.xml.bind;
-	opens org.update4j.mapper to java.xml.bind;
-
 	uses org.update4j.service.Delegate;
 	uses org.update4j.service.UpdateHandler;
 	uses org.update4j.service.Launcher;

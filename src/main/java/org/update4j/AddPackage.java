@@ -30,8 +30,19 @@ public class AddPackage {
 	/**
 	 * Constructs a new {@link AddPackage} with the given source package name to be
 	 * added to the given target module.
+	 * 
+	 * @throws IllegalArgumentException
+	 *             If either package name or target module name are either
+	 *             {@code null} or an empty string.
 	 */
 	public AddPackage(String pkg, String mod) {
+		if (pkg == null || pkg.isEmpty()) {
+			throw new IllegalArgumentException("Missing package name.");
+		}
+		if (mod == null || mod.isEmpty()) {
+			throw new IllegalArgumentException("Missing target module name.");
+		}
+
 		packageName = pkg;
 		targetModule = mod;
 	}

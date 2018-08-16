@@ -155,7 +155,7 @@ public class FileUtils {
 		Matcher osMatcher = osPattern.matcher(filename);
 
 		if (osMatcher.matches()) {
-			return OS.valueOf(osMatcher.group(1));
+			return OS.fromShortName(osMatcher.group(1));
 		}
 
 		return null;
@@ -163,7 +163,7 @@ public class FileUtils {
 
 	public static void windowsHide(Path file) {
 		try {
-			Files.setAttribute(file, "dos:hidden", Boolean.TRUE);
+			Files.setAttribute(file, "dos:hidden", true);
 		} catch (Exception e) {
 		}
 	}

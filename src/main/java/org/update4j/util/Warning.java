@@ -83,7 +83,7 @@ public class Warning {
 	public static void path() {
 		if (!"true".equals(System.getProperty(PREFIX + "path"))) {
 			System.err.println(
-							"WARNING: No libraries were found that are set with 'classpath' or 'modulepath' to true;\n"
+							"WARNING: No files were found that are set with 'classpath' or 'modulepath' to true;\n"
 											+ "although perfectly valid it's rarely what you want.\n"
 											+ "Please refer to: https://github.com/update4j/update4j/wiki/Documentation#classpath-and-modulepath");
 		}

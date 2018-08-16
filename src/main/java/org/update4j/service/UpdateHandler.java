@@ -24,9 +24,9 @@ public interface UpdateHandler extends Service {
 	
 	void startCheckUpdates() throws Throwable;
 	
-	void startCheckUpdateLibrary(FileMetadata lib) throws Throwable;
+	void startCheckUpdateFile(FileMetadata file) throws Throwable;
 	
-	void doneCheckUpdateLibrary(FileMetadata lib, boolean requires) throws Throwable;
+	void doneCheckUpdateFile(FileMetadata file, boolean requires) throws Throwable;
 	
 	// Based on bytes, not file count
 	void updateCheckUpdatesProgress(float frac) throws Throwable;
@@ -35,15 +35,15 @@ public interface UpdateHandler extends Service {
 
 	void startDownloads() throws Throwable;
 	
-	void startDownloadLibrary(FileMetadata lib) throws Throwable;
+	void startDownloadFile(FileMetadata file) throws Throwable;
 	
-	void updateDownloadLibraryProgress(FileMetadata lib, float frac) throws Throwable;
+	void updateDownloadFileProgress(FileMetadata file, float frac) throws Throwable;
 	
 	void updateDownloadProgress(float frac) throws Throwable;
 	
-	void verifyingLibrary(FileMetadata lib) throws Throwable;
+	void verifyingFileSignature(FileMetadata file) throws Throwable;
 	
-	void doneDownloadLibrary(FileMetadata lib) throws Throwable;
+	void doneDownloadFile(FileMetadata file) throws Throwable;
 	
 	void doneDownloads() throws Throwable;
 
