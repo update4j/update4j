@@ -69,11 +69,12 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 * *Upcoming Release*
   * Bug fixes.
-  * Redo of Configuration builder API.
+  * Major redo of Configuration builder API.
   * Reduced dependencies to zero.
-  * Renamed `Library` to `FileMetadata`.
+  * Renamed `Library` to `FileMetadata` and `<library>` XML element to `<file>`.
   * Warnings if files were incorrectly added to the boot classpath.
-  * Reject download if module name or package name conflicts with a module on the boot modulepath.
+  * Reject download if module name or package name conflicts with a module on the boot modulepath and additional `ignoreBootConflict` attribute to `<file>` to override it.
+  * Directly pass instances of service providers instead of locating providers.
   * Removed deprecated methods.
 * **1.1.3-beta**
   * `Library.Reference.Builder` no longer automatically sets `modulepath` to true.

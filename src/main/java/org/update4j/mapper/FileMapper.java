@@ -56,9 +56,9 @@ public class FileMapper extends XmlMapper {
 		comment = copy.comment;
 		ignoreBootConflict = copy.ignoreBootConflict;
 		signature = copy.signature;
-		addExports = copy.addExports;
-		addOpens = copy.addOpens;
-		addReads = copy.addReads;
+		addExports = new ArrayList<>(copy.addExports);
+		addOpens = new ArrayList<>(copy.addOpens);
+		addReads = new ArrayList<>(copy.addReads);
 	}
 
 	@Override

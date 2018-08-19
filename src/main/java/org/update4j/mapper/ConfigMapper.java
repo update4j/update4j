@@ -60,7 +60,7 @@ public class ConfigMapper extends XmlMapper {
 		basePath = copy.basePath;
 		updateHandler = copy.updateHandler;
 		launcher = copy.launcher;
-		properties = copy.properties;
+		properties = new ArrayList<>(copy.properties);
 		files = copy.files.stream()
 						.map(FileMapper::new)
 						.collect(Collectors.toList());
@@ -131,10 +131,11 @@ public class ConfigMapper extends XmlMapper {
 		builder.append("<configuration");
 
 		if (timestamp != null) {
-			builder.append(" timestamp=\"" + timestamp + "\">\n");
+			builder.append(" timestamp=\"" + timestamp + "\"");
 		}
+		builder.append(">\n");
 
-		if (baseUri != null && basePath != null) {
+		if (baseUri != null || basePath != null) {
 			builder.append("    <base");
 
 			if (baseUri != null) {
@@ -142,6 +143,18 @@ public class ConfigMapper extends XmlMapper {
 			}
 			if (basePath != null) {
 				builder.append(" path=\"" + basePath + "\"");
+			}
+
+			builder.append("/>\n");
+		}
+		if (updateHandler != null || launcher != null) {
+			builder.append("    <provider");
+
+			if (updateHandler != null) {
+				builder.append(" updateHandler=\"" + updateHandler + "\"");
+			}
+			if (launcher != null) {
+				builder.append(" launcher=\"" + launcher + "\"");
 			}
 
 			builder.append("/>\n");
@@ -175,74 +188,74 @@ public class ConfigMapper extends XmlMapper {
 
 			builder.append("    </files>\n");
 		}
-		
+
 		builder.append("</configuration>");
 
 		return builder.toString();
 	}
 
-//	@Override
-//	public Node toNode(Document doc) {
-//		Element e = doc.createElement("configuration");
-//
-//		if (timestamp != null)
-//			e.setAttribute("timestamp", timestamp);
-//
-//		if (baseUri != null && basePath != null) {
-//			Element base = doc.createElement("base");
-//
-//			if (baseUri != null)
-//				base.setAttribute("uri", baseUri);
-//			if (basePath != null)
-//				base.setAttribute("path", basePath);
-//
-//			e.appendChild(base);
-//		}
-//
-//		if (updateHandler != null && launcher != null) {
-//			Element provider = doc.createElement("provider");
-//
-//			if (updateHandler != null)
-//				provider.setAttribute("updateHandler", updateHandler);
-//			if (launcher != null)
-//				provider.setAttribute("launcher", launcher);
-//
-//			e.appendChild(provider);
-//		}
-//
-//		if (properties != null && properties.size() > 0) {
-//
-//			Element props = doc.createElement("properties");
-//
-//			for (Property p : properties) {
-//				Element prop = doc.createElement("property");
-//				prop.setAttribute("key", p.getKey());
-//				prop.setAttribute("value", p.getValue());
-//
-//				if (p.getOs() != null) {
-//					prop.setAttribute("os", p.getOs()
-//									.getShortName());
-//				}
-//
-//				props.appendChild(prop);
-//			}
-//
-//			e.appendChild(props);
-//		}
-//
-//		if (files != null && files.size() > 0) {
-//
-//			Element f = doc.createElement("files");
-//
-//			for (FileMapper fm : files) {
-//				f.appendChild(fm.toNode(doc));
-//			}
-//
-//			e.appendChild(f);
-//		}
-//
-//		return e;
-//	}
+	//	@Override
+	//	public Node toNode(Document doc) {
+	//		Element e = doc.createElement("configuration");
+	//
+	//		if (timestamp != null)
+	//			e.setAttribute("timestamp", timestamp);
+	//
+	//		if (baseUri != null && basePath != null) {
+	//			Element base = doc.createElement("base");
+	//
+	//			if (baseUri != null)
+	//				base.setAttribute("uri", baseUri);
+	//			if (basePath != null)
+	//				base.setAttribute("path", basePath);
+	//
+	//			e.appendChild(base);
+	//		}
+	//
+	//		if (updateHandler != null && launcher != null) {
+	//			Element provider = doc.createElement("provider");
+	//
+	//			if (updateHandler != null)
+	//				provider.setAttribute("updateHandler", updateHandler);
+	//			if (launcher != null)
+	//				provider.setAttribute("launcher", launcher);
+	//
+	//			e.appendChild(provider);
+	//		}
+	//
+	//		if (properties != null && properties.size() > 0) {
+	//
+	//			Element props = doc.createElement("properties");
+	//
+	//			for (Property p : properties) {
+	//				Element prop = doc.createElement("property");
+	//				prop.setAttribute("key", p.getKey());
+	//				prop.setAttribute("value", p.getValue());
+	//
+	//				if (p.getOs() != null) {
+	//					prop.setAttribute("os", p.getOs()
+	//									.getShortName());
+	//				}
+	//
+	//				props.appendChild(prop);
+	//			}
+	//
+	//			e.appendChild(props);
+	//		}
+	//
+	//		if (files != null && files.size() > 0) {
+	//
+	//			Element f = doc.createElement("files");
+	//
+	//			for (FileMapper fm : files) {
+	//				f.appendChild(fm.toNode(doc));
+	//			}
+	//
+	//			e.appendChild(f);
+	//		}
+	//
+	//		return e;
+	//	}
 
 	public static ConfigMapper read(Reader reader) throws IOException {
 		try {
@@ -264,9 +277,15 @@ public class ConfigMapper extends XmlMapper {
 	}
 
 	public void write(Writer writer) throws IOException {
-		writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
-		writer.write("\n");
-		writer.write("<!-- Generated by update4j. Licensed under Apache Software License 2.0 -->\n");
+		write(writer, true);
+	}
+
+	public void write(Writer writer, boolean header) throws IOException {
+		if (header) {
+			writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
+			writer.write("\n");
+			writer.write("<!-- Generated by update4j. Licensed under Apache Software License 2.0 -->\n");
+		}
 
 		writer.write(toXml());
 	}

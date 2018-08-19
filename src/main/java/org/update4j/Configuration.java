@@ -52,6 +52,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.update4j.mapper.ConfigMapper;
 import org.update4j.mapper.FileMapper;
@@ -60,7 +61,6 @@ import org.update4j.service.Service;
 import org.update4j.service.UpdateHandler;
 import org.update4j.util.FileUtils;
 import org.update4j.util.PropertyManager;
-import org.update4j.util.PropertyUtils;
 import org.update4j.util.StringUtils;
 import org.update4j.util.Warning;
 
@@ -213,7 +213,8 @@ public class Configuration {
 	/**
 	 * Returns the {@link Property} with the corresponding key, or {@code null} if
 	 * missing. If there are more than one property with the given key (if they are
-	 * platform specific), only one will be returned.
+	 * platform specific), only the one corresponding to this system will be
+	 * returned.
 	 * 
 	 * @param key
 	 *            The key of the property.
@@ -245,8 +246,8 @@ public class Configuration {
 	 *            The key of the property.
 	 * @return The value of the property with the given key.
 	 */
-	public String getUserPropertyForCurrent(String key) {
-		return propertyManager.getUserPropertyForCurrent(key);
+	public String getUserPropertyForCurrentOs(String key) {
+		return propertyManager.getUserPropertyForCurrentOs(key);
 	}
 
 	/**
@@ -333,20 +334,32 @@ public class Configuration {
 		return update((PublicKey) null);
 	}
 
+	public boolean update(UpdateHandler handler) {
+		return update((PublicKey) null, handler);
+	}
+
 	public boolean update(Consumer<? super UpdateHandler> handlerSetup) {
 		return update((PublicKey) null, handlerSetup);
 	}
 
 	public boolean update(PublicKey key) {
-		return update(key, null);
+		return update(key, (UpdateHandler) null);
+	}
+
+	public boolean update(PublicKey key, UpdateHandler handler) {
+		return updateImpl(null, key, handler, null);
 	}
 
 	public boolean update(PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateImpl(null, key, handlerSetup);
+		return updateImpl(null, key, null, handlerSetup);
 	}
 
 	public boolean updateTemp(Path tempDir) {
 		return updateTemp(tempDir, (PublicKey) null);
+	}
+
+	public boolean updateTemp(Path tempDir, UpdateHandler handler) {
+		return updateTemp(tempDir, (PublicKey) null, handler);
 	}
 
 	public boolean updateTemp(Path tempDir, Consumer<? super UpdateHandler> handlerSetup) {
@@ -354,20 +367,27 @@ public class Configuration {
 	}
 
 	public boolean updateTemp(Path tempDir, PublicKey key) {
-		return updateTemp(tempDir, key, null);
+		return updateTemp(tempDir, key, (UpdateHandler) null);
+	}
+
+	public boolean updateTemp(Path tempDir, PublicKey key, UpdateHandler handler) {
+		return updateImpl(Objects.requireNonNull(tempDir), key, handler, null);
 	}
 
 	public boolean updateTemp(Path tempDir, PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateImpl(Objects.requireNonNull(tempDir), key, handlerSetup);
+		return updateImpl(Objects.requireNonNull(tempDir), key, null, handlerSetup);
 	}
 
-	private boolean updateImpl(Path tempDir, PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
+	private boolean updateImpl(Path tempDir, PublicKey key, UpdateHandler handler,
+					Consumer<? super UpdateHandler> handlerSetup) {
 		boolean success;
 
-		UpdateHandler handler = Service.loadService(UpdateHandler.class, updateHandler);
+		if (handler == null) {
+			handler = Service.loadService(UpdateHandler.class, updateHandler);
 
-		if (handlerSetup != null) {
-			handlerSetup.accept(handler);
+			if (handlerSetup != null) {
+				handlerSetup.accept(handler);
+			}
 		}
 
 		Map<File, File> updateData = null;
@@ -615,7 +635,7 @@ public class Configuration {
 	}
 
 	public void launch() {
-		launch(null, null);
+		launch(null, (Launcher) null);
 	}
 
 	public void launch(Consumer<? super Launcher> launcherSetup) {
@@ -623,10 +643,22 @@ public class Configuration {
 	}
 
 	public void launch(List<String> args) {
-		launch(args, null);
+		launch(args, (Launcher) null);
+	}
+
+	public void launch(Launcher launcher) {
+		launch(null, launcher);
 	}
 
 	public void launch(List<String> args, Consumer<? super Launcher> launcherSetup) {
+		launchImpl(args, null, launcherSetup);
+	}
+
+	public void launch(List<String> args, Launcher launcher) {
+		launchImpl(args, launcher, null);
+	}
+
+	private void launchImpl(List<String> args, Launcher launcher, Consumer<? super Launcher> launcherSetup) {
 		args = args == null ? List.of() : Collections.unmodifiableList(args);
 
 		List<FileMetadata> modules = getFiles().stream()
@@ -730,19 +762,22 @@ public class Configuration {
 
 		LaunchContext ctx = new LaunchContext(layer, contextClassLoader, this, args);
 
-		Launcher launcher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
+		if (launcher == null) {
+			launcher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
 
-		if (launcherSetup != null) {
-			launcherSetup.accept(launcher);
+			if (launcherSetup != null) {
+				launcherSetup.accept(launcher);
+			}
 		}
 
+		Launcher finalLauncher = launcher;
 		Thread t = new Thread(() -> {
 			try {
-				launcher.run(ctx);
+				finalLauncher.run(ctx);
 			} catch (NoClassDefFoundError e) {
-				if (launcher.getClass()
+				if (finalLauncher.getClass()
 								.getClassLoader() == ClassLoader.getSystemClassLoader()) {
-					Warning.access(launcher);
+					Warning.access(finalLauncher);
 				}
 
 				throw e;
@@ -814,7 +849,7 @@ public class Configuration {
 					String s = config.resolvePlaceholders(fm.uri, true, fm.os != null && fm.os != OS.CURRENT);
 
 					// Might happen when trying to parse foreign os properties
-					if (!PropertyUtils.containsPlaceholder(s)) {
+					if (!PropertyManager.containsPlaceholder(s)) {
 						fileBuilder.uri(URI.create(s));
 					}
 				}
@@ -822,7 +857,7 @@ public class Configuration {
 				if (fm.path != null) {
 					String s = config.resolvePlaceholders(fm.path, true, fm.os != null && fm.os != OS.CURRENT);
 
-					if (!PropertyUtils.containsPlaceholder(s)) {
+					if (!PropertyManager.containsPlaceholder(s)) {
 						fileBuilder.path(Paths.get(s));
 					}
 				}
@@ -857,7 +892,15 @@ public class Configuration {
 					fileBuilder.reads(fm.addReads);
 				}
 
-				files.add(fileBuilder.build());
+				FileMetadata file = fileBuilder.build();
+				for (FileMetadata prevFile : files) {
+					if (prevFile.getPath()
+									.equals(file.getPath())) {
+						throw new IllegalStateException("2 files resolve to same 'path': " + file.getPath());
+					}
+				}
+
+				files.add(file);
 			}
 		}
 
@@ -919,7 +962,7 @@ public class Configuration {
 		private List<String> systemProperties;
 
 		private PrivateKey signer;
-		private PlaceholderMatchType matcher = PlaceholderMatchType.WHOLE_WORD;
+		private PlaceholderMatchType matcher;
 
 		private Builder() {
 			files = new ArrayList<>();
@@ -974,8 +1017,14 @@ public class Configuration {
 			return this;
 		}
 
-		public Builder files(Collection<FileMetadata.Reference> files) {
-			files.addAll(files);
+		public Builder files(Collection<FileMetadata.Reference> f) {
+			files.addAll(f);
+
+			return this;
+		}
+
+		public Builder files(Stream<FileMetadata.Reference> fileStream) {
+			files.addAll(fileStream.collect(Collectors.toList()));
 
 			return this;
 		}
@@ -989,14 +1038,6 @@ public class Configuration {
 		}
 
 		public Builder property(String key, String value, OS os) {
-			value = Objects.requireNonNull(value);
-
-			for (Property p : properties) {
-				if (key.equals(p.getKey()) && p.getOs() == os) {
-					throw new IllegalArgumentException("Duplicate property: " + key);
-				}
-			}
-
 			properties.add(new Property(key, value, os));
 
 			return this;
@@ -1066,17 +1107,22 @@ public class Configuration {
 			return launcher;
 		}
 
-		public Builder matching(PlaceholderMatchType matcher) {
+		public Builder matchAndReplace(PlaceholderMatchType matcher) {
 			this.matcher = matcher;
 
 			return this;
 		}
 
-		public PlaceholderMatchType getMatcher() {
+		public PlaceholderMatchType getMatchType() {
 			return matcher;
 		}
 
 		public Configuration build() {
+			PlaceholderMatchType matcher = this.matcher;
+			if (matcher == null) {
+				matcher = PlaceholderMatchType.WHOLE_WORD;
+			}
+
 			ConfigMapper mapper = new ConfigMapper();
 			PropertyManager pm = new PropertyManager(properties, systemProperties);
 
@@ -1101,11 +1147,7 @@ public class Configuration {
 			if (files.size() > 0) {
 				mapper.files = new ArrayList<>();
 				for (FileMetadata.Reference fileRef : files) {
-					try {
-						mapper.files.add(fileRef.getFileMapper(pm, matcher, signer));
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
+					mapper.files.add(fileRef.getFileMapper(pm, matcher, signer));
 				}
 			}
 

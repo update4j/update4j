@@ -22,12 +22,32 @@ public class Property {
 	private OS os;
 
 	public Property(String key, String value, OS os) {
-		if(key.isEmpty())
+		if (key.isEmpty())
 			throw new IllegalArgumentException("Key must not be empty.");
-		
-		if(value.isEmpty())
+
+		if (value.isEmpty())
 			throw new IllegalArgumentException("Value must not be empty.");
-		
+
+		if (key.contains("$")) {
+			throw new IllegalArgumentException("Key contains illegal character '$': " + key);
+		}
+
+		if (key.contains("{")) {
+			throw new IllegalArgumentException("Key contains illegal character '{': " + key);
+		}
+
+		if (key.contains("}")) {
+			throw new IllegalArgumentException("Key contains illegal character '}': " + key);
+		}
+
+		if (key.matches(".*\\p{Cntrl}.*")) {
+			throw new IllegalArgumentException("Key may not contain control characters: " + key);
+		}
+
+		if (value.matches(".*\\p{Cntrl}.*")) {
+			throw new IllegalArgumentException("Value may not contain control characters: " + value);
+		}
+
 		this.key = key;
 		this.value = value;
 		this.os = os;
@@ -36,7 +56,7 @@ public class Property {
 	public Property(String key, String value) {
 		this(key, value, null);
 	}
-	
+
 	public String getKey() {
 		return key;
 	}

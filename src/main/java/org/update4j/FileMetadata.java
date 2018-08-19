@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.update4j.mapper.FileMapper;
 import org.update4j.util.FileUtils;
@@ -156,16 +157,30 @@ public class FileMetadata {
 						|| FileUtils.getChecksum(getPath()) != getChecksum();
 	}
 
-	public static Reference readFrom(Path location) {
-		return new Reference(location);
+	public static Reference readFrom(Path source) {
+		return new Reference(source);
 	}
 
-	public static Reference readFrom(String location) {
-		return readFrom(Paths.get(location));
+	public static Reference readFrom(String source) {
+		return readFrom(Paths.get(source));
+	}
+
+	public static Stream<Reference> streamDirectory(Path dir) {
+		try {
+			return Files.walk(dir)
+							.filter(p -> Files.isRegularFile(p))
+							.map(FileMetadata::readFrom);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static Stream<Reference> streamDirectory(String dir) {
+		return streamDirectory(Paths.get(dir));
 	}
 
 	public static class Reference {
-		private Path location;
+		private Path source;
 		private String path;
 		private String uri;
 		private OS os;
@@ -180,16 +195,16 @@ public class FileMetadata {
 
 		private PlaceholderMatchType matcher;
 
-		private Reference(Path location) {
-			this.location = location;
+		private Reference(Path source) {
+			this.source = source;
 
 			addExports = new ArrayList<>();
 			addOpens = new ArrayList<>();
 			addReads = new ArrayList<>();
 		}
 
-		public Path getLocation() {
-			return location;
+		public Path getSource() {
+			return source;
 		}
 
 		public Reference uri(URI uri) {
@@ -264,7 +279,7 @@ public class FileMetadata {
 			}
 
 			// If not a jar, completely ignore modulepath
-			return FileUtils.isJarFile(getLocation());
+			return FileUtils.isJarFile(getSource());
 		}
 
 		public Reference comment(String c) {
@@ -308,7 +323,7 @@ public class FileMetadata {
 		}
 
 		public Reference opens(String pkg, String targetModule) {
-			addOpens.add(new AddPackage(Objects.requireNonNull(pkg), Objects.requireNonNull(targetModule)));
+			addOpens.add(new AddPackage(pkg, targetModule));
 
 			return this;
 		}
@@ -324,7 +339,7 @@ public class FileMetadata {
 		}
 
 		public Reference reads(String module) {
-			addReads.add(Objects.requireNonNull(module));
+			addReads.add(module);
 
 			return this;
 		}
@@ -339,66 +354,69 @@ public class FileMetadata {
 			return addReads;
 		}
 
-		public Reference matching(PlaceholderMatchType matcher) {
+		public Reference matchAndReplace(PlaceholderMatchType matcher) {
 			this.matcher = matcher;
 
 			return this;
 		}
 
-		public PlaceholderMatchType getMatcher() {
+		public PlaceholderMatchType getMatchType() {
 			return matcher;
 		}
 
 		public long getSize() throws IOException {
-			return Files.size(location);
+			return Files.size(source);
 		}
 
 		public long getChecksum() throws IOException {
-			return FileUtils.getChecksum(location);
+			return FileUtils.getChecksum(source);
 		}
 
 		public byte[] getSignature(PrivateKey key) throws IOException {
 			if (key == null)
 				return null;
 
-			return FileUtils.sign(location, key);
+			return FileUtils.sign(source, key);
 		}
 
-		FileMapper getFileMapper(PropertyManager pm, PlaceholderMatchType matchType, PrivateKey key)
-						throws IOException {
+		FileMapper getFileMapper(PropertyManager pm, PlaceholderMatchType matchType, PrivateKey key) {
 
-			String path = getPath();
-			if (getUri() == null && getPath() == null) {
-				path = location.toString();
+			try {
+				String path = getPath();
+				if (getUri() == null && getPath() == null) {
+					path = source.toString();
+				}
+
+				PlaceholderMatchType matcher = getMatchType();
+				if (matcher == null) {
+					matcher = matchType;
+				}
+
+				FileMapper mapper = new FileMapper();
+
+				mapper.uri = pm.implyPlaceholders(getUri(), matcher, true);
+				mapper.path = pm.implyPlaceholders(path, matcher, true);
+				mapper.os = getOs();
+				mapper.size = getSize();
+				mapper.checksum = Long.toHexString(getChecksum());
+				mapper.classpath = isClasspath();
+				mapper.modulepath = isFinalModulepath();
+				mapper.ignoreBootConflict = isIgnoreBootConflict();
+
+				byte[] sig = getSignature(key);
+				if (sig != null)
+					mapper.signature = Base64.getEncoder()
+									.encodeToString(sig);
+
+				mapper.comment = pm.implyPlaceholders(getComment(), matcher, false);
+				mapper.addExports = getAddExports();
+				mapper.addOpens = getAddOpens();
+				mapper.addReads = getAddReads();
+
+				return mapper;
+			} catch (IOException e) {
+				throw new RuntimeException(e);
 			}
-
-			PlaceholderMatchType matcher = getMatcher();
-			if (matcher == null) {
-				matcher = matchType;
-			}
-
-			FileMapper mapper = new FileMapper();
-
-			mapper.uri = pm.implyPlaceholders(getUri(), matcher, true);
-			mapper.path = pm.implyPlaceholders(path, matcher, true);
-			mapper.os = getOs();
-			mapper.size = getSize();
-			mapper.checksum = Long.toHexString(getChecksum());
-			mapper.classpath = isClasspath();
-			mapper.modulepath = isFinalModulepath();
-			mapper.ignoreBootConflict = isIgnoreBootConflict();
-
-			byte[] sig = getSignature(key);
-			if (sig != null)
-				mapper.signature = Base64.getEncoder()
-								.encodeToString(sig);
-
-			mapper.comment = pm.implyPlaceholders(getComment(), matcher, false);
-			mapper.addExports = getAddExports();
-			mapper.addOpens = getAddOpens();
-			mapper.addReads = getAddReads();
-
-			return mapper;
 		}
 
 	}
