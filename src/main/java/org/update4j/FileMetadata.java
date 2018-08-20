@@ -379,12 +379,25 @@ public class FileMetadata {
 			return FileUtils.sign(source, key);
 		}
 
-		FileMapper getFileMapper(PropertyManager pm, PlaceholderMatchType matchType, PrivateKey key) {
-
+		FileMapper getFileMapper(PropertyManager pm, String baseUri, String basePath, PlaceholderMatchType matchType,
+						PrivateKey key) {
 			try {
+
 				String path = getPath();
-				if (getUri() == null && getPath() == null) {
+				if (uri == null && getPath() == null) {
 					path = source.toString();
+				}
+
+				if (uri != null) {
+					uri = uri.replace("\\", "/");
+				}
+
+				if (path != null) {
+					path = path.replace("\\", "/");
+				}
+
+				if (uri != null && uri.equals(path)) {
+					uri = null;
 				}
 
 				PlaceholderMatchType matcher = getMatchType();
@@ -396,6 +409,18 @@ public class FileMetadata {
 
 				mapper.uri = pm.implyPlaceholders(getUri(), matcher, true);
 				mapper.path = pm.implyPlaceholders(path, matcher, true);
+
+				// Changes behavior of cross-resolution, so watch out
+				String phBaseUri = pm.implyPlaceholders(baseUri, matcher, true);
+				if (mapper.uri != null && phBaseUri != null && mapper.uri.startsWith(phBaseUri)) {
+					mapper.uri = mapper.uri.substring(phBaseUri.length());
+				}
+
+				String phBasePath = pm.implyPlaceholders(basePath, matcher, true);
+				if (mapper.path != null && phBasePath != null && mapper.path.startsWith(phBasePath)) {
+					mapper.path = mapper.path.substring(phBasePath.length());
+				}
+
 				mapper.os = getOs();
 				mapper.size = getSize();
 				mapper.checksum = Long.toHexString(getChecksum());

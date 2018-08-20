@@ -80,6 +80,15 @@ public class Warning {
 		}
 	}
 
+	public static void reflectiveAccess(Launcher launcher) {
+		if (!"true".equals(System.getProperty(PREFIX + "reflectiveAccess"))) {
+			System.err.println("WARNING: " + launcher.getClass().getCanonicalName()
+							+ " was not loaded using the Service Provider Interface.\n"
+							+ "Launchers like these only have reflective access to the business\n"
+							+ "application. You must reflect using 'context.getClassLoader()'.");
+		}
+	}
+	
 	public static void path() {
 		if (!"true".equals(System.getProperty(PREFIX + "path"))) {
 			System.err.println(

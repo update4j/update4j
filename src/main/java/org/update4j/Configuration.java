@@ -762,22 +762,29 @@ public class Configuration {
 
 		LaunchContext ctx = new LaunchContext(layer, contextClassLoader, this, args);
 
+		Launcher theLauncher;
 		if (launcher == null) {
-			launcher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
+			theLauncher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
 
 			if (launcherSetup != null) {
 				launcherSetup.accept(launcher);
 			}
+		} else {
+			theLauncher = launcher;
 		}
 
-		Launcher finalLauncher = launcher;
+		Launcher finalLauncher = theLauncher;
 		Thread t = new Thread(() -> {
 			try {
 				finalLauncher.run(ctx);
 			} catch (NoClassDefFoundError e) {
-				if (finalLauncher.getClass()
-								.getClassLoader() == ClassLoader.getSystemClassLoader()) {
-					Warning.access(finalLauncher);
+				if (launcher == null) {
+					if (finalLauncher.getClass()
+									.getClassLoader() == ClassLoader.getSystemClassLoader()) {
+						Warning.access(finalLauncher);
+					}
+				} else {
+					Warning.reflectiveAccess(finalLauncher);
 				}
 
 				throw e;
@@ -912,7 +919,7 @@ public class Configuration {
 		return config;
 	}
 
-	public ConfigMapper getMapper() {
+	public ConfigMapper generateXmlMapper() {
 		return new ConfigMapper(mapper);
 	}
 
@@ -996,7 +1003,7 @@ public class Configuration {
 		public Builder basePath(Path path) {
 			return basePath(path.toString());
 		}
-
+ 
 		public String getBasePath() {
 			return basePath;
 		}
@@ -1133,7 +1140,7 @@ public class Configuration {
 				mapper.baseUri = pm.implyPlaceholders(baseUri, matcher, true);
 
 			if (basePath != null)
-				mapper.basePath = pm.implyPlaceholders(basePath.replace("\\", "/"), matcher, true);
+				mapper.basePath = pm.implyPlaceholders(basePath, matcher, true);
 
 			if (updateHandler != null)
 				mapper.updateHandler = pm.implyPlaceholders(updateHandler, matcher, false);
@@ -1147,7 +1154,7 @@ public class Configuration {
 			if (files.size() > 0) {
 				mapper.files = new ArrayList<>();
 				for (FileMetadata.Reference fileRef : files) {
-					mapper.files.add(fileRef.getFileMapper(pm, matcher, signer));
+					mapper.files.add(fileRef.getFileMapper(pm, baseUri, basePath, matcher, signer));
 				}
 			}
 

@@ -255,7 +255,6 @@ public class PropertyManager {
 		}
 
 		// Get a list sorted by longest value
-
 		List<Map.Entry<String, String>> resolved = resolvedProperties.entrySet()
 						.stream()
 						.sorted((e1, e2) -> e2.getValue()
@@ -270,13 +269,14 @@ public class PropertyManager {
 						})
 						.collect(Collectors.toList());
 
-		if (matchType == PlaceholderMatchType.FULL_MATCH) {
-			for (Map.Entry<String, String> e : resolved) {
-				if (str.equals(e.getValue())) {
-					return wrap(e.getKey());
-				}
+		for (Map.Entry<String, String> e : resolved) {
+			if (str.equals(e.getValue())) {
+				return wrap(e.getKey());
 			}
+		}
 
+		// should've matched in for-loop above
+		if (matchType == PlaceholderMatchType.FULL_MATCH) {
 			return str;
 		}
 

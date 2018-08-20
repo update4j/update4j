@@ -60,10 +60,14 @@ public class ConfigMapper extends XmlMapper {
 		basePath = copy.basePath;
 		updateHandler = copy.updateHandler;
 		launcher = copy.launcher;
-		properties = new ArrayList<>(copy.properties);
-		files = copy.files.stream()
-						.map(FileMapper::new)
-						.collect(Collectors.toList());
+
+		if (copy.properties != null)
+			properties = new ArrayList<>(copy.properties);
+
+		if (copy.files != null)
+			files = copy.files.stream()
+							.map(FileMapper::new)
+							.collect(Collectors.toList());
 	}
 
 	@Override
@@ -133,63 +137,70 @@ public class ConfigMapper extends XmlMapper {
 		if (timestamp != null) {
 			builder.append(" timestamp=\"" + timestamp + "\"");
 		}
-		builder.append(">\n");
 
-		if (baseUri != null || basePath != null) {
-			builder.append("    <base");
+		if (baseUri != null || basePath != null || updateHandler != null || launcher != null
+						|| (properties != null && !properties.isEmpty()) || (files != null && !files.isEmpty())) {
 
-			if (baseUri != null) {
-				builder.append(" uri=\"" + baseUri + "\"");
+			builder.append(">\n");
+
+			if (baseUri != null || basePath != null) {
+				builder.append("    <base");
+
+				if (baseUri != null) {
+					builder.append(" uri=\"" + baseUri + "\"");
+				}
+				if (basePath != null) {
+					builder.append(" path=\"" + basePath + "\"");
+				}
+
+				builder.append("/>\n");
 			}
-			if (basePath != null) {
-				builder.append(" path=\"" + basePath + "\"");
-			}
+			if (updateHandler != null || launcher != null) {
+				builder.append("    <provider");
 
-			builder.append("/>\n");
-		}
-		if (updateHandler != null || launcher != null) {
-			builder.append("    <provider");
-
-			if (updateHandler != null) {
-				builder.append(" updateHandler=\"" + updateHandler + "\"");
-			}
-			if (launcher != null) {
-				builder.append(" launcher=\"" + launcher + "\"");
-			}
-
-			builder.append("/>\n");
-		}
-
-		if (properties != null && properties.size() > 0) {
-			builder.append("    <properties>\n");
-
-			for (Property p : properties) {
-				builder.append("        <property");
-
-				builder.append(" key=\"" + p.getKey() + "\"");
-				builder.append(" value=\"" + p.getValue() + "\"");
-
-				if (p.getOs() != null)
-					builder.append(" os=\"" + p.getOs()
-									.getShortName() + "\"");
+				if (updateHandler != null) {
+					builder.append(" updateHandler=\"" + updateHandler + "\"");
+				}
+				if (launcher != null) {
+					builder.append(" launcher=\"" + launcher + "\"");
+				}
 
 				builder.append("/>\n");
 			}
 
-			builder.append("    </properties>\n");
-		}
+			if (properties != null && properties.size() > 0) {
+				builder.append("    <properties>\n");
 
-		if (files != null && files.size() > 0) {
-			builder.append("    <files>\n");
+				for (Property p : properties) {
+					builder.append("        <property");
 
-			for (FileMapper fm : files) {
-				builder.append(fm.toXml());
+					builder.append(" key=\"" + p.getKey() + "\"");
+					builder.append(" value=\"" + p.getValue() + "\"");
+
+					if (p.getOs() != null)
+						builder.append(" os=\"" + p.getOs()
+										.getShortName() + "\"");
+
+					builder.append("/>\n");
+				}
+
+				builder.append("    </properties>\n");
 			}
 
-			builder.append("    </files>\n");
-		}
+			if (files != null && files.size() > 0) {
+				builder.append("    <files>\n");
 
-		builder.append("</configuration>");
+				for (FileMapper fm : files) {
+					builder.append(fm.toXml());
+				}
+
+				builder.append("    </files>\n");
+			}
+
+			builder.append("</configuration>");
+		} else {
+			builder.append("/>\n");
+		}
 
 		return builder.toString();
 	}

@@ -56,9 +56,15 @@ public class FileMapper extends XmlMapper {
 		comment = copy.comment;
 		ignoreBootConflict = copy.ignoreBootConflict;
 		signature = copy.signature;
-		addExports = new ArrayList<>(copy.addExports);
-		addOpens = new ArrayList<>(copy.addOpens);
-		addReads = new ArrayList<>(copy.addReads);
+
+		if (copy.addExports != null)
+			addExports = new ArrayList<>(copy.addExports);
+
+		if (copy.addOpens != null)
+			addOpens = new ArrayList<>(copy.addOpens);
+
+		if (copy.addReads != null)
+			addReads = new ArrayList<>(copy.addReads);
 	}
 
 	@Override
@@ -199,36 +205,36 @@ public class FileMapper extends XmlMapper {
 
 			if (addExports != null && addExports.size() > 0) {
 				builder.append("            <addExports>\n");
-				
+
 				for (AddPackage ap : addExports) {
 					builder.append("                <exports");
 					builder.append(" package=\"" + ap.getPackageName() + "\"");
 					builder.append(" target=\"" + ap.getTargetModule() + "\"/>\n");
 				}
-				
+
 				builder.append("            </addExports>\n");
 			}
-			
+
 			if (addOpens != null && addOpens.size() > 0) {
 				builder.append("            <addOpens>\n");
-				
+
 				for (AddPackage ap : addOpens) {
 					builder.append("                <opens");
 					builder.append(" package=\"" + ap.getPackageName() + "\"");
 					builder.append(" target=\"" + ap.getTargetModule() + "\"/>\n");
 				}
-				
+
 				builder.append("            </addOpens>\n");
 			}
-			
+
 			if (addReads != null && addReads.size() > 0) {
 				builder.append("            <addReads>\n");
-				
+
 				for (String r : addReads) {
 					builder.append("                <reads");
 					builder.append(" module=\"" + r + "\"/>\n");
 				}
-				
+
 				builder.append("            </addReads>\n");
 			}
 
@@ -240,71 +246,71 @@ public class FileMapper extends XmlMapper {
 		return builder.toString();
 	}
 
-//	@Override
-//	public Node toNode(Document doc) {
-//		Element e = doc.createElement("file");
-//
-//		if (uri != null)
-//			e.setAttribute("uri", uri);
-//		if (path != null)
-//			e.setAttribute("path", path);
-//		if (checksum != null)
-//			e.setAttribute("checksum", checksum);
-//		if (size != null)
-//			e.setAttribute("size", size.toString());
-//		if (os != null)
-//			e.setAttribute("os", os.getShortName());
-//		if (classpath != null && classpath)
-//			e.setAttribute("classpath", classpath.toString());
-//		if (modulepath != null && modulepath)
-//			e.setAttribute("modulepath", modulepath.toString());
-//		if (comment != null)
-//			e.setAttribute("comment", comment);
-//		if (ignoreBootConflict != null && ignoreBootConflict)
-//			e.setAttribute("ignoreBootConflict", ignoreBootConflict.toString());
-//		if (signature != null)
-//			e.setAttribute("signature", signature);
-//
-//		if (addExports != null && addExports.size() > 0) {
-//			Element exports = doc.createElement("addExports");
-//
-//			for (AddPackage a : addExports) {
-//				Element export = doc.createElement("exports");
-//				export.setAttribute("package", a.getPackageName());
-//				export.setAttribute("target", a.getTargetModule());
-//
-//				exports.appendChild(export);
-//			}
-//
-//			e.appendChild(exports);
-//		}
-//
-//		if (addOpens != null && addOpens.size() > 0) {
-//			Element opens = doc.createElement("addOpens");
-//
-//			for (AddPackage a : addOpens) {
-//				Element open = doc.createElement("opens");
-//				open.setAttribute("package", a.getPackageName());
-//				open.setAttribute("target", a.getTargetModule());
-//
-//				opens.appendChild(open);
-//			}
-//
-//			e.appendChild(opens);
-//		}
-//
-//		if (addReads != null && addReads.size() > 0) {
-//			Element reads = doc.createElement("addReads");
-//
-//			for (String a : addReads) {
-//				Element read = doc.createElement("reads");
-//				read.setAttribute("module", a);
-//				reads.appendChild(read);
-//			}
-//
-//			e.appendChild(reads);
-//		}
-//
-//		return e;
-//	}
+	//	@Override
+	//	public Node toNode(Document doc) {
+	//		Element e = doc.createElement("file");
+	//
+	//		if (uri != null)
+	//			e.setAttribute("uri", uri);
+	//		if (path != null)
+	//			e.setAttribute("path", path);
+	//		if (checksum != null)
+	//			e.setAttribute("checksum", checksum);
+	//		if (size != null)
+	//			e.setAttribute("size", size.toString());
+	//		if (os != null)
+	//			e.setAttribute("os", os.getShortName());
+	//		if (classpath != null && classpath)
+	//			e.setAttribute("classpath", classpath.toString());
+	//		if (modulepath != null && modulepath)
+	//			e.setAttribute("modulepath", modulepath.toString());
+	//		if (comment != null)
+	//			e.setAttribute("comment", comment);
+	//		if (ignoreBootConflict != null && ignoreBootConflict)
+	//			e.setAttribute("ignoreBootConflict", ignoreBootConflict.toString());
+	//		if (signature != null)
+	//			e.setAttribute("signature", signature);
+	//
+	//		if (addExports != null && addExports.size() > 0) {
+	//			Element exports = doc.createElement("addExports");
+	//
+	//			for (AddPackage a : addExports) {
+	//				Element export = doc.createElement("exports");
+	//				export.setAttribute("package", a.getPackageName());
+	//				export.setAttribute("target", a.getTargetModule());
+	//
+	//				exports.appendChild(export);
+	//			}
+	//
+	//			e.appendChild(exports);
+	//		}
+	//
+	//		if (addOpens != null && addOpens.size() > 0) {
+	//			Element opens = doc.createElement("addOpens");
+	//
+	//			for (AddPackage a : addOpens) {
+	//				Element open = doc.createElement("opens");
+	//				open.setAttribute("package", a.getPackageName());
+	//				open.setAttribute("target", a.getTargetModule());
+	//
+	//				opens.appendChild(open);
+	//			}
+	//
+	//			e.appendChild(opens);
+	//		}
+	//
+	//		if (addReads != null && addReads.size() > 0) {
+	//			Element reads = doc.createElement("addReads");
+	//
+	//			for (String a : addReads) {
+	//				Element read = doc.createElement("reads");
+	//				read.setAttribute("module", a);
+	//				reads.appendChild(read);
+	//			}
+	//
+	//			e.appendChild(reads);
+	//		}
+	//
+	//		return e;
+	//	}
 }
