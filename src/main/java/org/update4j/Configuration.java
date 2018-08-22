@@ -43,6 +43,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -762,23 +763,24 @@ public class Configuration {
 
 		LaunchContext ctx = new LaunchContext(layer, contextClassLoader, this, args);
 
-		Launcher theLauncher;
+		boolean usingSpi = false;
 		if (launcher == null) {
-			theLauncher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
+			usingSpi = true;
+			launcher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
 
 			if (launcherSetup != null) {
 				launcherSetup.accept(launcher);
 			}
-		} else {
-			theLauncher = launcher;
 		}
 
-		Launcher finalLauncher = theLauncher;
+		Launcher finalLauncher = launcher;
+		boolean finalUsingSpi = usingSpi;
+
 		Thread t = new Thread(() -> {
 			try {
 				finalLauncher.run(ctx);
 			} catch (NoClassDefFoundError e) {
-				if (launcher == null) {
+				if (finalUsingSpi) {
 					if (finalLauncher.getClass()
 									.getClassLoader() == ClassLoader.getSystemClassLoader()) {
 						Warning.access(finalLauncher);
@@ -803,15 +805,20 @@ public class Configuration {
 
 	public static Configuration read(Reader reader) throws IOException {
 		ConfigMapper configMapper = ConfigMapper.read(reader);
-		return parse(configMapper);
+
+		return parseImpl(configMapper);
 	}
 
 	public static Configuration parse(ConfigMapper mapper) {
-		PropertyManager propManager = new PropertyManager(mapper.properties, null);
-		return parse(mapper, propManager);
+		return parseImpl(new ConfigMapper(mapper));
 	}
 
-	static Configuration parse(ConfigMapper configMapper, PropertyManager propManager) {
+	private static Configuration parseImpl(ConfigMapper configMapper) {
+		PropertyManager propManager = new PropertyManager(configMapper.properties, null);
+		return parseImpl(configMapper, propManager);
+	}
+
+	private static Configuration parseImpl(ConfigMapper configMapper, PropertyManager propManager) {
 		Configuration config = new Configuration();
 		config.propertyManager = propManager;
 
@@ -919,6 +926,63 @@ public class Configuration {
 		return config;
 	}
 
+	public Configuration sync() throws IOException {
+		return sync(null, null);
+	}
+
+	public Configuration sync(Path overrideBasePath) throws IOException {
+		return sync(overrideBasePath, null);
+	}
+
+	public Configuration sync(PrivateKey signer) throws IOException {
+		return sync(null, signer);
+	}
+
+	public Configuration sync(Path overrideBasePath, PrivateKey signer) throws IOException {
+		ConfigMapper newMapper = generateXmlMapper();
+
+		for (int i = 0; i < getFiles().size(); i++) {
+
+			FileMetadata fm = getFiles().get(i);
+			Path path;
+			if (overrideBasePath == null || getBasePath().relativize(fm.getPath())
+							.isAbsolute()) {
+				path = fm.getPath();
+			} else {
+				path = overrideBasePath.resolve(getBasePath().relativize(fm.getPath()));
+			}
+
+			if (Files.notExists(path)) {
+				System.err.println("[WARNING] File '" + path.getFileName() + "' is missing; skipped.");
+
+				continue;
+			}
+
+			FileMapper fileMapper = newMapper.files.get(i);
+			
+			long size = Files.size(path);
+			long checksum = FileUtils.getChecksum(path);
+			
+			if(fm.getSize() == size && fm.getChecksum() == checksum) {
+				continue;
+			}
+			
+			fileMapper.size = size;
+			fileMapper.checksum = Long.toString(checksum, 16);
+
+			if (signer == null) {
+				fileMapper.signature = null;
+			} else {
+				fileMapper.signature = Base64.getEncoder()
+								.encodeToString(FileUtils.sign(path, signer));
+			}
+
+			System.out.println("[INFO] Synced '" + path.getFileName() +"'.");
+		}
+
+		return parseImpl(newMapper);
+	}
+
 	public ConfigMapper generateXmlMapper() {
 		return new ConfigMapper(mapper);
 	}
@@ -1003,7 +1067,7 @@ public class Configuration {
 		public Builder basePath(Path path) {
 			return basePath(path.toString());
 		}
- 
+
 		public String getBasePath() {
 			return basePath;
 		}
@@ -1158,7 +1222,7 @@ public class Configuration {
 				}
 			}
 
-			return Configuration.parse(mapper, pm);
+			return Configuration.parseImpl(mapper, pm);
 
 		}
 
