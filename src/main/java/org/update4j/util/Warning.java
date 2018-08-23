@@ -19,12 +19,28 @@ import org.update4j.service.Launcher;
 
 public class Warning {
 
-	private static final String PREFIX = "suppress.warning.";
+	private static final String PREFIX = "suppress.warning";
+
+	public static void sizeMismatch(String filename, long expected, long found) {
+		if (shouldWarn("metadataMismatch")) {
+			System.err.println("WARNING: '" + filename
+							+ "' downloaded size does not match with the size in configuration\n\tExpected: " + expected
+							+ ", found: " + found);
+		}
+	}
+
+	public static void checksumMismatch(String filename, long expected, long found) {
+		if (shouldWarn("metadataMismatch")) {
+			System.err.println("WARNING: '" + filename
+							+ "' downloaded checksum does not match with the checksum in configuration\n\tExpected: "
+							+ Long.toHexString(expected) + ", found: " + Long.toHexString(found));
+		}
+	}
 
 	public static void lock(String filename) {
-		if (!"true".equals(System.getProperty(PREFIX + "lock"))) {
-			System.err.println("WARNING: " + filename
-							+ " is locked by another process, there are a few common causes for this:\n"
+		if (shouldWarn("lock")) {
+			System.err.println("WARNING: '" + filename
+							+ "' is locked by another process, there are a few common causes for this:\n"
 							+ "\t- Another application accesses this file:\n"
 							+ "\t\tNothing you can do about it, it's out of your control.\n"
 							+ "\t- 2 instances of this application run simultaneously:\n"
@@ -43,9 +59,9 @@ public class Warning {
 	}
 
 	public static void lockFinalize(String filename) {
-		if (!"true".equals(System.getProperty(PREFIX + "lock"))) {
-			System.err.println("WARNING: " + filename
-							+ " is locked by another process, there are a few common causes for this:\n"
+		if (shouldWarn("lock")) {
+			System.err.println("WARNING: '" + filename
+							+ "' is locked by another process, there are a few common causes for this:\n"
 							+ "\t- Another application accesses this file:\n"
 							+ "\t\tNothing you can do about it, it's out of your control.\n"
 							+ "\t- 2 instances of this application run simultaneously:\n"
@@ -65,9 +81,9 @@ public class Warning {
 	}
 
 	public static void access(Launcher launcher) {
-		if (!"true".equals(System.getProperty(PREFIX + "access"))) {
-			System.err.println("WARNING: " + launcher.getClass().getCanonicalName()
-							+ " was loaded with the boot class loader.\n"
+		if (shouldWarn("access")) {
+			System.err.println("WARNING: '" + launcher.getClass()
+							.getCanonicalName() + "' was loaded with the boot class loader.\n"
 							+ "\tThis may prevent accessing classes in the business application, and will\n"
 							+ "\tthrow NoClassDefFoundErrors.\n"
 							+ "\tTo prevent this, make sure the launcher is NOT loaded onto the boot\n"
@@ -81,25 +97,24 @@ public class Warning {
 	}
 
 	public static void reflectiveAccess(Launcher launcher) {
-		if (!"true".equals(System.getProperty(PREFIX + "reflectiveAccess"))) {
-			System.err.println("WARNING: " + launcher.getClass().getCanonicalName()
-							+ " was not loaded using the Service Provider Interface.\n"
+		if (shouldWarn("reflectiveAccess")) {
+			System.err.println("WARNING: '" + launcher.getClass()
+							.getCanonicalName() + "' was not loaded using the Service Provider Interface.\n"
 							+ "Launchers like these only have reflective access to the business\n"
 							+ "application. You must reflect using 'context.getClassLoader()'.");
 		}
 	}
-	
+
 	public static void path() {
-		if (!"true".equals(System.getProperty(PREFIX + "path"))) {
-			System.err.println(
-							"WARNING: No files were found that are set with 'classpath' or 'modulepath' to true;\n"
-											+ "although perfectly valid it's rarely what you want.\n"
-											+ "Please refer to: https://github.com/update4j/update4j/wiki/Documentation#classpath-and-modulepath");
+		if (shouldWarn("path")) {
+			System.err.println("WARNING: No files were found that are set with 'classpath' or 'modulepath' to true;\n"
+							+ "although perfectly valid it's rarely what you want.\n"
+							+ "Please refer to: https://github.com/update4j/update4j/wiki/Documentation#classpath-and-modulepath");
 		}
 	}
 
 	public static void moduleConflict(String moduleName) {
-		if (!"true".equals(System.getProperty(PREFIX + "moduleConflict"))) {
+		if (shouldWarn("bootConflict")) {
 			System.err.println("WARNING: module '" + moduleName + "' already exists in the boot modulepath.\n"
 							+ "\tIn order to prevent accidental breakage of your application among\n"
 							+ "\tall your clients, the download was rejected.\n"
@@ -111,7 +126,7 @@ public class Warning {
 	}
 
 	public static void packageConflict(String packageName) {
-		if (!"true".equals(System.getProperty(PREFIX + "packageConflict"))) {
+		if (shouldWarn("bootConflict")) {
 			System.err.println("WARNING: package '" + packageName + "' already exists in the boot modulepath.\n"
 							+ "\tIn order to prevent accidental breakage of your application among\n"
 							+ "\tall your clients, the download was rejected.\n"
@@ -120,5 +135,9 @@ public class Warning {
 							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
 							+ "\tthe configuration.");
 		}
+	}
+
+	private static boolean shouldWarn(String key) {
+		return !"true".equals(System.getProperty(PREFIX, System.getProperty(PREFIX) + "." + key));
 	}
 }
