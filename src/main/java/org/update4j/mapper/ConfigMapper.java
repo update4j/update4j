@@ -48,13 +48,17 @@ public class ConfigMapper extends XmlMapper {
 	public List<FileMapper> files;
 
 	public ConfigMapper() {
+		properties = new ArrayList<>();
+		files = new ArrayList<>();
 	}
 
 	public ConfigMapper(Node node) {
+		this();
 		parse(node);
 	}
 
 	public ConfigMapper(ConfigMapper copy) {
+		this();
 		timestamp = copy.timestamp;
 		baseUri = copy.baseUri;
 		basePath = copy.basePath;
@@ -62,7 +66,7 @@ public class ConfigMapper extends XmlMapper {
 		launcher = copy.launcher;
 
 		if (copy.properties != null)
-			properties = new ArrayList<>(copy.properties);
+			properties.addAll(copy.properties);
 
 		if (copy.files != null)
 			files = copy.files.stream()

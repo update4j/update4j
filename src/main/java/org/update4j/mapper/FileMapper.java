@@ -39,13 +39,18 @@ public class FileMapper extends XmlMapper {
 	public List<String> addReads;
 
 	public FileMapper() {
+		addExports = new ArrayList<>();
+		addOpens = new ArrayList<>();
+		addReads = new ArrayList<>();
 	}
 
 	public FileMapper(Node node) {
+		this();
 		parse(node);
 	}
 
 	public FileMapper(FileMapper copy) {
+		this();
 		uri = copy.uri;
 		path = copy.path;
 		checksum = copy.checksum;
@@ -58,13 +63,13 @@ public class FileMapper extends XmlMapper {
 		signature = copy.signature;
 
 		if (copy.addExports != null)
-			addExports = new ArrayList<>(copy.addExports);
+			addExports.addAll(copy.addExports);
 
 		if (copy.addOpens != null)
-			addOpens = new ArrayList<>(copy.addOpens);
+			addOpens.addAll(copy.addOpens);
 
 		if (copy.addReads != null)
-			addReads = new ArrayList<>(copy.addReads);
+			addReads.addAll(copy.addReads);
 	}
 
 	@Override
