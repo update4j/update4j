@@ -13,6 +13,18 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+/*
+ * The update4j framework keeps your application files synchronized and
+ * dynamically launches the application. The framework gives you the ability to
+ * customize almost every single process; as how it is started, what to do
+ * before or after the update, decide whether to first launch then update
+ * silently or the other way around and much more.
+ * 
+ * The main focus revolves around the {@link Configuration} class which contains almost all
+ * logic to update and launch.
+ * 
+ * 
+ */
 module org.update4j {
 
 	/*
@@ -20,7 +32,7 @@ module org.update4j {
 	 */
 	exports org.update4j;
 	exports org.update4j.service;
-	
+
 	/*
 	 * For use especially by automated clients.
 	 */
@@ -30,7 +42,6 @@ module org.update4j {
 	 * We list all system modules to make it available to layers requiring them.
 	 */
 	requires java.se;
-	requires java.se.ee;
 	requires javafx.base;
 	requires javafx.controls;
 	requires javafx.fxml;

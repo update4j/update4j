@@ -18,6 +18,7 @@ package org.update4j;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -38,6 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -66,9 +68,358 @@ import org.update4j.util.StringUtils;
 import org.update4j.util.Warning;
 
 /**
- * This class is the heart of the framework. It essentially wraps around a
- * configuration XML file and does the update/launch logic.
+ * This class is the heart of the framework. It contains all the logic required
+ * to draft new releases at the development side, or start the application at
+ * the client side.
  * 
+ * <p>
+ * Although everything is contained in a single class; most methods are intended
+ * to run either on the dev machine -- to draft new releases -- or client
+ * machine, not both. The documentation of each method will point that out.
+ * 
+ * <p>
+ * A configuration is linked to an XML file, and method within this class
+ * provide methods to read, write, generate and sync configurations. Once a
+ * configuration has been created, it is immutable and cannot be modified. There
+ * are methods to manipulate the XML elements and create new configurations from
+ * them, but the original remains untouched.
+ * 
+ * <h2>Terminology</h2>
+ * <p>
+ * <ul>
+ * <li><b>Config</b> &mdash; For the purpose of brevity we will refer to a
+ * configuration as a 'config'.</li>
+ * <li><b>Bootstrap Application</b> &mdash; The JVM startup application that
+ * solely does the update and launch logic or anything at that level apart from
+ * the Business Application.</li>
+ * <li><b>Business Application</b> &mdash; The application you actually want to
+ * make updatable.</li>
+ * <li><b>Boot Classpath/Modulepath</b> &mdash; The JVM native
+ * classpath/modulepath where the bootstrap is usually loaded.</li>
+ * <li><b>Dynamic Classpath/Modulepath</b> &mdash; The dynamically loaded
+ * classpath/modulepath where the business application is loaded.</li>
+ * <li><b>URI</b> &mdash; The remote (or in case of {@code file:///} -- local)
+ * location <i>from where</i> the file is downloaded.</li>
+ * <li><b>Path</b> &mdash; The local location <i>to where</i> the file should be
+ * downloaded on the client machine.</li>
+ * <li><b>Service</b> &mdash; Any of the service interfaces that can be provided
+ * by developers and easily updatable by releasing newer providers with a higher
+ * version number.</li>
+ * <li><b>Property</b> &mdash; Any of the key-value pairs listed in the config
+ * file. Can be used as placeholders in URI's, paths, class names or in values
+ * of other properties.</li>
+ * </ul>
+ * 
+ * <h1>Developer Side</h1>
+ * <p>
+ * You should primarily use this class whenever you want to draft a new release
+ * to generate new configs. This might be done directly in code or be called by
+ * build tools.
+ * 
+ * <p>
+ * There are 3 ways generate configs.
+ * 
+ * <h3>1. Using the Builder API</h3>
+ * <p>
+ * {@link Configuration#builer()} is the entry point to the config builder API.
+ * 
+ * <p>
+ * Here's a sample config created with the config:
+ * 
+ * <pre>
+ * Configuration config = Configuration.builder()
+ * 				// resolve uri and path of each individual file against the base.
+ * 				// if not present you must provider the absolute location to every individual file
+ * 				// with the uri() and path() method
+ * 				.baseUri("http://example.com/")
+ * 
+ * 				// reads actual value from client system property "user.home"
+ * 				.basePath("${user.home}/myapp/")
+ * 
+ * 				// list all files from the given directory
+ * 				.files(FileMetadata.streamDirectory("build/mylibs")
+ * 								// mark all jar files for classpath
+ * 								.peek(r -> r.classpath(r.getSource()
+ * 												.toString()
+ * 												.endsWith(".jar"))))
+ * 
+ * 				.file(FileMetadata.readFrom("otherDirectory/my-logo.png")
+ * 
+ * 								//override http://example.com above
+ * 								.uri("https://s3.aws.com/some-location/img.png")
+ * 
+ * 								// resolves base from basePath but
+ * 								// overrides my-logo.png from source
+ * 								.path("application-logo.png"))
+ * 
+ * 				// we're done!
+ * 				.build();
+ * </pre>
+ * 
+ * 
+ * <h3>2. Synchronizing Existing Configuration</h3>
+ * <p>
+ * If you already have a configuration but you changed files without adding or
+ * removing files, you might synchronize the file size, checksum and signature
+ * (if you use signature validation) without using the builder API, via
+ * {@link Configuration#sync()}. A new config will be returned, the existing
+ * config remains untouched:
+ * 
+ * <p>
+ * Given this XML {@code config.xml}:
+ * 
+ * <pre>
+ * <xmp>
+ * <configuration timestamp="2018-08-22T19:31:40.448450500Z">
+ *     <base uri="https://example.com/" path="${user.loc}"/>
+ *     <properties>
+ *         <property key="user.loc" value="${user.home}/Desktop/"/>
+ *     </properties>
+ *     <files>
+ *         <file path="file1.jar" size="1348" checksum="fd7adfb7"/>
+ *     </files>
+ * </configuration>
+ * </xmp>
+ * </pre>
+ * 
+ * <p>
+ * 
+ * You can synchronize it as:
+ * 
+ * <pre>
+ * Configuration config = Configuration.read(Files.newBufferedReader(Paths.get("config.xml")));
+ * 
+ * // read files from actual locations listed in config
+ * // in our case ${user.loc}/Desktop/file1.jar
+ * Configuration newConfig = config.sync();
+ * 
+ * // read files from different base path but same individual file name
+ * // in our case ./build/file1.jar where "." is current directory
+ * Configuration newConfig = config.sync(Paths.get("build"));
+ * 
+ * // read files from actual locations listed in config
+ * // and sign with given PrivateKey
+ * KeyStore ks = KeyStore.getInstance("JKS");
+ * ks.load(Files.newInputStream(keystorePath), "Password1".toCharArray());
+ * 
+ * PrivateKey pk = (PrivateKey) ks.getKey("alias", "Password2".toCharArray());
+ * Configuration newConfig = config.sync(pk);
+ * </pre>
+ * 
+ * <p>
+ * If you want to add a new file you should manually add the filename in the
+ * config XML and {@code sync()} will do the rest:
+ * 
+ * <pre>
+ * <xmp>
+ * <files>
+ *         <file path="file1.jar" size="1348" checksum="fd7adfb7"/>
+ *         
+ *         <!-- The new file -->
+ *         <file path="file2.jar" />
+ * </files>
+ * </xmp>
+ * </pre>
+ * 
+ * 
+ * <h3>3. Manual XML Manipulation</h3>
+ * <p>
+ * You can access the XML DOM with the {@link ConfigMapper} class and load a
+ * config using {@link Configuration#parse(ConfigMapper)} to obtain a new
+ * configuration.
+ * 
+ * <pre>
+ * ConfigMapper mapper = new ConfigMapper();
+ * mapper.baseUri = "https://example.com/"
+ * 
+ * FileMapper file = new FileMapper();
+ * file.path = "/root/home/file.jar";
+ * file.size = 3082;
+ * file.checksum = "ac29bfa0";
+ * mapper.files.add(file);
+ * 
+ * Configuration config = Configuration.parse(mapper);
+ * </pre>
+ * 
+ * <p>
+ * Or access the underlying mapper of an existing config (it creates a defensive
+ * copy, so cache them once):
+ * 
+ * <pre>
+ * ConfigMapper mapper = config.generateXmlMapper();
+ * mapper.files.remove(0);
+ * 
+ * Configuration newConfig = Configuration.parse(mapper);
+ * </pre>
+ * 
+ * <h2>Writing the Configuration</h2>
+ * <p>
+ * Once you successfully created a config, write them with
+ * {@link Configuration#write(Writer)}:
+ * 
+ * <pre>
+ * try (Writer out = Files.newBufferedWriter(location)) {
+ * 	config.write(location);
+ * }
+ * 
+ * // or get a String
+ * String theXml = config.toString();
+ * system.out.println(theXml);
+ * </pre>
+ * 
+ * <h1>Client Side</h1>
+ * <p>
+ * All logic on the client side is generally done in the bootstrap application,
+ * like reading the config (and usually caching it somewhere locally in case
+ * there's no internet connection next time), updating and launching or whatever
+ * needs to be done before launch or after business app shutdown or anywhere in
+ * between, according to your needs.
+ * 
+ * <p>
+ * In order to use the config you must first read it from a file or remote
+ * location.
+ * 
+ * <h2>Reading a Configuration</h2>
+ * <p>
+ * Read a config using the {@link Configuration#read(Reader)}:
+ * 
+ * <pre>
+ * Configuration config = null;
+ * 
+ * try (InputStream in = new URL("https://example.com/config.xml").openStream()) {
+ * 	config = Configuration.read(new InputStreamReader(in));
+ * }
+ * </pre>
+ * 
+ * <h2>Updating</h2>
+ * <p>
+ * Updating is done by calling any of the {@code update()} methods. You can
+ * update without signature validation, or with, by using the {@link PublicKey}
+ * overloads.
+ * 
+ * <p>
+ * You can update before launching so the subsequent launch always has the
+ * newest version, or you can update afterwards and only get the new version on
+ * next restart. In the latter case you cannot update existing files, since the
+ * JVM locks them upon launch; you can call any of the {@code updateTemp()}
+ * overloads and complete the launch on next restart via
+ * {@link Update#finalizeUpdate(Path)}.
+ * 
+ * <p>
+ * When update is called without explicitly passing an {@link UpdateHandler},
+ * the framework will try to locate one between the registered service providers
+ * and will use the one with the highest {@code version()} number. If
+ * {@link Configuration#getUpdateHandler()} returns a class name, it will ignore
+ * the versioning and use that one, <em>It is completely optional to list the
+ * update handler in the config</em>.
+ * 
+ * <p>
+ * For more info how to register providers please refer to the <a
+ * href=https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers>Github
+ * Wiki</a>.
+ * 
+ * <p>
+ * Regular updating (not {@code updateTemp()}:
+ * 
+ * <pre>
+ * // loads a registered provider or DefaultUpdateHandler if non are found.
+ * config.update(); // returns a boolean if succeeded
+ * 
+ * // updates with given update handler
+ * config.update(new MyUpdateHandler());
+ * 
+ * // update with registered handler and fish out the instance *before* the
+ * // update process starts
+ * config.update(handler -> processHandler(handler));
+ * // or just
+ * config.update(this::processHandler);
+ * 
+ * // update and validate against the public key
+ * config.update(myPubKey);
+ * </pre>
+ * 
+ * <p>
+ * Or you can update to a temporary location and finalize on next restart.
+ * Here's a sample lifecycle:
+ * 
+ * <pre>
+ * public static void main(String[] args) throws IOException {
+ * 	// the temporary location
+ * 	Path temp = Paths.get("update");
+ * 
+ * 	// first check if last run made a temp update
+ * 	if (Update.containsUpdate(temp)) {
+ * 		Update.finalizeUpdate(temp);
+ * 	}
+ * 
+ * 	// some random method
+ * 	Configuration config = getConfig();
+ * 	config.launch();
+ * 
+ * 	// and *after* launcher do the update
+ * 	if (config.requiresUpdate()) {
+ * 		config.updateTemp(temp);
+ * 	}
+ * }
+ * </pre>
+ * 
+ * <h3>Modulepath conflicts</h3>
+ * <p>
+ * Every jar file gets checked for the module name and all packages if they are
+ * already present in the boot modulepath so they won't conflict. Since 2 module
+ * names or split packages on the boot modulepath prevents JVM startup, there's
+ * no way to fix such a mistake remotely once you accidently downloaded a file
+ * visible to modulepath. the download will be rejected if conflicting.
+ * 
+ * <p>
+ * If great care was taken that the given file will not be visible to the boot
+ * modulepath (i.e. only to the dynamic path), it is legal and you may override
+ * the check by marking {@code ignoreBootConflict="true"} in the config file or
+ * via the corresponding builder method. This is also useful for non zip files
+ * that ended up to have -- for any reason -- the ".jar" extension.
+ * 
+ * <h3>Signature</h3>
+ * <p>
+ * Optionally, to prevent Man-in-the-middle (MITM) attacks, you can sign the
+ * files via the {@code signer()} method in the Builder API, or
+ * {@link Configuration#sync(PrivateKey)}. If you used the {@link PublicKey}
+ * overload of {@code update()} or {@code updateTemp()} it will verify all files
+ * and reject the download if they fail.
+ * 
+ * <h1>Launching</h1>
+ * <p>
+ * Launching loads files onto the dynamic classpath or modulepath (or does not
+ * load it if not marked with either), depending on their configuration and
+ * launches it by using either a passed {@link Launcher} or locate one by
+ * looking at registered providers.
+ * 
+ * <p>
+ * When launch is called without explicitly passing a {@link Launcher}, the
+ * framework will try to locate one between the registered service providers and
+ * will use the one with the highest {@code version()} number. If
+ * {@link Configuration#getLauncher()} returns a class name, it will ignore the
+ * versioning and use that one, <em>It is completely optional to list the
+ * launcher in the config</em>.
+ * 
+ * <p>
+ * If a launcher instance was used and not loaded via the service providing
+ * mechanism, it only has reflective access to the Business Application by
+ * reflecting against {@link LaunchContext#getClassLoader()}.
+ * 
+ * 
+ * <pre>
+ * // launch with registered launcher or DefaultLauncher if non were found
+ * config.launch();
+ * 
+ * // launch with passed launcher, *only reflective access*
+ * config.launch(new MyLauncher());
+ * </pre>
+ * 
+ * <p>
+ * A call to launch will launch the application in a new thread (to give it
+ * seperate context), but it will still not return until
+ * {@link Launcher#run(LaunchContext)} returned (not counting new threads in the
+ * business app).
  * 
  * @author Mordechai Meisels
  *
@@ -99,7 +450,8 @@ public class Configuration {
 	 * 2 Weeks Ago"), or for clients willing to act according to this value.
 	 * 
 	 * 
-	 * @return The timestamp this configuration was last updated.
+	 * @return The timestamp this configuration was last updated, or when currently
+	 *         loaded, if missing from XML.
 	 */
 	public Instant getTimestamp() {
 		return timestamp;
@@ -116,7 +468,7 @@ public class Configuration {
 	 * This is read from the {@code uri} attribute from the {@code <base>} element.
 	 * If the attribute is missing this will return {@code null}.
 	 * 
-	 * @return The base URI.
+	 * @return The base URI, or {@code null} if missing.
 	 */
 	public URI getBaseUri() {
 		return baseUri;
@@ -131,7 +483,7 @@ public class Configuration {
 	 * This is read from the {@code path} attribute from the {@code <base>} element.
 	 * If the attribute is missing this will return {@code null}.
 	 * 
-	 * @return The base path.
+	 * @return The base path, or {@code null} if missing.
 	 */
 	public Path getBasePath() {
 		return basePath;
@@ -156,7 +508,7 @@ public class Configuration {
 	 * {@code null}.
 	 * 
 	 * @return The {@link UpdateHandler} class name that should be used instead of
-	 *         of the default highest version.
+	 *         of the default highest version, or {@code null} if missing.
 	 */
 	public String getUpdateHandler() {
 		return updateHandler;
@@ -179,7 +531,7 @@ public class Configuration {
 	 * element. If the attribute is missing this will return {@code null}.
 	 * 
 	 * @return The {@link Launcher} class name that should be used instead of of the
-	 *         default highest version.
+	 *         default highest version, or {@code null} if missing.
 	 */
 	public String getLauncher() {
 		return launcher;
@@ -192,7 +544,8 @@ public class Configuration {
 	 * <p>
 	 * These are read from the {@code <files>} element.
 	 * 
-	 * @return The {@link FileMetadata} instances listed in the configuration file.
+	 * @return The {@link FileMetadata} instances listed in the configuration file,
+	 *         never {@code null}.
 	 */
 	public List<FileMetadata> getFiles() {
 		return unmodifiableFiles;
@@ -205,7 +558,8 @@ public class Configuration {
 	 * <p>
 	 * This is read from the {@code <properties>} element.
 	 * 
-	 * @return The {@link Property} instances listed in the configuration file.
+	 * @return The {@link Property} instances listed in the configuration file,
+	 *         never {@code null}.
 	 */
 	public List<Property> getUserProperties() {
 		return propertyManager.getUserProperties();
@@ -219,7 +573,7 @@ public class Configuration {
 	 * 
 	 * @param key
 	 *            The key of the property.
-	 * @return The {@link Property} with the given key.
+	 * @return The {@link Property} with the given key, or {@code null} if missing.
 	 */
 	public Property getUserProperty(String key) {
 		return propertyManager.getUserProperty(key);
@@ -232,7 +586,7 @@ public class Configuration {
 	 * 
 	 * @param key
 	 *            The key of the property.
-	 * @return A list of properties with the given key.
+	 * @return A list of properties with the given key, never {@code null}
 	 */
 	public List<Property> getUserProperties(String key) {
 		return propertyManager.getUserProperties(key);
@@ -252,40 +606,51 @@ public class Configuration {
 	}
 
 	/**
-	 * Returns an unmodifiable map of keys and values after resolving the
-	 * placeholders. This will not include properties marked for foreign operating
-	 * systems.
+	 * Returns an unmodifiable map of keys and values with their <i>real</i> values
+	 * after resolving the placeholders. This will not include properties marked for
+	 * foreign operating systems. This will also include system properties that were
+	 * referenced anywhere in the XML or after a call to
+	 * {@link Configuration#resolvePlaceholders(String)} referred to a system
+	 * property.
+	 * 
+	 * <p>
+	 * 
+	 * @apiNote Although everything in this class is immutable, this is the only
+	 *          thing that can change after construction by calling
+	 *          {@link Configuration#resolvePlaceholders(String)} and the passed
+	 *          string has a reference to a system property.
 	 * 
 	 * @return A map of the keys and real values of the properties, after resolving
-	 *         the placeholders.
+	 *         the placeholders, never {@code null}.
 	 */
 	public Map<String, String> getResolvedProperties() {
 		return propertyManager.getResolvedProperties();
 	}
 
 	/**
-	 * Returns the real value of the property with the given key, after resolving
-	 * the placeholders.
+	 * Returns the <i>real</i> value of the property with the given key, after
+	 * resolving the placeholders.
 	 * 
 	 * @param key
 	 *            The key of the property.
-	 * @return The real value of the property after resolving the placeholders.
+	 * @return The real value of the property after resolving the placeholders, or
+	 *         {@code null} if missing.
 	 */
 	public String getResolvedProperty(String key) {
 		return propertyManager.getResolvedProperty(key);
 	}
 
 	/**
-	 * Returns a string where all placeholders are replaced with the real values.
+	 * Returns a string where all placeholders are replaced with the real values. If
+	 * the given string is {@code null}, the same value will be returned.
 	 * 
 	 * <p>
-	 * If it includes a reference to a foreign property that could not be resolved
-	 * (as if that property refers to a system dependent system property), the
-	 * placeholder will not be replaced.
+	 * If it includes a reference to a placeholder that could not be resolved, it
+	 * will fail.
 	 * 
 	 * @param str
 	 *            The source string to try to resolve.
-	 * @return The resolved string.
+	 * @return The resolved string, or {@code null} if {@code null} was passed.
 	 * @throws IllegalArgumentException
 	 *             if the source string contains a placeholder that could not be
 	 *             resolved.
@@ -294,7 +659,7 @@ public class Configuration {
 		return propertyManager.resolvePlaceholders(str);
 	}
 
-	protected String resolvePlaceholders(String str, boolean isPath) {
+	private String resolvePlaceholders(String str, boolean isPath) {
 		return propertyManager.resolvePlaceholders(str, isPath);
 	}
 
@@ -302,26 +667,141 @@ public class Configuration {
 	 * ignoreForeignProperty will not throw an exception if the key is found in an
 	 * unresolved foreign property.
 	 */
-	protected String resolvePlaceholders(String str, boolean isPath, boolean ignoreForeignProperty) {
+	private String resolvePlaceholders(String str, boolean isPath, boolean ignoreForeignProperty) {
 		return propertyManager.resolvePlaceholders(str, isPath, ignoreForeignProperty);
 	}
 
+	/**
+	 * Returns a string with real values replaced with placeholders. This method
+	 * will never break up words, it acts exactly as:
+	 * 
+	 * <pre>
+	 * implyPlaceholders(str, PlaceholderMatchType.WHOLE_WORD);
+	 * </pre>
+	 * 
+	 * <p>
+	 * If the given string is {@code null}, the same value will be returned.
+	 * 
+	 * @param str
+	 *            The string to attempt to replace with placeholders.
+	 * @return The replaced string, or {@code null} if {@code null} was passed.
+	 */
 	public String implyPlaceholders(String str) {
 		return propertyManager.implyPlaceholders(str);
 	}
 
+	/**
+	 * Returns a string with real values replaced with placeholders. This method
+	 * will never break up words, it acts exactly as:
+	 * 
+	 * <pre>
+	 * implyPlaceholders(str, isPath, PlaceholderMatchType.WHOLE_WORD);
+	 * </pre>
+	 * 
+	 * <p>
+	 * This overload allows you to specify whether the given string is a
+	 * hierarchical string in a path manner. If {@code true}, then {@code "\\"} and
+	 * {@code "/"} are treated identical. This is intended to match more strings in
+	 * a platform independent way.
+	 * 
+	 * <pre>
+	 * String old = "C:/Users/User/Desktop";
+	 * String newString = config.implyPlaceholders(old, true);
+	 * 
+	 * // -> newString is "${user.home}/Desktop" even though the real system
+	 * // property value is "C:\\Users\\User" on Windows
+	 * </pre>
+	 * 
+	 * <p>
+	 * If the given string is {@code null}, the same value will be returned.
+	 * 
+	 * @param str
+	 *            The string to attempt to replace with placeholders.
+	 * @param isPath
+	 *            Whether the given string is a path like string.
+	 * @return The replaced string, or {@code null} if {@code null} was passed.
+	 */
 	public String implyPlaceholders(String str, boolean isPath) {
 		return propertyManager.implyPlaceholders(str, isPath);
 	}
 
+	/**
+	 * Returns a string with real values replaced with placeholders.
+	 * 
+	 * <p>
+	 * You can specify how matches should be found by passing the
+	 * {@link PlaceholderMatchType}.
+	 * <ul>
+	 * <li>{@code EVERY_OCCURENCE} &mdash; Will break words with placeholders if it
+	 * finds a match.</li>
+	 * <li>{@code WHOLE_WORD} &mdash; Will only relpace with placeholders if the it
+	 * doesnt break a word (using rexeg {@code \b} word boundary).</li>
+	 * <li>{@code FULL_MATCH} &mdash; Will only replace if the complete string
+	 * matches with one placeholder.</li>
+	 * </ul>
+	 * 
+	 * <p>
+	 * If the given string is {@code null}, the same value will be returned.
+	 * 
+	 * @param str
+	 *            The string to attempt to replace with placeholders.
+	 * @param isPath
+	 *            Whether the given string is a path like string.
+	 * @return The replaced string, or {@code null} if {@code null} was passed.
+	 */
 	public String implyPlaceholders(String str, PlaceholderMatchType matchType) {
 		return propertyManager.implyPlaceholders(str, matchType);
 	}
 
+	/**
+	 * Returns a string with real values replaced with placeholders.
+	 * <p>
+	 * This overload allows you to specify whether the given string is a
+	 * hierarchical string in a path manner. If {@code true}, then {@code "\\"} and
+	 * {@code "/"} are treated identical. This is intended to match more strings in
+	 * a platform independent way.
+	 * 
+	 * <pre>
+	 * String old = "C:/Users/User/Desktop";
+	 * String newString = config.implyPlaceholders(old, true);
+	 * 
+	 * // -> newString is "${user.home}/Desktop" even though the real system
+	 * // property value is "C:\\Users\\User" on Windows
+	 * </pre>
+	 * 
+	 * <p>
+	 * You can specify how matches should be found by passing the
+	 * {@link PlaceholderMatchType}.
+	 * <ul>
+	 * <li>{@code EVERY_OCCURENCE} &mdash; Will break words with placeholders if it
+	 * finds a match.</li>
+	 * <li>{@code WHOLE_WORD} &mdash; Will only relpace with placeholders if the it
+	 * doesnt break a word (using rexeg {@code \b} word boundary).</li>
+	 * <li>{@code FULL_MATCH} &mdash; Will only replace if the complete string
+	 * matches with one placeholder.</li>
+	 * </ul>
+	 * 
+	 * <p>
+	 * If the given string is {@code null}, the same value will be returned.
+	 * 
+	 * @param str
+	 *            The string to attempt to replace with placeholders.
+	 * @param isPath
+	 *            Whether the given string is a path like string.
+	 * @return The replaced string, or {@code null} if {@code null} was passed.
+	 */
 	public String implyPlaceholders(String str, PlaceholderMatchType matchType, boolean isPath) {
 		return propertyManager.implyPlaceholders(str, matchType, isPath);
 	}
 
+	/**
+	 * Checks the metadata of every file and returns {@code true} if at-least one file requires an
+	 * update, and {@code false} if no file requires an update.
+	 * 
+	 * @return If at-least one file requires an update.
+	 * @throws IOException
+	 *             If any {@code IOException} arises will reading the files.
+	 */
 	public boolean requiresUpdate() throws IOException {
 		for (FileMetadata file : getFiles()) {
 			if (file.requiresUpdate())
@@ -496,6 +976,20 @@ public class Configuration {
 							handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
 						}
 
+						long actualSize = Files.size(output);
+						if (actualSize != file.getSize()) {
+							Warning.sizeMismatch(file.getPath()
+											.getFileName()
+											.toString(), file.getSize(), actualSize);
+						}
+
+						long actualChecksum = FileUtils.getChecksum(output);
+						if (actualChecksum != file.getChecksum()) {
+							Warning.checksumMismatch(file.getPath()
+											.getFileName()
+											.toString(), file.getChecksum(), actualChecksum);
+						}
+
 						if (sig != null) {
 							handler.verifyingFileSignature(file);
 
@@ -597,7 +1091,7 @@ public class Configuration {
 
 		ModuleDescriptor newMod = null;
 		Path newPath = download.getParent()
-						.resolve(download.getFileName()
+						.resolve("a" + download.getFileName()
 										.toString() + ".jar");
 
 		try {
@@ -763,9 +1257,8 @@ public class Configuration {
 
 		LaunchContext ctx = new LaunchContext(layer, contextClassLoader, this, args);
 
-		boolean usingSpi = false;
-		if (launcher == null) {
-			usingSpi = true;
+		boolean usingSpi = launcher == null;
+		if (usingSpi) {
 			launcher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
 
 			if (launcherSetup != null) {
@@ -774,13 +1267,12 @@ public class Configuration {
 		}
 
 		Launcher finalLauncher = launcher;
-		boolean finalUsingSpi = usingSpi;
 
 		Thread t = new Thread(() -> {
 			try {
 				finalLauncher.run(ctx);
 			} catch (NoClassDefFoundError e) {
-				if (finalUsingSpi) {
+				if (usingSpi) {
 					if (finalLauncher.getClass()
 									.getClassLoader() == ClassLoader.getSystemClassLoader()) {
 						Warning.access(finalLauncher);
@@ -959,15 +1451,9 @@ public class Configuration {
 			}
 
 			FileMapper fileMapper = newMapper.files.get(i);
-			
-			long size = Files.size(path);
+
 			long checksum = FileUtils.getChecksum(path);
-			
-			if(fm.getSize() == size && fm.getChecksum() == checksum) {
-				continue;
-			}
-			
-			fileMapper.size = size;
+			fileMapper.size = Files.size(path);
 			fileMapper.checksum = Long.toString(checksum, 16);
 
 			if (signer == null) {
@@ -977,7 +1463,10 @@ public class Configuration {
 								.encodeToString(FileUtils.sign(path, signer));
 			}
 
-			System.out.println("[INFO] Synced '" + path.getFileName() +"'.");
+			if (fm.getSize() != fileMapper.size || fm.getChecksum() != checksum) {
+				System.out.println("[INFO] Synced '" + path.getFileName() + "'.");
+			}
+
 		}
 
 		return parseImpl(newMapper);
