@@ -278,8 +278,8 @@ public class FileMetadata {
 				return false;
 			}
 
-			// If not a jar, completely ignore modulepath
-			return FileUtils.isJarFile(getSource());
+			// If not a zip file, completely ignore modulepath
+			return FileUtils.isZipFile(getSource());
 		}
 
 		public Reference comment(String c) {

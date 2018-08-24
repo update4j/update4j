@@ -99,9 +99,9 @@ import org.update4j.util.Warning;
  * <li><b>Dynamic Classpath/Modulepath</b> &mdash; The dynamically loaded
  * classpath/modulepath where the business application is loaded.</li>
  * <li><b>URI</b> &mdash; The remote (or in case of {@code file:///} -- local)
- * location <i>from where</i> the file is downloaded.</li>
- * <li><b>Path</b> &mdash; The local location <i>to where</i> the file should be
- * downloaded on the client machine.</li>
+ * location <em>from where</em> the file is downloaded.</li>
+ * <li><b>Path</b> &mdash; The local location <em>to where</em> the file should
+ * be downloaded on the client machine.</li>
  * <li><b>Service</b> &mdash; Any of the service interfaces that can be provided
  * by developers and easily updatable by releasing newer providers with a higher
  * version number.</li>
@@ -121,7 +121,7 @@ import org.update4j.util.Warning;
  * 
  * <h3>1. Using the Builder API</h3>
  * <p>
- * {@link Configuration#builer()} is the entry point to the config builder API.
+ * {@link Configuration#builder()} is the entry point to the config builder API.
  * 
  * <p>
  * Here's a sample config created with the config:
@@ -310,7 +310,7 @@ import org.update4j.util.Warning;
  * the framework will try to locate one between the registered service providers
  * and will use the one with the highest {@code version()} number. If
  * {@link Configuration#getUpdateHandler()} returns a class name, it will ignore
- * the versioning and use that one, <em>It is completely optional to list the
+ * the versioning and use that one, <em>it is completely optional to list the
  * update handler in the config</em>.
  * 
  * <p>
@@ -319,7 +319,7 @@ import org.update4j.util.Warning;
  * Wiki</a>.
  * 
  * <p>
- * Regular updating (not {@code updateTemp()}:
+ * Regular updating (not {@code updateTemp()}):
  * 
  * <pre>
  * // loads a registered provider or DefaultUpdateHandler if non are found.
@@ -356,7 +356,7 @@ import org.update4j.util.Warning;
  * 	Configuration config = getConfig();
  * 	config.launch();
  * 
- * 	// and *after* launcher do the update
+ * 	// and *after* launch do the update
  * 	if (config.requiresUpdate()) {
  * 		config.updateTemp(temp);
  * 	}
@@ -398,7 +398,7 @@ import org.update4j.util.Warning;
  * framework will try to locate one between the registered service providers and
  * will use the one with the highest {@code version()} number. If
  * {@link Configuration#getLauncher()} returns a class name, it will ignore the
- * versioning and use that one, <em>It is completely optional to list the
+ * versioning and use that one, <em>it is completely optional to list the
  * launcher in the config</em>.
  * 
  * <p>
@@ -443,11 +443,15 @@ public class Configuration {
 	}
 
 	/**
-	 * Returns the timestamp this configuration was last updated, using the
-	 * {@link Configuration.Builder} API. This is read from the {@code timestamp}
-	 * attribute in the root element. It does not have any effect on the behavior of
-	 * anything else; it is rather just for reference purposes (i.e. "Last Updated:
-	 * 2 Weeks Ago"), or for clients willing to act according to this value.
+	 * Returns the timestamp this configuration was last updated using the
+	 * {@link Configuration.Builder} API or {@code sync()}. This is read from the
+	 * {@code timestamp} attribute in the root element. If the attribute is missing
+	 * it will return the time this instance was created.
+	 * 
+	 * <p>
+	 * It does not have any effect on the behavior of anything else; it is rather
+	 * just for reference purposes (i.e. "Last Updated: 2 Weeks Ago"), or for
+	 * clients willing to act according to this value.
 	 * 
 	 * 
 	 * @return The timestamp this configuration was last updated, or when currently
@@ -458,7 +462,7 @@ public class Configuration {
 	}
 
 	/**
-	 * Returns the base URI against whom all <i>relative</i> URIs in individual
+	 * Returns the base URI against whom all <em>relative</em> URIs in individual
 	 * files are resolved. The URI points to the remote (or if it has a
 	 * {@code file:///} scheme, local) location from where the file should be
 	 * downloaded.
@@ -475,7 +479,7 @@ public class Configuration {
 	}
 
 	/**
-	 * Returns the base path against whom all <i>relative</i> paths in individual
+	 * Returns the base path against whom all <em>relative</em> paths in individual
 	 * files are resolved. The path points to the location the files should be saved
 	 * to on the client's local machine.
 	 * 
@@ -606,10 +610,10 @@ public class Configuration {
 	}
 
 	/**
-	 * Returns an unmodifiable map of keys and values with their <i>real</i> values
-	 * after resolving the placeholders. This will not include properties marked for
-	 * foreign operating systems. This will also include system properties that were
-	 * referenced anywhere in the XML or after a call to
+	 * Returns an unmodifiable map of keys and values with their <em>real</em>
+	 * values after resolving the placeholders. This will not include properties
+	 * marked for foreign operating systems. This will also include system
+	 * properties that were referenced anywhere in the XML or after a call to
 	 * {@link Configuration#resolvePlaceholders(String)} referred to a system
 	 * property.
 	 * 
@@ -628,7 +632,7 @@ public class Configuration {
 	}
 
 	/**
-	 * Returns the <i>real</i> value of the property with the given key, after
+	 * Returns the <em>real</em> value of the property with the given key, after
 	 * resolving the placeholders.
 	 * 
 	 * @param key
@@ -734,8 +738,8 @@ public class Configuration {
 	 * <ul>
 	 * <li>{@code EVERY_OCCURENCE} &mdash; Will break words with placeholders if it
 	 * finds a match.</li>
-	 * <li>{@code WHOLE_WORD} &mdash; Will only relpace with placeholders if the it
-	 * doesnt break a word (using rexeg {@code \b} word boundary).</li>
+	 * <li>{@code WHOLE_WORD} &mdash; Will only replace with placeholders if the it
+	 * doesn't break a word (using rexeg {@code \b} word boundary).</li>
 	 * <li>{@code FULL_MATCH} &mdash; Will only replace if the complete string
 	 * matches with one placeholder.</li>
 	 * </ul>
@@ -775,8 +779,8 @@ public class Configuration {
 	 * <ul>
 	 * <li>{@code EVERY_OCCURENCE} &mdash; Will break words with placeholders if it
 	 * finds a match.</li>
-	 * <li>{@code WHOLE_WORD} &mdash; Will only relpace with placeholders if the it
-	 * doesnt break a word (using rexeg {@code \b} word boundary).</li>
+	 * <li>{@code WHOLE_WORD} &mdash; Will only replace with placeholders if the it
+	 * doesn't break a word (using rexeg {@code \b} word boundary).</li>
 	 * <li>{@code FULL_MATCH} &mdash; Will only replace if the complete string
 	 * matches with one placeholder.</li>
 	 * </ul>
@@ -795,8 +799,8 @@ public class Configuration {
 	}
 
 	/**
-	 * Checks the metadata of every file and returns {@code true} if at-least one file requires an
-	 * update, and {@code false} if no file requires an update.
+	 * Checks the metadata of every file and returns {@code true} if at-least one
+	 * file requires an update, and {@code false} if no file requires an update.
 	 * 
 	 * @return If at-least one file requires an update.
 	 * @throws IOException
@@ -1003,7 +1007,7 @@ public class Configuration {
 						if (file.getPath()
 										.toString()
 										.endsWith(".jar") && !file.isIgnoreBootConflict()) {
-							checkConflicts(output);
+							checkConflicts(file, output);
 						}
 
 						if (tempDir == null) {
@@ -1081,7 +1085,35 @@ public class Configuration {
 
 	}
 
-	private void checkConflicts(Path download) throws IOException {
+	private String deriveModule(String filename) {
+
+		// strip ".jar" at the end
+		filename = filename.replaceAll("\\.jar$", "");
+
+		// drop everything after the version
+		filename = filename.replaceAll("-\\d.*", "");
+
+		// all non alphanumeric get's converted to "."
+		filename = filename.replaceAll("[^A-Za-z0-9]", ".");
+
+		// strip "." at beginning and end
+		filename = filename.replaceAll("^\\.*|\\.*$", "");
+
+		// all double "." stripped to single
+		filename = filename.replaceAll("\\.{2,}", ".");
+
+		return filename;
+	}
+
+	private void checkConflicts(FileMetadata file, Path download) throws IOException {
+		if (!FileUtils.isZipFile(download)) {
+			Warning.nonZip(file.getPath()
+							.getFileName()
+							.toString());
+			throw new IllegalStateException("File '" + file.getPath()
+							.getFileName()
+							.toString() + "' is not a valid zip file.");
+		}
 
 		Set<Module> modules = ModuleLayer.boot()
 						.modules();
@@ -1090,9 +1122,10 @@ public class Configuration {
 						.collect(Collectors.toSet());
 
 		ModuleDescriptor newMod = null;
+		String newModuleName = "a" + download.getFileName()
+						.toString();
 		Path newPath = download.getParent()
-						.resolve("a" + download.getFileName()
-										.toString() + ".jar");
+						.resolve(newModuleName + ".jar");
 
 		try {
 			// ModuleFinder will not cooperate otherwise
@@ -1110,10 +1143,20 @@ public class Configuration {
 		if (newMod == null)
 			return;
 
-		if (moduleNames.contains(newMod.name())) {
-			Warning.moduleConflict(newMod.name());
+		// non-modular and no Automatic-Module-Name
+		// use real filename as module name
+		if (newModuleName.equals(newMod.name())) {
+			newModuleName = deriveModule(file.getPath()
+							.getFileName()
+							.toString());
+		} else {
+			newModuleName = newMod.name();
+		}
+
+		if (moduleNames.contains(newModuleName)) {
+			Warning.moduleConflict(newModuleName);
 			throw new IllegalStateException(
-							"Module '" + newMod.name() + "' conflicts with a module in the boot modulepath");
+							"Module '" + newModuleName + "' conflicts with a module in the boot modulepath");
 		}
 
 		Set<String> packages = modules.stream()
@@ -1468,6 +1511,9 @@ public class Configuration {
 			}
 
 		}
+
+		newMapper.timestamp = Instant.now()
+						.toString();
 
 		return parseImpl(newMapper);
 	}

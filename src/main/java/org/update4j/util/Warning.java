@@ -125,6 +125,20 @@ public class Warning {
 		}
 	}
 
+
+	public static void nonZip(String filename) {
+		if (shouldWarn("bootConflict")) {
+			System.err.println("WARNING: File '" + filename + "' has the \".jar\" file extension but is not a\n"
+							+ "\tvalid zip file and if present in the boot modulepath it will prevent JVM startup.\n"
+							+ "\tIn order to prevent accidental breakage of your application among\n"
+							+ "\tall your clients, the download was rejected.\n"
+							+ "\tIf this is ONLY loaded on the business application, and great caution\n"
+							+ "\twas taken it should not be included in the boot modulepath, you may\n"
+							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
+							+ "\tthe configuration.");
+		}
+	}
+	
 	public static void packageConflict(String packageName) {
 		if (shouldWarn("bootConflict")) {
 			System.err.println("WARNING: package '" + packageName + "' already exists in the boot modulepath.\n"
