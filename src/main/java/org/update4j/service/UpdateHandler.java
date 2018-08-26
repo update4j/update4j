@@ -15,6 +15,8 @@
  */
 package org.update4j.service;
 
+import java.nio.file.Path;
+
 import org.update4j.FileMetadata;
 import org.update4j.UpdateContext;
 
@@ -41,9 +43,9 @@ public interface UpdateHandler extends Service {
 	
 	void updateDownloadProgress(float frac) throws Throwable;
 	
-	void verifyingFileSignature(FileMetadata file) throws Throwable;
+	void validatingFile(FileMetadata file, Path tempFile) throws Throwable;
 	
-	void doneDownloadFile(FileMetadata file) throws Throwable;
+	void doneDownloadFile(FileMetadata file, Path tempFile) throws Throwable;
 	
 	void doneDownloads() throws Throwable;
 

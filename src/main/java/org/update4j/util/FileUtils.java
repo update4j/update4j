@@ -29,6 +29,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.Adler32;
@@ -52,6 +53,10 @@ public class FileUtils {
 
 			return checksum.getValue();
 		}
+	}
+
+	public static String getChecksumString(Path path) throws IOException {
+		return Long.toHexString(getChecksum(path));
 	}
 
 	public static boolean isJarFile(Path path) throws IOException {
@@ -101,6 +106,11 @@ public class FileUtils {
 		}
 	}
 
+	public static String signAndEncode(Path path, PrivateKey key) throws IOException {
+		return Base64.getEncoder()
+						.encodeToString(sign(path, key));
+	}
+
 	public static Path fromUri(URI uri) {
 		String path = uri.getPath();
 
@@ -120,7 +130,8 @@ public class FileUtils {
 		}
 
 		try {
-			String uri = URLEncoder.encode(path.toString().replace("\\", "/"), "UTF-8");
+			String uri = URLEncoder.encode(path.toString()
+							.replace("\\", "/"), "UTF-8");
 
 			uri = uri.replace("%2F", "/") // We still need directory structure
 							.replace("+", "%20"); // "+" only means space in queries, not in paths
@@ -164,6 +175,14 @@ public class FileUtils {
 	public static void windowsHide(Path file) {
 		try {
 			Files.setAttribute(file, "dos:hidden", true);
+		} catch (Exception e) {
+		}
+	}
+	
+
+	public static void windowsUnhide(Path file) {
+		try {
+			Files.setAttribute(file, "dos:hidden", false);
 		} catch (Exception e) {
 		}
 	}

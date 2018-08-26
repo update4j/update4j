@@ -49,11 +49,24 @@ public class Update {
 
 		try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(updateData))) {
 			Map<File, File> map = (Map<File, File>) in.readObject();
-			map.forEach((k, v) -> {
-				if (Files.isRegularFile(k.toPath()))
-					files.put(k.toPath(), v.toPath());
-			});
 
+			boolean missing = false;
+			for (Map.Entry<File, File> e : map.entrySet()) {
+				if (Files.isRegularFile(e.getKey().toPath())) {
+					files.put(e.getKey().toPath(), e.getValue().toPath());
+				} else {
+					missing = true;
+				}
+			}
+
+			if (missing) {
+				Files.deleteIfExists(updateData);
+				for (Map.Entry<Path, Path> e : files.entrySet()) {
+					Files.deleteIfExists(e.getKey());
+				}
+				throw new IllegalStateException(
+								"Files in the update had been tampered and finalize could not be completed.");
+			}
 		} catch (ClassNotFoundException e) {
 			throw new IOException(e);
 		}
@@ -84,4 +97,5 @@ public class Update {
 
 		return true;
 	}
+
 }

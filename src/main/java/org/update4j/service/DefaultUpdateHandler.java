@@ -67,31 +67,33 @@ public class DefaultUpdateHandler implements UpdateHandler {
 
 	@Override
 	public void startDownloadFile(FileMetadata file) throws Throwable {
-		System.out.print("Downloading: " + compactName(context.getConfiguration().getBasePath(), file.getPath())
-						+ " <" + file.getUri() + "> ");
+		//		System.out.print("Downloading: " + compactName(context.getConfiguration().getBasePath(), file.getPath())
+		//		+ " <" + file.getUri() + "> ");
+		System.out.println("Downloading: " + compactName(context.getConfiguration().getBasePath(), file.getPath())
+						+ " <" + file.getUri() + ">");
 	}
 
-	private String percent;
+	//	private String percent;
 
 	@Override
 	public void updateDownloadFileProgress(FileMetadata file, float frac) throws InterruptedException {
-		if (frac == 0) {
-			System.out.print("(");
-		}
-		
-		String percent = ((int) (frac * 100)) + "%)   ";
-		percent = percent.substring(0, 5);
-
-		if (!percent.equals(this.percent)) {
-			this.percent = percent;
-			if (frac != 0)
-				System.out.print("\b\b\b\b\b");
-			System.out.print(percent);
-		}
-
-		if (frac == 1) {
-			System.out.println();
-		}
+		//		if (frac == 0) {
+		//			System.out.print("(");
+		//		}
+		//		
+		//		String percent = ((int) (frac * 100)) + "%)   ";
+		//		percent = percent.substring(0, 5);
+		//
+		//		if (!percent.equals(this.percent)) {
+		//			this.percent = percent;
+		//			if (frac != 0)
+		//				System.out.print("\b\b\b\b\b");
+		//			System.out.print(percent);
+		//		}
+		//
+		//		if (frac == 1) {
+		//			System.out.println();
+		//		}
 
 	}
 
@@ -100,11 +102,11 @@ public class DefaultUpdateHandler implements UpdateHandler {
 	}
 
 	@Override
-	public void verifyingFileSignature(FileMetadata file) throws Throwable {
+	public void validatingFile(FileMetadata file, Path tempFile) throws Throwable {
 	}
 
 	@Override
-	public void doneDownloadFile(FileMetadata file) throws Throwable {
+	public void doneDownloadFile(FileMetadata file, Path tempFile) throws Throwable {
 	}
 
 	@Override

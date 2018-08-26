@@ -67,6 +67,12 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 ## Change Log
 
+* *Upcoming Release*
+  * Added `DefaultBootstrap` and `DefaultLauncher`.
+  * Added `Configuration.sync()` methods.
+  * Additional file validation on update and renaming `UpdateManager.verifyingFileSignature()` to `validatingFile()` to include all of them.
+  * To avoid version inconsistencies, all downloads are now atomic; if one download fails all previous are rolled back. Updated `UpdateHandler.doneDownloadFile()` to add awareness of this.
+  * Fixed bug when downloading automatic module with no `Automatic-Module-Name` in `META-INF/MANIFEST.MF`.
 * **1.2.0**
   * Bug fixes.
   * Major redo of Configuration builder API.

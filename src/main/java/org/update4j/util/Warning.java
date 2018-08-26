@@ -21,22 +21,6 @@ public class Warning {
 
 	private static final String PREFIX = "suppress.warning";
 
-	public static void sizeMismatch(String filename, long expected, long found) {
-		if (shouldWarn("metadataMismatch")) {
-			System.err.println("WARNING: '" + filename
-							+ "' downloaded size does not match with the size in configuration\n\tExpected: " + expected
-							+ ", found: " + found);
-		}
-	}
-
-	public static void checksumMismatch(String filename, long expected, long found) {
-		if (shouldWarn("metadataMismatch")) {
-			System.err.println("WARNING: '" + filename
-							+ "' downloaded checksum does not match with the checksum in configuration\n\tExpected: "
-							+ Long.toHexString(expected) + ", found: " + Long.toHexString(found));
-		}
-	}
-
 	public static void lock(String filename) {
 		if (shouldWarn("lock")) {
 			System.err.println("WARNING: '" + filename
@@ -54,7 +38,7 @@ public class Warning {
 							+ "\t\tnumber and make it available to the boot classpath or modulepath.\n"
 							+ "\t- A file that's required in the business application was added to the boot classpath or modulepath:\n"
 							+ "\t\tMuch care must be taken that business application files should NOT be\n"
-							+ "\t\tloaded in the boot, the JVM locks them and prevents them from being updated.");
+							+ "\t\tloaded in the boot, the JVM locks them and prevents them from being updated.\n");
 		}
 	}
 
@@ -76,14 +60,14 @@ public class Warning {
 							+ "\t- A file that's required in the business application was added to the boot "
 							+ "classpath or modulepath:\n"
 							+ "\t\tMuch care must be taken that business application files should NOT be\n"
-							+ "\t\tloaded in the boot, the JVM locks them and prevents them from being updated.");
+							+ "\t\tloaded in the boot, the JVM locks them and prevents them from being updated.\n");
 		}
 	}
 
 	public static void access(Launcher launcher) {
 		if (shouldWarn("access")) {
-			System.err.println("WARNING: '" + launcher.getClass()
-							.getCanonicalName() + "' was loaded with the boot class loader.\n"
+			System.err.println("WARNING: '" + launcher.getClass().getCanonicalName()
+							+ "' was loaded with the boot class loader.\n"
 							+ "\tThis may prevent accessing classes in the business application, and will\n"
 							+ "\tthrow NoClassDefFoundErrors.\n"
 							+ "\tTo prevent this, make sure the launcher is NOT loaded onto the boot\n"
@@ -92,39 +76,26 @@ public class Warning {
 							+ "\tYou may still leave it like this and access the business application by\n"
 							+ "\treflecting against \"context.getClassLoader()\".\n"
 							+ "\tPlease refer to: https://github.com/update4j/update4j/wiki/Documentation"
-							+ "#classpath-and-modulepath");
+							+ "#classpath-and-modulepath\n");
 		}
 	}
 
 	public static void reflectiveAccess(Launcher launcher) {
-		if (shouldWarn("reflectiveAccess")) {
-			System.err.println("WARNING: '" + launcher.getClass()
-							.getCanonicalName() + "' was not loaded using the Service Provider Interface.\n"
-							+ "Launchers like these only have reflective access to the business\n"
-							+ "application. You must reflect using 'context.getClassLoader()'.");
+		if (shouldWarn("access")) {
+			System.err.println("WARNING: '" + launcher.getClass().getCanonicalName()
+							+ "' was not loaded using the Service Provider Interface.\n"
+							+ "\tLaunchers like these only have reflective access to the business\n"
+							+ "\tapplication. You must reflect using 'context.getClassLoader()'.\n");
 		}
 	}
 
 	public static void path() {
 		if (shouldWarn("path")) {
 			System.err.println("WARNING: No files were found that are set with 'classpath' or 'modulepath' to true;\n"
-							+ "although perfectly valid it's rarely what you want.\n"
-							+ "Please refer to: https://github.com/update4j/update4j/wiki/Documentation#classpath-and-modulepath");
+							+ "\talthough perfectly valid it's rarely what you want.\n"
+							+ "\tPlease refer to: https://github.com/update4j/update4j/wiki/Documentation#classpath-and-modulepath\n");
 		}
 	}
-
-	public static void moduleConflict(String moduleName) {
-		if (shouldWarn("bootConflict")) {
-			System.err.println("WARNING: module '" + moduleName + "' already exists in the boot modulepath.\n"
-							+ "\tIn order to prevent accidental breakage of your application among\n"
-							+ "\tall your clients, the download was rejected.\n"
-							+ "\tIf this is ONLY loaded on the business application, and great caution\n"
-							+ "\twas taken it should not be included in the boot modulepath, you may\n"
-							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
-							+ "\tthe configuration.");
-		}
-	}
-
 
 	public static void nonZip(String filename) {
 		if (shouldWarn("bootConflict")) {
@@ -132,26 +103,53 @@ public class Warning {
 							+ "\tvalid zip file and if present in the boot modulepath it will prevent JVM startup.\n"
 							+ "\tIn order to prevent accidental breakage of your application among\n"
 							+ "\tall your clients, the download was rejected.\n"
-							+ "\tIf this is ONLY loaded on the business application, and great caution\n"
-							+ "\twas taken it should not be included in the boot modulepath, you may\n"
+							+ "\tIf this is ONLY loaded on the boot CLASSPATH or the business application,\n"
+							+ "\tand great caution was taken it should not be included in the boot modulepath, you may\n"
 							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
-							+ "\tthe configuration.");
+							+ "\tthe configuration.\n");
 		}
 	}
-	
-	public static void packageConflict(String packageName) {
+
+	public static void illegalAutomaticModule(String moduleName, String filename) {
 		if (shouldWarn("bootConflict")) {
-			System.err.println("WARNING: package '" + packageName + "' already exists in the boot modulepath.\n"
+			System.err.println("WARNING: Automatic module '" + moduleName + "' for file '" + filename
+							+ "' is not a valid Java identifier.\n"
 							+ "\tIn order to prevent accidental breakage of your application among\n"
 							+ "\tall your clients, the download was rejected.\n"
-							+ "\tIf this is ONLY loaded on the business application, and great caution\n"
-							+ "\twas taken it should not be included in the boot modulepath, you may\n"
+							+ "\tIf this is ONLY loaded on the boot CLASSPATH or the business application,\n"
+							+ "\tand great caution was taken it should not be included in the boot modulepath, you may\n"
 							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
-							+ "\tthe configuration.");
+							+ "\tthe configuration.\n");
+		}
+
+	}
+
+	public static void moduleConflict(String moduleName) {
+		if (shouldWarn("bootConflict")) {
+			System.err.println("WARNING: Module '" + moduleName + "' already exists in the boot modulepath.\n"
+							+ "\tIn order to prevent accidental breakage of your application among\n"
+							+ "\tall your clients, the download was rejected.\n"
+							+ "\tIf this is ONLY loaded on the boot CLASSPATH or the business application,\n"
+							+ "\tand great caution was taken it should not be included in the boot modulepath, you may\n"
+							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
+							+ "\tthe configuration.\n");
+		}
+	}
+
+	public static void packageConflict(String packageName) {
+		if (shouldWarn("bootConflict")) {
+			System.err.println("WARNING: Package '" + packageName + "' already exists in the boot modulepath.\n"
+							+ "\tIn order to prevent accidental breakage of your application among\n"
+							+ "\tall your clients, the download was rejected.\n"
+							+ "\tIf this is ONLY loaded on the boot CLASSPATH or the business application,\n"
+							+ "\tand great caution was taken it should not be included in the boot modulepath, you may\n"
+							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
+							+ "\tthe configuration.\n");
 		}
 	}
 
 	private static boolean shouldWarn(String key) {
-		return !"true".equals(System.getProperty(PREFIX, System.getProperty(PREFIX) + "." + key));
+		return !"true".equals(System.getProperty(PREFIX, System.getProperty(PREFIX + "." + key)));
 	}
+
 }

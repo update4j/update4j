@@ -18,7 +18,6 @@ package org.update4j;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -35,11 +34,11 @@ import java.net.URLConnection;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -73,16 +72,16 @@ import org.update4j.util.Warning;
  * the client side.
  * 
  * <p>
- * Although everything is contained in a single class; most methods are intended
+ * Although everything is contained in a single class; some methods are intended
  * to run either on the dev machine -- to draft new releases -- or client
  * machine, not both. The documentation of each method will point that out.
  * 
  * <p>
- * A configuration is linked to an XML file, and method within this class
- * provide methods to read, write, generate and sync configurations. Once a
- * configuration has been created, it is immutable and cannot be modified. There
- * are methods to manipulate the XML elements and create new configurations from
- * them, but the original remains untouched.
+ * A configuration is linked to an XML file, and this class provide methods to
+ * read, write, generate and sync configurations. Once a configuration has been
+ * created, it is immutable and cannot be modified. There are methods to
+ * manipulate the XML elements and create new configurations from them, but the
+ * original remains untouched.
  * 
  * <h2>Terminology</h2>
  * <p>
@@ -106,8 +105,8 @@ import org.update4j.util.Warning;
  * by developers and easily updatable by releasing newer providers with a higher
  * version number.</li>
  * <li><b>Property</b> &mdash; Any of the key-value pairs listed in the config
- * file. Can be used as placeholders in URI's, paths, class names or in values
- * of other properties.</li>
+ * file. Can be used as placeholders in URI's, paths, class names, file comments
+ * or in values of other properties.</li>
  * </ul>
  * 
  * <h1>Developer Side</h1>
@@ -139,9 +138,7 @@ import org.update4j.util.Warning;
  * 				// list all files from the given directory
  * 				.files(FileMetadata.streamDirectory("build/mylibs")
  * 								// mark all jar files for classpath
- * 								.peek(r -> r.classpath(r.getSource()
- * 												.toString()
- * 												.endsWith(".jar"))))
+ * 								.peek(r -> r.classpath(r.getSource().toString().endsWith(".jar"))))
  * 
  * 				.file(FileMetadata.readFrom("otherDirectory/my-logo.png")
  * 
@@ -354,7 +351,8 @@ import org.update4j.util.Warning;
  * 
  * 	// some random method
  * 	Configuration config = getConfig();
- * 	config.launch();
+ * 	// we don't want to hang, so we can update immediately
+ * 	new Thread(() -> config.launch());
  * 
  * 	// and *after* launch do the update
  * 	if (config.requiresUpdate()) {
@@ -363,20 +361,28 @@ import org.update4j.util.Warning;
  * }
  * </pre>
  * 
- * <h3>Modulepath conflicts</h3>
+ * <h3>Consistency</h3>
  * <p>
- * Every jar file gets checked for the module name and all packages if they are
- * already present in the boot modulepath so they won't conflict. Since 2 module
- * names or split packages on the boot modulepath prevents JVM startup, there's
- * no way to fix such a mistake remotely once you accidently downloaded a file
- * visible to modulepath. the download will be rejected if conflicting.
+ * If even a single file failed to download or if any other exception arises,
+ * all downloads before the exception is rolled back to its original state as
+ * before the call for update.
+ * 
+ * <h3>Boot Modulepath Conflicts</h3>
+ * <p>
+ * Every jar file gets checked if it were a valid file in boot modulepath; as if
+ * it's a valid zip file, duplicate module name, split package, valid automatic
+ * module name etc., no matter if the file was actually intended to be present
+ * in the boot modulepath. This was put in place to prevent accidentally making
+ * the file visible to the boot modulepath and completely breaking the
+ * application, as the JVM would resist to startup, thus not allowing this to be
+ * fixed remotely.
  * 
  * <p>
  * If great care was taken that the given file will not be visible to the boot
- * modulepath (i.e. only to the dynamic path), it is legal and you may override
- * the check by marking {@code ignoreBootConflict="true"} in the config file or
- * via the corresponding builder method. This is also useful for non zip files
- * that ended up to have -- for any reason -- the ".jar" extension.
+ * modulepath (i.e. only to the dynamic path or boot <em>classpath</em>), it is
+ * legal and you may override the check by marking
+ * {@code ignoreBootConflict="true"} in the config file or via the corresponding
+ * builder method.
  * 
  * <h3>Signature</h3>
  * <p>
@@ -875,7 +881,8 @@ public class Configuration {
 			}
 		}
 
-		Map<File, File> updateData = null;
+		Map<File, File> updateTempData = null;
+		Map<FileMetadata, Path> transactionMap = null;
 
 		try {
 			List<FileMetadata> requiresUpdate = new ArrayList<>();
@@ -891,9 +898,7 @@ public class Configuration {
 							.filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
 							.collect(Collectors.toList());
 
-			long updateJobSize = osFiles.stream()
-							.mapToLong(FileMetadata::getSize)
-							.sum();
+			long updateJobSize = osFiles.stream().mapToLong(FileMetadata::getSize).sum();
 			double updateJobCompleted = 0;
 
 			for (FileMetadata file : osFiles) {
@@ -913,7 +918,9 @@ public class Configuration {
 			handler.doneCheckUpdates();
 
 			if (tempDir != null) {
-				updateData = new HashMap<>();
+				updateTempData = new HashMap<>();
+			} else {
+				transactionMap = new HashMap<>();
 			}
 
 			Signature sig = null;
@@ -922,9 +929,7 @@ public class Configuration {
 				sig.initVerify(key);
 			}
 
-			long downloadJobSize = requiresUpdate.stream()
-							.mapToLong(FileMetadata::getSize)
-							.sum();
+			long downloadJobSize = requiresUpdate.stream().mapToLong(FileMetadata::getSize).sum();
 			double downloadJobCompleted = 0;
 
 			if (!requiresUpdate.isEmpty()) {
@@ -939,20 +944,15 @@ public class Configuration {
 
 					Path output;
 					if (tempDir == null) {
-						Files.createDirectories(file.getPath()
-										.getParent());
-						output = Files.createTempFile(file.getPath()
-										.getParent(), null, null);
+						Files.createDirectories(file.getPath().getParent());
+						output = Files.createTempFile(file.getPath().getParent(), null, null);
 					} else {
 						Files.createDirectories(tempDir);
 						output = Files.createTempFile(tempDir, null, null);
-						updateData.put(output.toFile(), file.getPath()
-										.toFile());
+						updateTempData.put(output.toFile(), file.getPath().toFile());
 					}
 
-					URLConnection connection = file.getUri()
-									.toURL()
-									.openConnection();
+					URLConnection connection = file.getUri().toURL().openConnection();
 
 					// Some downloads may fail with HTTP/403, this may solve it
 					connection.addRequestProperty("User-Agent", "Mozilla/5.0");
@@ -980,23 +980,28 @@ public class Configuration {
 							handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
 						}
 
+						if (tempDir == null) {
+							transactionMap.put(file, output);
+						}
+
+						handler.validatingFile(file, output);
+
 						long actualSize = Files.size(output);
 						if (actualSize != file.getSize()) {
-							Warning.sizeMismatch(file.getPath()
-											.getFileName()
-											.toString(), file.getSize(), actualSize);
+							throw new IllegalStateException("Size of file '" + file.getPath().getFileName()
+											+ "' does not match size in configuration. Expected: " + file.getSize()
+											+ ", found: " + actualSize);
 						}
 
 						long actualChecksum = FileUtils.getChecksum(output);
 						if (actualChecksum != file.getChecksum()) {
-							Warning.checksumMismatch(file.getPath()
-											.getFileName()
-											.toString(), file.getChecksum(), actualChecksum);
+							throw new IllegalStateException("Checksum of file '" + file.getPath().getFileName()
+											+ "' does not match checksum in configuration. Expected: "
+											+ Long.toHexString(file.getChecksum()) + ", found: "
+											+ Long.toHexString(actualChecksum));
 						}
 
 						if (sig != null) {
-							handler.verifyingFileSignature(file);
-
 							if (file.getSignature() == null)
 								throw new SecurityException("Missing signature.");
 
@@ -1004,33 +1009,36 @@ public class Configuration {
 								throw new SecurityException("Signature verification failed.");
 						}
 
-						if (file.getPath()
-										.toString()
-										.endsWith(".jar") && !file.isIgnoreBootConflict()) {
+						if (file.getPath().toString().endsWith(".jar") && !file.isIgnoreBootConflict()) {
 							checkConflicts(file, output);
 						}
 
-						if (tempDir == null) {
-							Files.move(output, file.getPath(), StandardCopyOption.REPLACE_EXISTING);
-						}
-
 						updated.add(file);
-						handler.doneDownloadFile(file);
+						handler.doneDownloadFile(file, output);
 
-					} finally {
-						// clean up if it failed
-						if (tempDir == null) {
-							Files.deleteIfExists(output);
-						}
 					}
 				}
 
-				if (tempDir != null && updateData.size() > 0) {
+				// if update regular
+				if (tempDir == null && transactionMap.size() > 0) {
+					for (Path p : transactionMap.values()) {
+						if (Files.notExists(p)) {
+							throw new NoSuchFileException(p.toString());
+						}
+					}
+
+					for (Map.Entry<FileMetadata, Path> entry : transactionMap.entrySet()) {
+						Files.move(entry.getValue(), entry.getKey().getPath(), StandardCopyOption.REPLACE_EXISTING);
+					}
+				}
+
+				// otherwise if update temp
+				if (tempDir != null && updateTempData.size() > 0) {
 					Path updateDataFile = tempDir.resolve(Update.UPDATE_DATA);
 
 					try (ObjectOutputStream out = new ObjectOutputStream(
 									Files.newOutputStream(updateDataFile, StandardOpenOption.CREATE))) {
-						out.writeObject(updateData);
+						out.writeObject(updateTempData);
 					}
 
 					FileUtils.windowsHide(updateDataFile);
@@ -1043,27 +1051,34 @@ public class Configuration {
 			success = true;
 
 		} catch (Throwable t) {
-			// clean-up as updateHandler failed
-			if (tempDir != null) {
-				try {
+			// clean-up as update failed
+
+			try {
+				if (tempDir == null) {
+					if (transactionMap != null) {
+						for (Path p : transactionMap.values()) {
+							Files.deleteIfExists(p);
+						}
+					}
+				} else {
 					Files.deleteIfExists(tempDir.resolve(Update.UPDATE_DATA));
-					if (updateData != null) {
-						for (File file : updateData.keySet()) {
+					if (updateTempData != null) {
+						for (File file : updateTempData.keySet()) {
 							Files.deleteIfExists(file.toPath());
 						}
 					}
 
 					if (Files.isDirectory(tempDir)) {
 						try (DirectoryStream<Path> dir = Files.newDirectoryStream(tempDir)) {
-							if (!dir.iterator()
-											.hasNext()) {
+							if (!dir.iterator().hasNext()) {
 								Files.deleteIfExists(tempDir);
 							}
 						}
 					}
-				} catch (IOException e) {
-					e.printStackTrace();
+
 				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 
 			if (t instanceof FileSystemException) {
@@ -1107,35 +1122,24 @@ public class Configuration {
 
 	private void checkConflicts(FileMetadata file, Path download) throws IOException {
 		if (!FileUtils.isZipFile(download)) {
-			Warning.nonZip(file.getPath()
-							.getFileName()
-							.toString());
-			throw new IllegalStateException("File '" + file.getPath()
-							.getFileName()
-							.toString() + "' is not a valid zip file.");
+			Warning.nonZip(file.getPath().getFileName().toString());
+			throw new IllegalStateException(
+							"File '" + file.getPath().getFileName().toString() + "' is not a valid zip file.");
 		}
 
-		Set<Module> modules = ModuleLayer.boot()
-						.modules();
-		Set<String> moduleNames = modules.stream()
-						.map(Module::getName)
-						.collect(Collectors.toSet());
+		Set<Module> modules = ModuleLayer.boot().modules();
+		Set<String> moduleNames = modules.stream().map(Module::getName).collect(Collectors.toSet());
 
 		ModuleDescriptor newMod = null;
-		String newModuleName = "a" + download.getFileName()
-						.toString();
-		Path newPath = download.getParent()
-						.resolve(newModuleName + ".jar");
+		
+		// ModuleFinder will not cooperate otherwise
+		String newFilename = "a" + download.getFileName().toString();
+		Path newPath = download.getParent().resolve(newFilename + ".jar");
 
 		try {
-			// ModuleFinder will not cooperate otherwise
 			Files.move(download, newPath);
-			newMod = ModuleFinder.of(newPath)
-							.findAll()
-							.stream()
-							.map(ModuleReference::descriptor)
-							.findAny()
-							.orElse(null);
+			newMod = ModuleFinder.of(newPath).findAll().stream().map(ModuleReference::descriptor).findAny().orElse(
+							null);
 		} finally {
 			Files.move(newPath, download, StandardCopyOption.REPLACE_EXISTING);
 		}
@@ -1145,10 +1149,14 @@ public class Configuration {
 
 		// non-modular and no Automatic-Module-Name
 		// use real filename as module name
-		if (newModuleName.equals(newMod.name())) {
-			newModuleName = deriveModule(file.getPath()
-							.getFileName()
-							.toString());
+		String newModuleName;
+		if (newFilename.equals(newMod.name())) {
+			newModuleName = deriveModule(file.getPath().getFileName().toString());
+			if (!StringUtils.isModuleName(newModuleName)) {
+				Warning.illegalAutomaticModule(newModuleName, file.getPath().getFileName().toString());
+				throw new IllegalStateException("Automatic module name '" + newModuleName + "' for file '"
+								+ file.getPath().getFileName() + "' is not valid.");
+			}
 		} else {
 			newModuleName = newMod.name();
 		}
@@ -1159,10 +1167,7 @@ public class Configuration {
 							"Module '" + newModuleName + "' conflicts with a module in the boot modulepath");
 		}
 
-		Set<String> packages = modules.stream()
-						.flatMap(m -> m.getPackages()
-										.stream())
-						.collect(Collectors.toSet());
+		Set<String> packages = modules.stream().flatMap(m -> m.getPackages().stream()).collect(Collectors.toSet());
 		for (String p : newMod.packages()) {
 			if (packages.contains(p)) {
 				Warning.packageConflict(p);
@@ -1204,9 +1209,7 @@ public class Configuration {
 						.filter(FileMetadata::isModulepath)
 						.collect(Collectors.toList());
 
-		List<Path> modulepaths = modules.stream()
-						.map(FileMetadata::getPath)
-						.collect(Collectors.toList());
+		List<Path> modulepaths = modules.stream().map(FileMetadata::getPath).collect(Collectors.toList());
 
 		List<URL> classpaths = getFiles().stream()
 						.filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
@@ -1214,8 +1217,7 @@ public class Configuration {
 						.map(FileMetadata::getPath)
 						.map(path -> {
 							try {
-								return path.toUri()
-												.toURL();
+								return path.toUri().toURL();
 							} catch (MalformedURLException e) {
 								throw new RuntimeException(e);
 							}
@@ -1235,11 +1237,10 @@ public class Configuration {
 						.collect(Collectors.toList());
 
 		ModuleLayer parent = ModuleLayer.boot();
-		java.lang.module.Configuration cf = parent.configuration()
-						.resolveAndBind(ModuleFinder.of(), finder, moduleNames);
+		java.lang.module.Configuration cf = parent.configuration().resolveAndBind(ModuleFinder.of(), finder,
+						moduleNames);
 
-		ClassLoader parentClassLoader = Thread.currentThread()
-						.getContextClassLoader();
+		ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
 		ClassLoader classpathLoader = new URLClassLoader("classpath", classpaths.toArray(new URL[classpaths.size()]),
 						parentClassLoader);
 
@@ -1249,23 +1250,14 @@ public class Configuration {
 
 		// manipulate exports, opens and reads
 		for (FileMetadata mod : modules) {
-			if (!mod.getAddExports()
-							.isEmpty()
-							|| !mod.getAddOpens()
-											.isEmpty()
-							|| !mod.getAddReads()
-											.isEmpty()) {
+			if (!mod.getAddExports().isEmpty() || !mod.getAddOpens().isEmpty() || !mod.getAddReads().isEmpty()) {
 				ModuleReference reference = finder.findAll()
 								.stream()
-								.filter(ref -> new File(ref.location()
-												.get()).toPath()
-																.equals(mod.getPath()))
+								.filter(ref -> new File(ref.location().get()).toPath().equals(mod.getPath()))
 								.findFirst()
 								.orElseThrow(IllegalStateException::new);
 
-				Module source = layer.findModule(reference.descriptor()
-								.name())
-								.orElseThrow(IllegalStateException::new);
+				Module source = layer.findModule(reference.descriptor().name()).orElseThrow(IllegalStateException::new);
 
 				for (AddPackage export : mod.getAddExports()) {
 					Module target = layer.findModule(export.getTargetModule())
@@ -1284,9 +1276,8 @@ public class Configuration {
 				}
 
 				for (String read : mod.getAddReads()) {
-					Module target = layer.findModule(read)
-									.orElseThrow(() -> new IllegalStateException(
-													"Module '" + read + "' is not known to the layer."));
+					Module target = layer.findModule(read).orElseThrow(() -> new IllegalStateException(
+									"Module '" + read + "' is not known to the layer."));
 
 					controller.addReads(source, target);
 				}
@@ -1316,8 +1307,7 @@ public class Configuration {
 				finalLauncher.run(ctx);
 			} catch (NoClassDefFoundError e) {
 				if (usingSpi) {
-					if (finalLauncher.getClass()
-									.getClassLoader() == ClassLoader.getSystemClassLoader()) {
+					if (finalLauncher.getClass().getClassLoader() == ClassLoader.getSystemClassLoader()) {
 						Warning.access(finalLauncher);
 					}
 				} else {
@@ -1390,9 +1380,8 @@ public class Configuration {
 
 		if (configMapper.files != null) {
 			for (FileMapper fm : configMapper.files) {
-				FileMetadata.Builder fileBuilder = FileMetadata.builder()
-								.baseUri(config.getBaseUri())
-								.basePath(config.getBasePath());
+				FileMetadata.Builder fileBuilder = FileMetadata.builder().baseUri(config.getBaseUri()).basePath(
+								config.getBasePath());
 
 				if (fm.uri != null) {
 					String s = config.resolvePlaceholders(fm.uri, true, fm.os != null && fm.os != OS.CURRENT);
@@ -1443,8 +1432,7 @@ public class Configuration {
 
 				FileMetadata file = fileBuilder.build();
 				for (FileMetadata prevFile : files) {
-					if (prevFile.getPath()
-									.equals(file.getPath())) {
+					if (prevFile.getPath().equals(file.getPath())) {
 						throw new IllegalStateException("2 files resolve to same 'path': " + file.getPath());
 					}
 				}
@@ -1480,8 +1468,7 @@ public class Configuration {
 
 			FileMetadata fm = getFiles().get(i);
 			Path path;
-			if (overrideBasePath == null || getBasePath().relativize(fm.getPath())
-							.isAbsolute()) {
+			if (overrideBasePath == null || getBasePath().relativize(fm.getPath()).isAbsolute()) {
 				path = fm.getPath();
 			} else {
 				path = overrideBasePath.resolve(getBasePath().relativize(fm.getPath()));
@@ -1502,18 +1489,16 @@ public class Configuration {
 			if (signer == null) {
 				fileMapper.signature = null;
 			} else {
-				fileMapper.signature = Base64.getEncoder()
-								.encodeToString(FileUtils.sign(path, signer));
+				fileMapper.signature = Base64.getEncoder().encodeToString(FileUtils.sign(path, signer));
 			}
 
 			if (fm.getSize() != fileMapper.size || fm.getChecksum() != checksum) {
 				System.out.println("[INFO] Synced '" + path.getFileName() + "'.");
+
+				newMapper.timestamp = Instant.now().toString();
 			}
 
 		}
-
-		newMapper.timestamp = Instant.now()
-						.toString();
 
 		return parseImpl(newMapper);
 	}
@@ -1544,8 +1529,7 @@ public class Configuration {
 		}
 
 		Configuration otherConfig = (Configuration) other;
-		if (!this.getTimestamp()
-						.equals(otherConfig.getTimestamp())) {
+		if (!this.getTimestamp().equals(otherConfig.getTimestamp())) {
 			return false;
 		}
 
@@ -1732,8 +1716,7 @@ public class Configuration {
 			ConfigMapper mapper = new ConfigMapper();
 			PropertyManager pm = new PropertyManager(properties, systemProperties);
 
-			mapper.timestamp = Instant.now()
-							.toString();
+			mapper.timestamp = Instant.now().toString();
 
 			if (baseUri != null)
 				mapper.baseUri = pm.implyPlaceholders(baseUri, matcher, true);
