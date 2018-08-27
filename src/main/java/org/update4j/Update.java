@@ -18,7 +18,6 @@ package org.update4j;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,6 +26,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.update4j.util.FileUtils;
 import org.update4j.util.Warning;
 
 public class Update {
@@ -64,6 +64,10 @@ public class Update {
 				for (Map.Entry<Path, Path> e : files.entrySet()) {
 					Files.deleteIfExists(e.getKey());
 				}
+				if (FileUtils.isEmptyDirectory(tempDir)) {
+					Files.deleteIfExists(tempDir);
+				}
+
 				throw new IllegalStateException(
 								"Files in the update had been tampered and finalize could not be completed.");
 			}
@@ -89,10 +93,8 @@ public class Update {
 
 		Files.deleteIfExists(updateData);
 
-		try (DirectoryStream<Path> dir = Files.newDirectoryStream(tempDir)) {
-			if (!dir.iterator().hasNext()) {
-				Files.deleteIfExists(tempDir);
-			}
+		if (FileUtils.isEmptyDirectory(tempDir)) {
+			Files.deleteIfExists(tempDir);
 		}
 
 		return true;

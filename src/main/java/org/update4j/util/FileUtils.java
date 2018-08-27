@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -107,8 +108,7 @@ public class FileUtils {
 	}
 
 	public static String signAndEncode(Path path, PrivateKey key) throws IOException {
-		return Base64.getEncoder()
-						.encodeToString(sign(path, key));
+		return Base64.getEncoder().encodeToString(sign(path, key));
 	}
 
 	public static Path fromUri(URI uri) {
@@ -130,8 +130,7 @@ public class FileUtils {
 		}
 
 		try {
-			String uri = URLEncoder.encode(path.toString()
-							.replace("\\", "/"), "UTF-8");
+			String uri = URLEncoder.encode(path.toString().replace("\\", "/"), "UTF-8");
 
 			uri = uri.replace("%2F", "/") // We still need directory structure
 							.replace("+", "%20"); // "+" only means space in queries, not in paths
@@ -172,13 +171,22 @@ public class FileUtils {
 		return null;
 	}
 
+	public static boolean isEmptyDirectory(Path path) throws IOException {
+		if (Files.isDirectory(path)) {
+			try (DirectoryStream<Path> dir = Files.newDirectoryStream(path)) {
+				return !dir.iterator().hasNext();
+			}
+		}
+
+		return false;
+	}
+
 	public static void windowsHide(Path file) {
 		try {
 			Files.setAttribute(file, "dos:hidden", true);
 		} catch (Exception e) {
 		}
 	}
-	
 
 	public static void windowsUnhide(Path file) {
 		try {

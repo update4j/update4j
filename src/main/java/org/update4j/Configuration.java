@@ -42,6 +42,7 @@ import java.nio.file.StandardOpenOption;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.security.SignatureException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -871,8 +872,10 @@ public class Configuration {
 
 	private boolean updateImpl(Path tempDir, PublicKey key, UpdateHandler handler,
 					Consumer<? super UpdateHandler> handlerSetup) {
+		boolean updateTemp = tempDir != null;
 		boolean success;
 
+		// if no explicit handler were passed
 		if (handler == null) {
 			handler = Service.loadService(UpdateHandler.class, updateHandler);
 
@@ -881,8 +884,9 @@ public class Configuration {
 			}
 		}
 
-		Map<File, File> updateTempData = null;
-		Map<FileMetadata, Path> transactionMap = null;
+		// to be moved in final location after all files completed download
+		// or -- in case if updateTemp -- in Update.finalizeUpdate()
+		Map<FileMetadata, Path> downloadedCollection = new HashMap<>();
 
 		try {
 			List<FileMetadata> requiresUpdate = new ArrayList<>();
@@ -917,12 +921,6 @@ public class Configuration {
 
 			handler.doneCheckUpdates();
 
-			if (tempDir != null) {
-				updateTempData = new HashMap<>();
-			} else {
-				transactionMap = new HashMap<>();
-			}
-
 			Signature sig = null;
 			if (key != null) {
 				sig = Signature.getInstance("SHA256with" + key.getAlgorithm());
@@ -943,14 +941,14 @@ public class Configuration {
 					byte[] buffer = new byte[1024];
 
 					Path output;
-					if (tempDir == null) {
+					if (!updateTemp) {
 						Files.createDirectories(file.getPath().getParent());
 						output = Files.createTempFile(file.getPath().getParent(), null, null);
 					} else {
 						Files.createDirectories(tempDir);
 						output = Files.createTempFile(tempDir, null, null);
-						updateTempData.put(output.toFile(), file.getPath().toFile());
 					}
+					downloadedCollection.put(file, output);
 
 					URLConnection connection = file.getUri().toURL().openConnection();
 
@@ -980,38 +978,8 @@ public class Configuration {
 							handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
 						}
 
-						if (tempDir == null) {
-							transactionMap.put(file, output);
-						}
-
 						handler.validatingFile(file, output);
-
-						long actualSize = Files.size(output);
-						if (actualSize != file.getSize()) {
-							throw new IllegalStateException("Size of file '" + file.getPath().getFileName()
-											+ "' does not match size in configuration. Expected: " + file.getSize()
-											+ ", found: " + actualSize);
-						}
-
-						long actualChecksum = FileUtils.getChecksum(output);
-						if (actualChecksum != file.getChecksum()) {
-							throw new IllegalStateException("Checksum of file '" + file.getPath().getFileName()
-											+ "' does not match checksum in configuration. Expected: "
-											+ Long.toHexString(file.getChecksum()) + ", found: "
-											+ Long.toHexString(actualChecksum));
-						}
-
-						if (sig != null) {
-							if (file.getSignature() == null)
-								throw new SecurityException("Missing signature.");
-
-							if (!sig.verify(file.getSignature()))
-								throw new SecurityException("Signature verification failed.");
-						}
-
-						if (file.getPath().toString().endsWith(".jar") && !file.isIgnoreBootConflict()) {
-							checkConflicts(file, output);
-						}
+						validateFile(file, output, sig);
 
 						updated.add(file);
 						handler.doneDownloadFile(file, output);
@@ -1019,30 +987,7 @@ public class Configuration {
 					}
 				}
 
-				// if update regular
-				if (tempDir == null && transactionMap.size() > 0) {
-					for (Path p : transactionMap.values()) {
-						if (Files.notExists(p)) {
-							throw new NoSuchFileException(p.toString());
-						}
-					}
-
-					for (Map.Entry<FileMetadata, Path> entry : transactionMap.entrySet()) {
-						Files.move(entry.getValue(), entry.getKey().getPath(), StandardCopyOption.REPLACE_EXISTING);
-					}
-				}
-
-				// otherwise if update temp
-				if (tempDir != null && updateTempData.size() > 0) {
-					Path updateDataFile = tempDir.resolve(Update.UPDATE_DATA);
-
-					try (ObjectOutputStream out = new ObjectOutputStream(
-									Files.newOutputStream(updateDataFile, StandardOpenOption.CREATE))) {
-						out.writeObject(updateTempData);
-					}
-
-					FileUtils.windowsHide(updateDataFile);
-				}
+				completeDownloads(downloadedCollection, tempDir, updateTemp);
 
 				handler.doneDownloads();
 			}
@@ -1054,25 +999,16 @@ public class Configuration {
 			// clean-up as update failed
 
 			try {
-				if (tempDir == null) {
-					if (transactionMap != null) {
-						for (Path p : transactionMap.values()) {
-							Files.deleteIfExists(p);
-						}
-					}
-				} else {
-					Files.deleteIfExists(tempDir.resolve(Update.UPDATE_DATA));
-					if (updateTempData != null) {
-						for (File file : updateTempData.keySet()) {
-							Files.deleteIfExists(file.toPath());
-						}
+				if (!downloadedCollection.isEmpty()) {
+					for (Path p : downloadedCollection.values()) {
+						Files.deleteIfExists(p);
 					}
 
-					if (Files.isDirectory(tempDir)) {
-						try (DirectoryStream<Path> dir = Files.newDirectoryStream(tempDir)) {
-							if (!dir.iterator().hasNext()) {
-								Files.deleteIfExists(tempDir);
-							}
+					if (updateTemp) {
+						Files.deleteIfExists(tempDir.resolve(Update.UPDATE_DATA));
+
+						if (FileUtils.isEmptyDirectory(tempDir)) {
+							Files.deleteIfExists(tempDir);
 						}
 					}
 
@@ -1099,28 +1035,80 @@ public class Configuration {
 		return success;
 
 	}
+	
+	private void completeDownloads(Map<FileMetadata, Path> files, Path tempDir, boolean isTemp) throws IOException {
 
-	private String deriveModule(String filename) {
+		if (!files.isEmpty()) {
 
-		// strip ".jar" at the end
-		filename = filename.replaceAll("\\.jar$", "");
+			// if update regular
+			if (!isTemp) {
+				for (Path p : files.values()) {
 
-		// drop everything after the version
-		filename = filename.replaceAll("-\\d.*", "");
+					// these update handlers may do some interference
+					if (Files.notExists(p)) {
+						throw new NoSuchFileException(p.toString());
+					}
+				}
 
-		// all non alphanumeric get's converted to "."
-		filename = filename.replaceAll("[^A-Za-z0-9]", ".");
+				// mimic a single transaction.
+				// if it fails in between moves, we're doomed
+				for (Map.Entry<FileMetadata, Path> entry : files.entrySet()) {
+					Files.move(entry.getValue(), entry.getKey().getPath(), StandardCopyOption.REPLACE_EXISTING);
+				}
+			}
 
-		// strip "." at beginning and end
-		filename = filename.replaceAll("^\\.*|\\.*$", "");
+			// otherwise if update temp, save to file
+			if (isTemp) {
+				Path updateDataFile = tempDir.resolve(Update.UPDATE_DATA);
 
-		// all double "." stripped to single
-		filename = filename.replaceAll("\\.{2,}", ".");
+				// Path is not serializable, so convert to file
+				Map<File, File> updateTempData = new HashMap<>();
+				for (Map.Entry<FileMetadata, Path> entry : files.entrySet()) {
 
-		return filename;
+					// gotta swap keys and values to get source -> target
+					updateTempData.put(entry.getValue().toFile(), entry.getKey().getPath().toFile());
+				}
+
+				try (ObjectOutputStream out = new ObjectOutputStream(
+								Files.newOutputStream(updateDataFile, StandardOpenOption.CREATE))) {
+					out.writeObject(updateTempData);
+				}
+
+				FileUtils.windowsHide(updateDataFile);
+			}
+		}
 	}
 
-	private void checkConflicts(FileMetadata file, Path download) throws IOException {
+	private void validateFile(FileMetadata file, Path output, Signature sig) throws IOException, SignatureException {
+
+		long actualSize = Files.size(output);
+		if (actualSize != file.getSize()) {
+			throw new IllegalStateException("Size of file '" + file.getPath().getFileName()
+							+ "' does not match size in configuration. Expected: " + file.getSize() + ", found: "
+							+ actualSize);
+		}
+
+		long actualChecksum = FileUtils.getChecksum(output);
+		if (actualChecksum != file.getChecksum()) {
+			throw new IllegalStateException("Checksum of file '" + file.getPath().getFileName()
+							+ "' does not match checksum in configuration. Expected: "
+							+ Long.toHexString(file.getChecksum()) + ", found: " + Long.toHexString(actualChecksum));
+		}
+
+		if (sig != null) {
+			if (file.getSignature() == null)
+				throw new SecurityException("Missing signature.");
+
+			if (!sig.verify(file.getSignature()))
+				throw new SecurityException("Signature verification failed.");
+		}
+
+		if (file.getPath().toString().endsWith(".jar") && !file.isIgnoreBootConflict()) {
+			checkBootConflicts(file, output);
+		}
+	}
+
+	private void checkBootConflicts(FileMetadata file, Path download) throws IOException {
 		if (!FileUtils.isZipFile(download)) {
 			Warning.nonZip(file.getPath().getFileName().toString());
 			throw new IllegalStateException(
@@ -1131,7 +1119,7 @@ public class Configuration {
 		Set<String> moduleNames = modules.stream().map(Module::getName).collect(Collectors.toSet());
 
 		ModuleDescriptor newMod = null;
-		
+
 		// ModuleFinder will not cooperate otherwise
 		String newFilename = "a" + download.getFileName().toString();
 		Path newPath = download.getParent().resolve(newFilename + ".jar");
@@ -1151,7 +1139,7 @@ public class Configuration {
 		// use real filename as module name
 		String newModuleName;
 		if (newFilename.equals(newMod.name())) {
-			newModuleName = deriveModule(file.getPath().getFileName().toString());
+			newModuleName = StringUtils.deriveModuleName(file.getPath().getFileName().toString());
 			if (!StringUtils.isModuleName(newModuleName)) {
 				Warning.illegalAutomaticModule(newModuleName, file.getPath().getFileName().toString());
 				throw new IllegalStateException("Automatic module name '" + newModuleName + "' for file '"

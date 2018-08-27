@@ -15,7 +15,7 @@
  */
 package org.update4j.util;
 
-import java.util.List;
+import java.util.Set;
 
 public class StringUtils {
 
@@ -24,17 +24,17 @@ public class StringUtils {
 
 	public static final String CLASS_REGEX = "([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*";
 
-	private static final List<String> keywords;
-	private static final List<String> moduleKeywords;
+	private static final Set<String> keywords;
+	private static final Set<String> moduleKeywords;
 
 	static {
-		keywords = List.of("abstract", "continue", "for", "new", "switch", "assert", "default", "goto", "package",
+		keywords = Set.of("abstract", "continue", "for", "new", "switch", "assert", "default", "goto", "package",
 						"synchronized", "boolean", "do", "if", "private", "this", "break", "double", "implements",
 						"protected", "throw", "byte", "else", "import", "public", "throws", "case", "enum",
 						"instanceof", "return", "transient", "catch", "extends", "int", "short", "try", "char", "final",
 						"interface", "static", "void", "class", "finally", "long", "strictfp", "volatile", "const",
 						"float", "native", "super", "while");
-		moduleKeywords = List.of("module", "open", "opens", "exports", "requires", "transitive", "to", "with",
+		moduleKeywords = Set.of("module", "open", "opens", "exports", "requires", "transitive", "to", "with",
 						"provides", "uses");
 	}
 
@@ -50,12 +50,12 @@ public class StringUtils {
 
 		return true;
 	}
-	
+
 	public static boolean isModuleName(String name) {
-		if(!isClassName(name)) {
+		if (!isClassName(name)) {
 			return false;
 		}
-		
+
 		String[] tokens = name.split("\\.");
 		for (String t : tokens) {
 			if (moduleKeywords.contains(t))
@@ -63,5 +63,25 @@ public class StringUtils {
 		}
 
 		return true;
+	}
+
+	public static String deriveModuleName(String filename) {
+
+		// strip ".jar" at the end
+		filename = filename.replaceAll("\\.jar$", "");
+
+		// drop everything after the version
+		filename = filename.replaceAll("-\\d.*", "");
+
+		// all non alphanumeric get's converted to "."
+		filename = filename.replaceAll("[^A-Za-z0-9]", ".");
+
+		// strip "." at beginning and end
+		filename = filename.replaceAll("^\\.*|\\.*$", "");
+
+		// all double "." stripped to single
+		filename = filename.replaceAll("\\.{2,}", ".");
+
+		return filename;
 	}
 }
