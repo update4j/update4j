@@ -42,6 +42,12 @@ module org.update4j {
 	 * We list all system modules to make it available to layers requiring them.
 	 */
 	requires java.se;
+	requires transitive java.xml;
+
+	/*
+	 * TODO:
+	 * How do we continue with Java 11???
+	 */
 	requires javafx.base;
 	requires javafx.controls;
 	requires javafx.fxml;
@@ -49,7 +55,6 @@ module org.update4j {
 	requires javafx.media;
 	requires javafx.swing;
 	requires javafx.web;
-	requires transitive java.xml;
 
 	/*
 	 * Rarely used. If you want them resolved, require it in bootstrap application module.
@@ -122,6 +127,8 @@ module org.update4j {
 	uses org.update4j.service.UpdateHandler;
 	uses org.update4j.service.Launcher;
 
+	provides org.update4j.service.Delegate with org.update4j.service.DefaultBootstrap;
 	provides org.update4j.service.UpdateHandler with org.update4j.service.DefaultUpdateHandler;
+	provides org.update4j.service.Launcher with org.update4j.service.DefaultLauncher;
 
 }
