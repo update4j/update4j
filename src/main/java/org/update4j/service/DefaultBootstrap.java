@@ -1,10 +1,35 @@
 package org.update4j.service;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.Writer;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.PublicKey;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.update4j.Bootstrap;
+import org.update4j.Configuration;
+import org.update4j.SingleInstanceManager;
 
 public class DefaultBootstrap implements Delegate {
+
+	private String remote;
+	private String local;
+	private String cert;
+
+	private boolean syncLocal;
+	private boolean launchFirst;
+	private boolean stopOnUpdateError;
+	private boolean singleInstance;
+
+	private static final String PATTERN = "(?:\\s*=)?\\s*(.+)";
 
 	@Override
 	public long version() {
@@ -17,16 +42,123 @@ public class DefaultBootstrap implements Delegate {
 			welcome();
 			return;
 		}
+
+		for (String arg : args) {
+			arg = arg.trim();
+
+			// let's try first those who don't need regex for performance
+			if (arg.equals("--syncLocal")) {
+				syncLocal = true;
+				continue;
+			} else if (arg.equals("--launchFirst")) {
+				launchFirst = true;
+				continue;
+			} else if (arg.equals("--stopOnUpdateError")) {
+				stopOnUpdateError = true;
+				continue;
+			} else if (arg.equals("--singleInstance")) {
+				singleInstance = true;
+				continue;
+			}
+
+			Matcher m = Pattern.compile("--remote" + PATTERN).matcher(arg);
+			if (m.matches()) {
+				remote = m.group(1);
+				continue;
+			}
+			m = Pattern.compile("--local" + PATTERN).matcher(arg);
+			if (m.matches()) {
+				local = m.group(1);
+				continue;
+			}
+			m = Pattern.compile("--cert" + PATTERN).matcher(arg);
+			if (m.matches()) {
+				cert = m.group(1);
+				continue;
+			}
+		}
+
+		if (remote == null && local == null) {
+			usage();
+			return;
+		}
+
+		if (launchFirst && local == null) {
+			throw new IllegalArgumentException("--launchFirst requires a local configuration.");
+		}
+
+		if (syncLocal && local == null) {
+			throw new IllegalArgumentException("--syncLocal requires a local configuration.");
+		}
+
+		if (singleInstance) {
+			SingleInstanceManager.execute();
+		}
+
+		if (launchFirst) {
+			launchFirst(args);
+		} else {
+			updateFirst(args);
+		}
+	}
+
+	private void updateFirst(List<String> args) throws Throwable {
+		Configuration config = null;
+
+		if (remote != null) {
+			try (Reader in = new InputStreamReader(new URL(remote).openStream())) {
+				config = Configuration.read(in);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		if (config == null && local != null) {
+			try (Reader in = Files.newBufferedReader(Paths.get(local))) {
+				config = Configuration.read(in);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		if (config == null) {
+			return;
+		}
+
+		PublicKey pk = null;
+
+		if (cert != null) {
+			CertificateFactory cf = CertificateFactory.getInstance("X.509");
+			try (InputStream in = Files.newInputStream(Paths.get(cert))) {
+				pk = cf.generateCertificate(in).getPublicKey();
+			}
+		}
+
+		if (syncLocal) {
+			try (Writer out = Files.newBufferedWriter(Paths.get(local))) {
+				config.write(out);
+			}
+		}
+
+		boolean success = config.update(pk);
+		if (!success && stopOnUpdateError) {
+			return;
+		}
+
+		config.launch(args);
+	}
+
+	private void launchFirst(List<String> args) throws Throwable {
+		
 	}
 
 	// @formatter:off 
 	private static void welcome() {
 
-		System.err.println(getLogo() + "\tWelcome to the update4j framework.\n\n"
+		System.out.println(getLogo() + "\tWelcome to the update4j framework.\n\n"
 						+ "\tYou started the framework with its default settings, which does\n"
-						+ "\tthe update and launch logic for you without having to understand how everything\n"
-						+ "\tcomes together. All you need is to specify some settings via command line\n"
-						+ "\targuments.\n\n"
+						+ "\tthe update and launch logic for you without complex setup. All you need is to\n"
+						+ "\tspecify some settings via command line arguments.\n\n"
 						+ "\tBefore you start, you first need to create a \"configuration\" file that contains\n"
 						+ "\tall details required to run. You can create one by using Configuration.builder()\n"
 						+ "\tBuilder API. You can sync an existing configuration when files are changed\n"
@@ -75,10 +207,13 @@ public class DefaultBootstrap implements Delegate {
 
 	private static void usage() {
 
-		System.out.println("To start in modulepath:\n\n" 
-						+ "\tjava -p update4j-" + Bootstrap.VERSION + ".jar -m org.update4j [commands...]\n\n" //
+		System.err.println("To start in modulepath:\n\n" 
+						+ "\tjava -p update4j-" + Bootstrap.VERSION + ".jar -m org.update4j [commands...]\n"
+						+ "\tjava -p . -m org.update4j [commands...]\n\n"
 						+ "To start in classpath:\n\n" 
-						+ "\tjava -jar update4j-" + Bootstrap.VERSION + ".jar [commands...]\n\n" 
+						+ "\tjava -jar update4j-" + Bootstrap.VERSION + ".jar [commands...]\n"
+						+ "\tjava -cp update4j-" + Bootstrap.VERSION + ".jar org.update4j.Bootstrap [commands...]\n"
+						+ "\tjava -cp * org.update4j.Bootstrap [commands...]\n\n" 
 						+ "Available commands:\n\n"
 						+ "\t--remote=[url] - The remote (or if using file:/// scheme - local) location of the\n"
 						+ "\t\tconfiguration file. If it fails to download or command is missing, it will\n"
@@ -86,12 +221,14 @@ public class DefaultBootstrap implements Delegate {
 						+ "\t--local=[path] - The path of a local configuration to use if the remote failed to download\n"
 						+ "\t\tor was not passed. If both remote and local fail, startup fails.\n\n"
 						+ "\t--syncLocal - Sync the local configuration with the remote if it downloaded successfully.\n"
-						+ "\t\tUseful to still allow launching without Internet connection. Default will not sync\n\n"
+						+ "\t\tUseful to still allow launching without Internet connection. Default will not sync unless\n"
+						+ "\t\t--launchFirst was specified.\n"
 						+ "\t--cert=[path] - A path to an X.509 certificate file to use to verify signatures. If missing,\n"
 						+ "\t\tno signature verification will be performed.\n\n"
 						+ "\t--launchFirst - If specified, it will first launch the local application then silently\n"
 						+ "\t\tdownload the update. The update will be available only on next restart. Otherwise it\n"
-						+ "\t\twill update before launch and hang the application until done.\n\n"
+						+ "\t\twill update before launch and hang the application until done. Must have a local\n"
+						+ "\t\tconfiguration\n\n"
 						+ "\t--stopOnUpdateError - If --launchFirst was not specified this will stop the launch\n"
 						+ "\t\tif an error occurred while downloading an update. This does not include if remote failed\n"
 						+ "\t\tto download and it used local as a fallback. Ignored if --launchFirst was used.\n\n"

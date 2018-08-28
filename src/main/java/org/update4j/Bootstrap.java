@@ -33,7 +33,7 @@ import org.update4j.util.StringUtils;
  *
  */
 public class Bootstrap {
-	
+
 	/**
 	 * The version of the current build of the framework.
 	 */
@@ -82,7 +82,7 @@ public class Bootstrap {
 	public static void main(String[] args) throws Throwable {
 		String override = null;
 
-		Pattern pattern = Pattern.compile("\\Q--delegate\\E\\s*?=?\\s*?(" + StringUtils.CLASS_REGEX + ")");
+		Pattern pattern = Pattern.compile("--delegate(?:\\s*=)?\\s*(" + StringUtils.CLASS_REGEX + ")");
 		for (String s : args) {
 			Matcher matcher = pattern.matcher(s);
 			if (matcher.matches()) {
