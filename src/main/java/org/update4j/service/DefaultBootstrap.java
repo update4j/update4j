@@ -6,9 +6,9 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.PublicKey;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 import org.update4j.Bootstrap;
 import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
+import org.update4j.Update;
 
 public class DefaultBootstrap implements Delegate {
 
@@ -48,43 +49,53 @@ public class DefaultBootstrap implements Delegate {
 
 			// let's try first those who don't need regex for performance
 			if (arg.equals("--syncLocal")) {
+				validateNotSet(syncLocal, "syncLocal");
 				syncLocal = true;
 				continue;
 			} else if (arg.equals("--launchFirst")) {
+				validateNotSet(launchFirst, "launchFirst");
 				launchFirst = true;
 				continue;
 			} else if (arg.equals("--stopOnUpdateError")) {
+				validateNotSet(stopOnUpdateError, "stopOnUpdateError");
 				stopOnUpdateError = true;
 				continue;
 			} else if (arg.equals("--singleInstance")) {
+				validateNotSet(singleInstance, "singleInstance");
 				singleInstance = true;
 				continue;
 			}
 
 			Matcher m = Pattern.compile("--remote" + PATTERN).matcher(arg);
 			if (m.matches()) {
+				validateNotSet(remote, "remote");
 				remote = m.group(1);
 				continue;
 			}
 			m = Pattern.compile("--local" + PATTERN).matcher(arg);
 			if (m.matches()) {
+				validateNotSet(local, "local");
 				local = m.group(1);
 				continue;
 			}
 			m = Pattern.compile("--cert" + PATTERN).matcher(arg);
 			if (m.matches()) {
+				validateNotSet(cert, "cert");
 				cert = m.group(1);
 				continue;
 			}
 		}
 
 		if (remote == null && local == null) {
-			usage();
-			return;
+			throw new IllegalArgumentException("One of --remote or --local must be supplied.");
 		}
 
 		if (launchFirst && local == null) {
 			throw new IllegalArgumentException("--launchFirst requires a local configuration.");
+		}
+
+		if (syncLocal && remote == null) {
+			throw new IllegalArgumentException("--syncLocal requires a remote configuration.");
 		}
 
 		if (syncLocal && local == null) {
@@ -100,6 +111,16 @@ public class DefaultBootstrap implements Delegate {
 		} else {
 			updateFirst(args);
 		}
+	}
+
+	private void validateNotSet(boolean val, String command) {
+		if (val)
+			throw new IllegalArgumentException("Duplicate --" + command + " command.");
+	}
+
+	private void validateNotSet(String val, String command) {
+		if (val != null)
+			throw new IllegalArgumentException("Duplicate --" + command + " command.");
 	}
 
 	private void updateFirst(List<String> args) throws Throwable {
@@ -125,31 +146,72 @@ public class DefaultBootstrap implements Delegate {
 			return;
 		}
 
-		PublicKey pk = null;
-
-		if (cert != null) {
-			CertificateFactory cf = CertificateFactory.getInstance("X.509");
-			try (InputStream in = Files.newInputStream(Paths.get(cert))) {
-				pk = cf.generateCertificate(in).getPublicKey();
-			}
-		}
-
 		if (syncLocal) {
 			try (Writer out = Files.newBufferedWriter(Paths.get(local))) {
 				config.write(out);
 			}
 		}
 
-		boolean success = config.update(pk);
-		if (!success && stopOnUpdateError) {
-			return;
+		if (config.requiresUpdate()) {
+			PublicKey pk = null;
+
+			if (cert != null) {
+				CertificateFactory cf = CertificateFactory.getInstance("X.509");
+				try (InputStream in = Files.newInputStream(Paths.get(cert))) {
+					pk = cf.generateCertificate(in).getPublicKey();
+				}
+			}
+
+			boolean success = config.update(pk);
+			if (!success && stopOnUpdateError) {
+				return;
+			}
 		}
 
 		config.launch(args);
 	}
 
 	private void launchFirst(List<String> args) throws Throwable {
+		Path tempDir = Paths.get("update");
+		if (Update.containsUpdate(tempDir)) {
+			Update.finalizeUpdate(tempDir);
+		}
+
+		Configuration localConfig = null;
+		try (Reader in = Files.newBufferedReader(Paths.get(local))) {
+			localConfig = Configuration.read(in);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		if (localConfig != null) {
+			Configuration finalConfig = localConfig;
+			Thread localApp = new Thread(() -> finalConfig.launch(args));
+			localApp.run();
+		}
+
+		Configuration remoteConfig = null;
+		try (Reader in = new InputStreamReader(new URL(remote).openStream())) {
+			remoteConfig = Configuration.read(in);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		
+		if(remoteConfig != null) {
+			if(remoteConfig.requiresUpdate()) {
+				PublicKey pk = null;
+
+				if (cert != null) {
+					CertificateFactory cf = CertificateFactory.getInstance("X.509");
+					try (InputStream in = Files.newInputStream(Paths.get(cert))) {
+						pk = cf.generateCertificate(in).getPublicKey();
+					}
+				}
+
+				remoteConfig.updateTemp(tempDir, pk);
+			}
+		}
+
 	}
 
 	// @formatter:off 
@@ -226,8 +288,8 @@ public class DefaultBootstrap implements Delegate {
 						+ "\t--cert=[path] - A path to an X.509 certificate file to use to verify signatures. If missing,\n"
 						+ "\t\tno signature verification will be performed.\n\n"
 						+ "\t--launchFirst - If specified, it will first launch the local application then silently\n"
-						+ "\t\tdownload the update. The update will be available only on next restart. Otherwise it\n"
-						+ "\t\twill update before launch and hang the application until done. Must have a local\n"
+						+ "\t\tdownload the update. The update will be available only on next restart. If not specified\n"
+						+ "\t\tit will update before launch and hang the application until done. Must have a local\n"
 						+ "\t\tconfiguration\n\n"
 						+ "\t--stopOnUpdateError - If --launchFirst was not specified this will stop the launch\n"
 						+ "\t\tif an error occurred while downloading an update. This does not include if remote failed\n"

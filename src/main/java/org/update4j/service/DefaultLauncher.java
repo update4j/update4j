@@ -2,8 +2,6 @@ package org.update4j.service;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-
 import org.update4j.Configuration;
 import org.update4j.LaunchContext;
 import org.update4j.util.StringUtils;
@@ -37,29 +35,12 @@ public class DefaultLauncher implements Launcher {
 		// if NoClassDefFoundError arises for any other reason
 		System.setProperty("suppress.warning.access", "true");
 
-		Class<?> clazz;
-
 		try {
-			clazz = Class.forName(mainClass, true, context.getClassLoader());
-			Method[] methods = clazz.getMethods();
-			
-			for (Method m : methods) {
-				if (m.getName().equals("main")) {
-					Class<?>[] params = m.getParameterTypes();
-					
-					if (params.length == 1) {
-						if (params[0] == LaunchContext.class) {
-							m.invoke(null, context);
-							return;
-						} else if (params[0] == String[].class) {
-							m.invoke(null, new Object[] { context.getArgs().toArray(new String[0]) });
-							return;
-						}
-					}
-				}
-			}
+			Class<?> clazz = Class.forName(mainClass, true, context.getClassLoader());
+			Method method = clazz.getMethod("main", String[].class);
 
-			throw new NoSuchMethodException(mainClass + " does not contain a valid main method.");
+			method.invoke(null, new Object[] { context.getArgs().toArray(new String[0]) });
+			
 		} catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 						| NoSuchMethodException | SecurityException e) {
 			throw new RuntimeException(e);
