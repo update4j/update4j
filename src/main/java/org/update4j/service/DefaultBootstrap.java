@@ -254,7 +254,8 @@ public class DefaultBootstrap implements Delegate {
 		
 		return
 						
-		   "\t                 _       _          ___ _ \n"
+		   "\n"
+		 + "\t                 _       _          ___ _ \n"
 		 + "\t                | |     | |        /   (_)\n"
 		 + "\t _   _ _ __   __| | __ _| |_ ___  / /| |_ \n"
 		 + "\t| | | | '_ \\ / _` |/ _` | __/ _ \\/ /_| | |\n"

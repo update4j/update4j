@@ -1,12 +1,9 @@
-# update4j <sup><sup>beta</sup></sup> &nbsp; &nbsp; &nbsp; [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.2.0-yellow.svg)](https://search.maven.org/search?q=org.update4j)
+# update4j <sup><sup>beta</sup></sup> &nbsp; &nbsp; &nbsp; [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.2.1-yellow.svg)](https://search.maven.org/search?q=org.update4j)    [![Gitter](https://badges.gitter.im/update4j/update4j.svg)](https://gitter.im/update4j/update4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 
 **Documentation available at the [wiki](https://github.com/update4j/update4j/wiki/Documentation), or explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/overview-summary.html)**
 
 Auto-updater and launcher for your distributed applications. Built with Java 9's module system in mind.
-
-
-
-
 
 ## Screenshots
 
@@ -42,33 +39,34 @@ Install using Maven:
 <dependency>
     <groupId>org.update4j</groupId>
     <artifactId>update4j</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
 </dependency>
 ```
 
-You can use it as a regular dependency, or you may run it as a runnable JAR file. In the latter case you must also provide a [`Delegate`](https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers) in the classpath or modulepath.
+You can use it as a regular dependency, or you may run it as a runnable JAR file. 
 
-To run it as a runnable JAR as a module:
-
-```shell
-$ java --module-path . --module org.update4j
-```
-
-Or in shorthand:
+To run it in the modulepath, use either of:
 
 ```shell
+$ java -p update4j-1.2.1.jar -m org.update4j
 $ java -p . -m org.update4j
+
 ```
 
-You can also start it the conventional way on the classpath using the `-cp` or `-jar` flags.
+To run it in the classpath, use either of:
+
+```shell
+$ java -jar update4j-1.2.1.jar
+$ java -cp * org.update4j.Bootstrap
+```
 
 For more information refer to [Starting the Application](https://github.com/update4j/update4j/wiki/Documentation#starting-the-application) in the wiki.
 
 
 ## Change Log
 
-* *Upcoming Release*
-  * Added `DefaultBootstrap` and `DefaultLauncher`.
+* **1.2.1**
+  * Added `DefaultBootstrap` with a straightforward CLI, and `DefaultLauncher`.
   * Added `Configuration.sync()` methods.
   * Additional file validation on update and renaming `UpdateManager.verifyingFileSignature()` to `validatingFile()` to include all of them.
   * To avoid version inconsistencies, all downloads are now atomic; if one download fails all previous are rolled back. Updated `UpdateHandler.doneDownloadFile()` to add awareness of this.

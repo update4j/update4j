@@ -5,7 +5,7 @@
 
 	<groupId>org.update4j</groupId>
 	<artifactId>update4j</artifactId>
-	<version>1.2.0</version>
+	<version>1.2.1</version>
 	<name>update4j</name>
 	<description>Updates and launches Java 9+ Applications</description>
 	<url>https://github.com/update4j/update4j</url>
@@ -82,7 +82,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!--  <plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>3.0.1</version>
@@ -113,7 +113,7 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin> -->
+			</plugin>
 		</plugins>
 	</build>
 </project>
