@@ -1,5 +1,6 @@
 package org.update4j.service;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -124,33 +125,39 @@ public class DefaultBootstrap implements Delegate {
 	}
 
 	private void updateFirst(List<String> args) throws Throwable {
-		Configuration config = null;
+		Configuration remoteConfig = null;
+		Configuration localConfig = null;
 
 		if (remote != null) {
 			try (Reader in = new InputStreamReader(new URL(remote).openStream())) {
-				config = Configuration.read(in);
+				remoteConfig = Configuration.read(in);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 
-		if (config == null && local != null) {
+		if (local != null) {
 			try (Reader in = Files.newBufferedReader(Paths.get(local))) {
-				config = Configuration.read(in);
+				localConfig = Configuration.read(in);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 
-		if (config == null) {
+		if (remoteConfig == null && localConfig == null) {
 			return;
 		}
 
 		if (syncLocal) {
-			try (Writer out = Files.newBufferedWriter(Paths.get(local))) {
-				config.write(out);
-			}
+			if (remoteConfig != null && !remoteConfig.equals(localConfig))
+				try (Writer out = Files.newBufferedWriter(Paths.get(local))) {
+					remoteConfig.write(out);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 		}
+
+		Configuration config = remoteConfig != null ? remoteConfig : localConfig;
 
 		if (config.requiresUpdate()) {
 			PublicKey pk = null;
@@ -184,21 +191,53 @@ public class DefaultBootstrap implements Delegate {
 			e.printStackTrace();
 		}
 
-		if (localConfig != null) {
+		boolean localNotReady = localConfig == null || localConfig.requiresUpdate();
+
+		if (!localNotReady) {
 			Configuration finalConfig = localConfig;
 			Thread localApp = new Thread(() -> finalConfig.launch(args));
 			localApp.run();
 		}
 
 		Configuration remoteConfig = null;
-		try (Reader in = new InputStreamReader(new URL(remote).openStream())) {
-			remoteConfig = Configuration.read(in);
-		} catch (Exception e) {
-			e.printStackTrace();
+		if (remote != null) {
+			try (Reader in = new InputStreamReader(new URL(remote).openStream())) {
+				remoteConfig = Configuration.read(in);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
-		
-		if(remoteConfig != null) {
-			if(remoteConfig.requiresUpdate()) {
+
+		if (remoteConfig != null && !remoteConfig.equals(localConfig)) {
+			try (Writer out = Files.newBufferedWriter(Paths.get(local))) {
+				remoteConfig.write(out);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		if (localNotReady) {
+			Configuration config = remoteConfig != null ? remoteConfig : localConfig;
+
+			if (config != null) {
+				PublicKey pk = null;
+
+				if (cert != null) {
+					CertificateFactory cf = CertificateFactory.getInstance("X.509");
+					try (InputStream in = Files.newInputStream(Paths.get(cert))) {
+						pk = cf.generateCertificate(in).getPublicKey();
+					}
+				}
+
+				boolean success = config.update(pk);
+				if (!success && stopOnUpdateError) {
+					return;
+				}
+
+				config.launch(args);
+			}
+		} else if (remoteConfig != null) {
+			if (remoteConfig.requiresUpdate()) {
 				PublicKey pk = null;
 
 				if (cert != null) {
@@ -285,19 +324,21 @@ public class DefaultBootstrap implements Delegate {
 						+ "\t\tor was not passed. If both remote and local fail, startup fails.\n\n"
 						+ "\t--syncLocal - Sync the local configuration with the remote if it downloaded successfully.\n"
 						+ "\t\tUseful to still allow launching without Internet connection. Default will not sync unless\n"
-						+ "\t\t--launchFirst was specified.\n"
+						+ "\t\t--launchFirst was specified.\n\n"
 						+ "\t--cert=[path] - A path to an X.509 certificate file to use to verify signatures. If missing,\n"
 						+ "\t\tno signature verification will be performed.\n\n"
 						+ "\t--launchFirst - If specified, it will first launch the local application then silently\n"
-						+ "\t\tdownload the update. The update will be available only on next restart. If not specified\n"
-						+ "\t\tit will update before launch and hang the application until done. Must have a local\n"
-						+ "\t\tconfiguration\n\n"
-						+ "\t--stopOnUpdateError - If --launchFirst was not specified this will stop the launch\n"
-						+ "\t\tif an error occurred while downloading an update. This does not include if remote failed\n"
-						+ "\t\tto download and it used local as a fallback. Ignored if --launchFirst was used.\n\n"
+						+ "\t\tdownload the update; the update will be available only on next restart. It will still\n"
+						+ "\t\tdownload the remote and update first if the local config requires an update\n"
+						+ "\t\t(e.g. files were deleted). Must have a local configuration.\n"
+						+ "\t\tIf not specified it will update before launch and hang the application until done.\n\n"
+						+ "\t--stopOnUpdateError - Will stop the launch if an error occurred while downloading an update.\n"
+						+ "\t\tThis does not include if remote failed to download and it used local as a fallback.\n"
+						+ "\t\tIf --launchFirst was used, this only applies if the local config requires an update\n"
+						+ "\t\tand failed.\n\n"
 						+ "\t--singleInstance - Run the application as a single instance. Any subsequent attempts\n"
 						+ "\t\tto run will just exit. You can better control this feature by directly using the\n"
-						+ "\t\tSingleInstanceManager class.");
+						+ "\t\tSingleInstanceManager class.\n");
 		
 	}
 }
