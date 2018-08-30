@@ -266,9 +266,15 @@ import org.update4j.util.Warning;
  * 
  * <h1>Client Side</h1>
  * <p>
+ * A config in the client serves two purposes: 1. Know when a file is outdated
+ * and requires an update when {@code update()} is called 2. List of files to be
+ * dynamically loaded onto the running JVM when {@code launch()} is called.
+ * 
+ * 
+ * <p>
  * All logic on the client side is generally done in the bootstrap application,
  * like reading the config (and usually caching it somewhere locally in case
- * there's no internet connection next time), updating and launching or whatever
+ * there's no Internet connection next time), updating and launching or whatever
  * needs to be done before launch or after business app shutdown or anywhere in
  * between, according to your needs.
  * 
@@ -639,7 +645,8 @@ public class Configuration {
 
 	/**
 	 * Returns the <em>real</em> value of the property with the given key, after
-	 * resolving the placeholders.
+	 * resolving the placeholders. This is usually the method you will call to read
+	 * some property from a configuration.
 	 * 
 	 * @param key
 	 *            The key of the property.
@@ -1034,7 +1041,7 @@ public class Configuration {
 		return success;
 
 	}
-	
+
 	private void completeDownloads(Map<FileMetadata, Path> files, Path tempDir, boolean isTemp) throws IOException {
 
 		if (!files.isEmpty()) {
@@ -1315,11 +1322,28 @@ public class Configuration {
 		}
 	}
 
+	/**
+	 * Reads and parses a configuration XML.
+	 * 
+	 * @param reader
+	 *            The {@code Reader} for reading the XML.
+	 * @return A {@code Configuration} as parsed from the given XML.
+	 * @throws IOException
+	 *             Any exception that arises while reading.
+	 */
 	public static Configuration read(Reader reader) throws IOException {
 		ConfigMapper configMapper = ConfigMapper.read(reader);
 
 		return parseImpl(configMapper);
 	}
+
+	/**
+	 * Parses a configuration from the given XML mapper.
+	 * 
+	 * @param mapper
+	 *            The mapper to parse.
+	 * @return A {@code Configuration} as parsed from the mapper.
+	 */
 
 	public static Configuration parse(ConfigMapper mapper) {
 		return parseImpl(new ConfigMapper(mapper));
@@ -1436,18 +1460,108 @@ public class Configuration {
 		return config;
 	}
 
+	/**
+	 * Returns a new {@code Configuration} where all file sizes and checksums are
+	 * synced with the real locations as listed in the current config. If changes
+	 * were made it will also update the {@code timestamp}.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the development machine only to draft a
+	 * new release when changes are made to files but it's still the same files.
+	 * 
+	 * <p>
+	 * If you want to change the files you should generally use the Builder API. If
+	 * you want, you can manually add or remove files in the config file; for new
+	 * files, just put the {@code path} and call sync to automatically fill the
+	 * rest.
+	 * 
+	 * @return A new {@code Configuration} with synced file metadata.
+	 * @throws IOException
+	 *             If any exception arises while reading file metadata.
+	 */
 	public Configuration sync() throws IOException {
 		return sync(null, null);
 	}
 
+	/**
+	 * Returns a new {@code Configuration} where all file sizes and checksums are
+	 * synced with the real locations as listed in the current config with the base
+	 * path overriden to the given {@code Path}. This is generally used to point to
+	 * the build output location. Files listed with an explicit absolute path will
+	 * not be overriden. If changes were made it will also update the
+	 * {@code timestamp}.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the development machine only to draft a
+	 * new release when changes are made to files but it's still the same files.
+	 * 
+	 * <p>
+	 * If you want to change the files you should generally use the Builder API. If
+	 * you want, you can manually add or remove files in the config file; for new
+	 * files, just put the {@code path} and call sync to automatically fill the
+	 * rest.
+	 * 
+	 * @param overrideBasePath
+	 *            The {@code Path} to use instead of the base path to lookup files.
+	 * @return A new {@code Configuration} with synced file metadata.
+	 * @throws IOException
+	 *             If any exception arises while reading file metadata
+	 */
 	public Configuration sync(Path overrideBasePath) throws IOException {
 		return sync(overrideBasePath, null);
 	}
 
+	/**
+	 * Returns a new {@code Configuration} where all file sizes, checksums and
+	 * signatures are synced with the real locations as listed in the current
+	 * config. If changes were made it will also update the {@code timestamp}.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the development machine only to draft a
+	 * new release when changes are made to files but it's still the same files.
+	 * 
+	 * <p>
+	 * If you want to change the files you should generally use the Builder API. If
+	 * you want, you can manually add or remove files in the config file; for new
+	 * files, just put the {@code path} and call sync to automatically fill the
+	 * rest.
+	 * 
+	 * @param signer
+	 *            The {@link PrivateKey} to use for file signing.
+	 * @return A new {@code Configuration} with synced file metadata.
+	 * @throws IOException
+	 *             If any exception arises while reading file metadata.
+	 */
 	public Configuration sync(PrivateKey signer) throws IOException {
 		return sync(null, signer);
 	}
 
+	/**
+	 * Returns a new {@code Configuration} where all file sizes, checksums and
+	 * signatures are synced with the real locations as listed in the current config
+	 * with the base path overriden to the given {@code Path}. This is generally
+	 * used to point to the build output location. Files listed with an explicit
+	 * absolute path will not be overriden. If changes were made it will also update
+	 * the {@code timestamp}.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the development machine only to draft a
+	 * new release when changes are made to files but it's still the same files.
+	 * 
+	 * <p>
+	 * If you want to change the files you should generally use the Builder API. If
+	 * you want, you can manually add or remove files in the config file; for new
+	 * files, just put the {@code path} and call sync to automatically fill the
+	 * rest.
+	 * 
+	 * @param overrideBasePath
+	 *            The {@code Path} to use instead of the base path to lookup files.
+	 * @param signer
+	 *            The {@link PrivateKey} to use for file signing.
+	 * @return A new {@code Configuration} with synced file metadata.
+	 * @throws IOException
+	 *             If any exception arises while reading file metadata
+	 */
 	public Configuration sync(Path overrideBasePath, PrivateKey signer) throws IOException {
 		ConfigMapper newMapper = generateXmlMapper();
 
@@ -1490,6 +1604,20 @@ public class Configuration {
 		return parseImpl(newMapper);
 	}
 
+	/**
+	 * Generates a new XML mapper for direct XML manipulation with values populated
+	 * identical to this configuration. More formally:
+	 * 
+	 * <pre>
+	 * this.equals(Configuration.parse(this.generateXmlMapper())) == true
+	 * </pre>
+	 * 
+	 * <p>
+	 * Any change to the mapper has no effect to the current configuration. A new
+	 * copy is created on each call.
+	 * 
+	 * @return A new XML mapper with values from this configuration.
+	 */
 	public ConfigMapper generateXmlMapper() {
 		return new ConfigMapper(mapper);
 	}
@@ -1498,6 +1626,12 @@ public class Configuration {
 		mapper.write(writer);
 	}
 
+	/**
+	 * Returns an XML string exactly as {@code #write(Writer)} would output.
+	 * 
+	 * @return An XML string exactly as {@code #write(Writer)} would output.
+	 */
+	@Override
 	public String toString() {
 		StringWriter out = new StringWriter();
 		try {
@@ -1509,6 +1643,15 @@ public class Configuration {
 		return out.toString();
 	}
 
+	/**
+	 * Returns whether the given configuration is equals to this. More formally:
+	 * 
+	 * <pre>
+	 * this.equals(other) == this.toString().equals(other.toString())
+	 * </pre>
+	 * 
+	 * @return Whether the given configuration is equals to this.
+	 */
 	@Override
 	public boolean equals(Object other) {
 		if (other == null || !(other instanceof Configuration)) {
@@ -1523,10 +1666,60 @@ public class Configuration {
 		return toString().equals(other.toString());
 	}
 
+	/**
+	 * The entry point to the Builder API.
+	 * 
+	 * <p>
+	 * This should <em>only</em> be used on the development machine when drafting a
+	 * new release. It should not be used to load a config on the client side.
+	 * 
+	 * @return A configuration builder.
+	 */
 	public static Builder builder() {
 		return new Builder();
 	}
 
+	/**
+	 * This class use used to generate new configurations when a new draft is
+	 * released. This might be called directly in code or used in various build
+	 * plugins.
+	 * 
+	 * <p>
+	 * In the builder process you refer to actual files on your machine, it will
+	 * read the file metadata and create a new configuration. With the exceptions of
+	 * {@link FileMetadata#readFrom(String)} and
+	 * {@link FileMetadata#streamDirectory(String)} all string methods may take
+	 * placeholder values that may refer to listed properties, system properties or
+	 * system environment variables.
+	 * 
+	 * <p>
+	 * To refer to a property {@code my.prop} with the value {@code Hello}:
+	 * 
+	 * <pre>
+	 * "${my.prop} World!" -> "Hello World"
+	 * </pre>
+	 * 
+	 * <p>
+	 * Or, on Windows:
+	 * 
+	 * <pre>
+	 * "${LOCALAPPDATA}/My App" -> "C:/Users/&lt;user-name&gt;/AppData/Local/My App"
+	 * </pre>
+	 * 
+	 * <p>
+	 * Placeholder references are resolved when {@code build()} is called.
+	 * 
+	 * <p>
+	 * If a string has a value that can be replaced with a property placeholder but
+	 * was hardcoded, it will be replaced for you. You can control how to replace
+	 * via {@link #matchAndReplace(PlaceholderMatchType)} in both the config and in
+	 * each individual file.
+	 * 
+	 * 
+	 * 
+	 * @author Mordechai Meisels
+	 *
+	 */
 	public static class Builder {
 		private String baseUri;
 		private String basePath;
@@ -1550,88 +1743,277 @@ public class Configuration {
 			resolveSystemProperty("user.dir");
 		}
 
+		/**
+		 * Set the base URI that files with a relative {@code uri} should resolve
+		 * against. Files with an absolute URI will ignore this field.
+		 * 
+		 * <p>
+		 * You may use a placeholder value for this field.
+		 * 
+		 * <p>
+		 * If this is not set, all files <em>must</em> have an absolute URI.
+		 * 
+		 * @param uri
+		 *            The base URI that files with a relative {@code uri} should resolve
+		 *            against.
+		 * @return The builder for chaining.
+		 */
 		public Builder baseUri(String uri) {
 			this.baseUri = uri;
 
 			return this;
 		}
 
+		/**
+		 * Set the base URI that files with a relative {@code uri} should resolve
+		 * against. Files with an absolute URI will ignore this field.
+		 * 
+		 * <p>
+		 * This is equivalent to:
+		 * 
+		 * <pre>
+		 * baseUri(uri.toString())
+		 * </pre>
+		 * 
+		 * <p>
+		 * If this is not set, all files <em>must</em> have an absolute URI.
+		 * 
+		 * @param uri
+		 *            The base URI that files with a relative {@code uri} should resolve
+		 *            against.
+		 * @return The builder for chaining.
+		 */
 		public Builder baseUri(URI uri) {
 			return this.baseUri(uri.toString());
 		}
 
+		/**
+		 * Returns the value passed in {@link #baseUri(String)}.
+		 * 
+		 * @return The value passed in {@link #baseUri(String)}.
+		 */
 		public String getBaseUri() {
 			return baseUri;
 		}
 
+		/**
+		 * Set the base path that files with a relative {@code path} should resolve
+		 * against. Files with an absolute path will ignore this field.
+		 * 
+		 * <p>
+		 * You may use a placeholder value for this field.
+		 * 
+		 * <p>
+		 * If this is not set, all files <em>must</em> have an absolute path.
+		 * 
+		 * @param path
+		 *            The base path that files with a relative {@code path} should
+		 *            resolve against.
+		 * @return The builder for chaining.
+		 */
 		public Builder basePath(String path) {
 			this.basePath = path;
 
 			return this;
 		}
 
+		/**
+		 * Set the base path that files with a relative {@code path} should resolve
+		 * against. Files with an absolute path will ignore this field.
+		 * 
+		 * <p>
+		 * This is equivalent to:
+		 * 
+		 * <pre>
+		 * basePath(path.toString())
+		 * </pre>
+		 * 
+		 * <p>
+		 * If this is not set, all files <em>must</em> have an absolute path.
+		 * 
+		 * @param path
+		 *            The base path that files with a relative {@code path} should
+		 *            resolve against.
+		 * @return The builder for chaining.
+		 */
 		public Builder basePath(Path path) {
 			return basePath(path.toString());
 		}
 
+		/**
+		 * Returns the value passed in {@link #basePath(String)}.
+		 * 
+		 * @return The value passed in {@link #basePath(String)}.
+		 */
 		public String getBasePath() {
 			return basePath;
 		}
 
+		/**
+		 * Set the private key to use for file signing. If not set, the files will not
+		 * be signed.
+		 * 
+		 * @param key
+		 *            the {@link PrivateKey} for file signing.
+		 * @return The builder for chaining.
+		 */
 		public Builder signer(PrivateKey key) {
 			this.signer = key;
 
 			return this;
 		}
 
+		/**
+		 * Returns the value passed in {@link #signer(PrivateKey)}.
+		 * 
+		 * @return The value passed in {@link #signer(PrivateKey)}.
+		 */
 		public PrivateKey getSigner() {
 			return signer;
 		}
 
+		/**
+		 * List a single file in the configuration. Files are listed using
+		 * {@link FileMetadata#readFrom(Path)}. You can customize the individual file
+		 * with the value returned from {@code readFrom()}.
+		 * 
+		 * <p>
+		 * This method can be called repeatedly. It will add them all to a list.
+		 * 
+		 * @param reference
+		 *            A file reference to list in the configuration.
+		 * @return The builder for chaining.
+		 */
 		public Builder file(FileMetadata.Reference reference) {
 			files.add(reference);
 
 			return this;
 		}
 
-		public Builder files(Collection<FileMetadata.Reference> f) {
-			files.addAll(f);
+		/**
+		 * List a collection of files in the configuration.
+		 * 
+		 * <p>
+		 * This method can be called repeatedly. It will add them all to a single list.
+		 * 
+		 * @param refs
+		 *            A collection of file references to list in the configuration.
+		 * @return The builder for chaining.
+		 */
+		public Builder files(Collection<FileMetadata.Reference> refs) {
+			files.addAll(refs);
 
 			return this;
 		}
 
+		/**
+		 * List a stream if {@link FileMetadata} instances in the configuration. Streams
+		 * can be created using {@link FileMetadata#streamDirectory(Path)} and
+		 * customized using {@code peek()} or {@code map()}.
+		 * 
+		 * <p>
+		 * This method can be called repeatedly. It will add them all to a single list.
+		 * 
+		 * @param fileStream
+		 *            A stream of file references to list in the configuration.
+		 * @return The builder for chaining.
+		 */
 		public Builder files(Stream<FileMetadata.Reference> fileStream) {
 			files.addAll(fileStream.collect(Collectors.toList()));
 
 			return this;
 		}
 
+		/**
+		 * Returns all files listed via {@code file()} or {@code files()}.
+		 * 
+		 * @return All files listed via {@code file()} or {@code files()}.
+		 */
 		public List<FileMetadata.Reference> getFiles() {
 			return files;
 		}
 
+		/**
+		 * List a single property with the given key and value. The value may contain a
+		 * placeholder.
+		 * 
+		 * <p>
+		 * This method can be called repeatedly. It will add them all to a single list.
+		 * 
+		 * 
+		 * @param key
+		 *            The key of the property.
+		 * @param value
+		 *            The value of the property.
+		 * @return The builder for chaining.
+		 */
 		public Builder property(String key, String value) {
 			return property(key, value, null);
 		}
 
+		/**
+		 * List a single property with the given key and value that should only resolve
+		 * for the given operating system. You may have more than one property with the
+		 * same key if non of them have the same os.
+		 * 
+		 * <p>
+		 * The value may contain a placeholder.
+		 * 
+		 * <p>
+		 * This method can be called repeatedly. It will add them all to a single list.
+		 * 
+		 * 
+		 * @param key
+		 *            The key of the property.
+		 * @param value
+		 *            The value of the property.
+		 * @param os
+		 *            The operating system to limit this property.
+		 * @return The builder for chaining.
+		 */
 		public Builder property(String key, String value, OS os) {
 			properties.add(new Property(key, value, os));
 
 			return this;
 		}
 
+		/**
+		 * Lists a single {@link Property} in the configuration.
+		 * 
+		 * <p>
+		 * This method can be called repeatedly. It will add them all to a single list.
+		 * 
+		 * @param p
+		 *            The property to list.
+		 * @return The builder for chaining.
+		 */
 		public Builder property(Property p) {
 			properties.add(p);
 
 			return this;
 		}
 
-		public Builder properties(Collection<Property> p) {
-			properties.addAll(p);
+		/**
+		 * List a collection of properties in the configuration.
+		 * 
+		 * <p>
+		 * This method can be called repeatedly. It will add them all to a single list.
+		 * 
+		 * @param props
+		 *            The collection of properties to list.
+		 * @return The builder for chaining.
+		 */
+		public Builder properties(Collection<Property> props) {
+			properties.addAll(props);
 
 			return this;
 		}
 
+		/**
+		 * Returns all properties listed via {@code property()} or {@code properties()}.
+		 * 
+		 * @return All properties listed via {@code property()} or {@code properties()}.
+		 */
 		public List<Property> getProperties() {
 			return properties;
 		}
