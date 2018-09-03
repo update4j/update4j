@@ -23,8 +23,10 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -193,5 +195,21 @@ public class FileUtils {
 			Files.setAttribute(file, "dos:hidden", false);
 		} catch (Exception e) {
 		}
+	}
+
+	public static void verifyNotLocked(Path path) throws IOException {
+		if (!Files.isRegularFile(path)) {
+			return;
+		}
+
+		Path temp = Files.createTempFile(path.getParent(), null, null);
+
+		try {
+			Files.move(path, temp, StandardCopyOption.REPLACE_EXISTING);
+			Files.move(temp, path);
+		} finally {
+			Files.deleteIfExists(temp);
+		}
+
 	}
 }

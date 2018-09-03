@@ -1055,6 +1055,10 @@ public class Configuration {
 						throw new NoSuchFileException(p.toString());
 					}
 				}
+				
+				for(FileMetadata fm : files.keySet()) {
+					FileUtils.verifyNotLocked(fm.getPath());
+				}
 
 				// mimic a single transaction.
 				// if it fails in between moves, we're doomed

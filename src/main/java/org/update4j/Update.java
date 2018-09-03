@@ -71,6 +71,7 @@ public class Update {
 				throw new IllegalStateException(
 								"Files in the update had been tampered and finalize could not be completed.");
 			}
+
 		} catch (ClassNotFoundException e) {
 			throw new IOException(e);
 		}
@@ -78,17 +79,21 @@ public class Update {
 		if (files.isEmpty())
 			return false;
 
-		for (Map.Entry<Path, Path> e : files.entrySet()) {
-			try {
-				Files.move(e.getKey(), e.getValue(), StandardCopyOption.REPLACE_EXISTING);
-			} catch (FileSystemException fse) {
-				String msg = fse.getMessage();
-				if (msg.contains("another process") || msg.contains("lock") || msg.contains("use")) {
-					Warning.lockFinalize(fse.getFile());
-				}
-
-				throw fse;
+		try {
+			for (Map.Entry<Path, Path> e : files.entrySet()) {
+				FileUtils.verifyNotLocked(e.getValue());
 			}
+		} catch (FileSystemException fse) {
+			String msg = fse.getMessage();
+			if (msg.contains("another process") || msg.contains("lock") || msg.contains("use")) {
+				Warning.lockFinalize(fse.getFile());
+			}
+
+			throw fse;
+		}
+
+		for (Map.Entry<Path, Path> e : files.entrySet()) {
+			Files.move(e.getKey(), e.getValue(), StandardCopyOption.REPLACE_EXISTING);
 		}
 
 		Files.deleteIfExists(updateData);
