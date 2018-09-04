@@ -23,7 +23,6 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -198,6 +197,9 @@ public class FileUtils {
 	}
 
 	public static void verifyNotLocked(Path path) throws IOException {
+		if(OS.CURRENT != OS.WINDOWS)
+			return;
+		
 		if (!Files.isRegularFile(path)) {
 			return;
 		}
