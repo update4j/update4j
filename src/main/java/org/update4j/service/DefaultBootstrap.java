@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.update4j.Bootstrap;
 import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
 import org.update4j.Update;
-import org.update4j.Update4j;
 
 public class DefaultBootstrap implements Delegate {
 
@@ -325,11 +325,11 @@ public class DefaultBootstrap implements Delegate {
 	private static void usage() {
 
 		System.err.println("To start in modulepath:\n\n" 
-						+ "\tjava -p update4j-" + Update4j.version() + ".jar -m org.update4j [commands...]\n"
+						+ "\tjava -p update4j-" + Bootstrap.VERSION + ".jar -m org.update4j [commands...]\n"
 						+ "\tjava -p . -m org.update4j [commands...]\n\n"
 						+ "To start in classpath:\n\n" 
-						+ "\tjava -jar update4j-" + Update4j.version() + ".jar [commands...]\n"
-						+ "\tjava -cp update4j-" + Update4j.version() + ".jar org.update4j.Bootstrap [commands...]\n"
+						+ "\tjava -jar update4j-" + Bootstrap.VERSION + ".jar [commands...]\n"
+						+ "\tjava -cp update4j-" + Bootstrap.VERSION + ".jar org.update4j.Bootstrap [commands...]\n"
 						+ "\tjava -cp * org.update4j.Bootstrap [commands...]\n\n" 
 						+ "Available commands:\n\n"
 						+ "\t--remote=[url] - The remote (or if using file:/// scheme - local) location of the\n"
