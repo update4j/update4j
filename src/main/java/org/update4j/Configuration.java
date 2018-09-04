@@ -1911,7 +1911,7 @@ public class Configuration {
 		}
 
 		/**
-		 * List a stream if {@link FileMetadata} instances in the configuration. Streams
+		 * List a stream of {@link FileMetadata} instances in the configuration. Streams
 		 * can be created using {@link FileMetadata#streamDirectory(Path)} and
 		 * customized using {@code peek()} or {@code map()}.
 		 * 
