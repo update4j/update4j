@@ -197,9 +197,9 @@ public class FileUtils {
 	}
 
 	public static void verifyNotLocked(Path path) throws IOException {
-		if(OS.CURRENT != OS.WINDOWS)
+		if (OS.CURRENT != OS.WINDOWS)
 			return;
-		
+
 		if (!Files.isRegularFile(path)) {
 			return;
 		}
@@ -213,5 +213,26 @@ public class FileUtils {
 			Files.deleteIfExists(temp);
 		}
 
+	}
+
+	public static void secureMoveFile(Path source, Path target) throws IOException {
+		if (OS.CURRENT == OS.WINDOWS || Files.notExists(target)) {
+			Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+			return;
+		}
+
+		// At this point we are on non-windows and exists
+		// Lets unlink file first so we don't run into file-busy errors.
+		Path temp = Files.createTempFile(target.getParent(), null, null);
+		Files.move(target, temp, StandardCopyOption.REPLACE_EXISTING);
+
+		try {
+			Files.move(source, target);
+		} catch (IOException e) {
+			Files.move(temp, target);
+			throw e;
+		} finally {
+			Files.deleteIfExists(temp);
+		}
 	}
 }

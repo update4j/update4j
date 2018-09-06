@@ -1055,15 +1055,15 @@ public class Configuration {
 						throw new NoSuchFileException(p.toString());
 					}
 				}
-				
-				for(FileMetadata fm : files.keySet()) {
+
+				for (FileMetadata fm : files.keySet()) {
 					FileUtils.verifyNotLocked(fm.getPath());
 				}
 
 				// mimic a single transaction.
 				// if it fails in between moves, we're doomed
 				for (Map.Entry<FileMetadata, Path> entry : files.entrySet()) {
-					Files.move(entry.getValue(), entry.getKey().getPath(), StandardCopyOption.REPLACE_EXISTING);
+					FileUtils.secureMoveFile(entry.getValue(), entry.getKey().getPath());
 				}
 			}
 

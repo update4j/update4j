@@ -93,7 +93,7 @@ public class Update {
 		}
 
 		for (Map.Entry<Path, Path> e : files.entrySet()) {
-			Files.move(e.getKey(), e.getValue(), StandardCopyOption.REPLACE_EXISTING);
+			FileUtils.secureMoveFile(e.getKey(), e.getValue());
 		}
 
 		Files.deleteIfExists(updateData);

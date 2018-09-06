@@ -69,7 +69,8 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 * *Upcoming Release*
   * Java 11 compatibility: Removed JavaFX modules by using a multi-release `module-info.class` file.
-  * On Windows, check if old files are locked *before* completing update to prevent breaking consistency (as the feature added in previous release didn't handle file locks in an atomic manner).
+  * On Windows, check if old files are locked *before* completing update to prevent breaking consistency (as the feature added in previous release didn't handle file locks in an atomically).
+  * On Unix-like operating systems, unlink old file before moving new file to allow overwriting locked files.
 * **1.2.2**
   * Added `DefaultBootstrap` with a straightforward CLI, and `DefaultLauncher`.
   * Added `Configuration.sync()` methods.
