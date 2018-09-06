@@ -44,8 +44,8 @@ public class ConfigMapper extends XmlMapper {
 	public String basePath;
 	public String updateHandler;
 	public String launcher;
-	public List<Property> properties;
-	public List<FileMapper> files;
+	public final List<Property> properties;
+	public final List<FileMapper> files;
 
 	public ConfigMapper() {
 		properties = new ArrayList<>();
@@ -65,13 +65,8 @@ public class ConfigMapper extends XmlMapper {
 		updateHandler = copy.updateHandler;
 		launcher = copy.launcher;
 
-		if (copy.properties != null)
-			properties.addAll(copy.properties);
-
-		if (copy.files != null)
-			files = copy.files.stream()
-							.map(FileMapper::new)
-							.collect(Collectors.toList());
+		properties.addAll(copy.properties);
+		files.addAll(copy.files.stream().map(FileMapper::new).collect(Collectors.toList()));
 	}
 
 	@Override
@@ -101,8 +96,6 @@ public class ConfigMapper extends XmlMapper {
 	}
 
 	private void parseProperties(NodeList list) {
-		properties = new ArrayList<>();
-
 		for (int i = 0; i < list.getLength(); i++) {
 			Node n = list.item(i);
 			if ("property".equals(n.getNodeName())) {
@@ -122,11 +115,9 @@ public class ConfigMapper extends XmlMapper {
 	}
 
 	private void parseFiles(NodeList list) {
-		files = new ArrayList<>();
-
 		for (int i = 0; i < list.getLength(); i++) {
 			Node n = list.item(i);
-			if ("file".equals(n.getNodeName()) || "library".equals(n.getNodeName())) {
+			if ("file".equals(n.getNodeName())) {
 				files.add(new FileMapper(n));
 			}
 		}
@@ -142,8 +133,8 @@ public class ConfigMapper extends XmlMapper {
 			builder.append(" timestamp=\"" + timestamp + "\"");
 		}
 
-		if (baseUri != null || basePath != null || updateHandler != null || launcher != null
-						|| (properties != null && !properties.isEmpty()) || (files != null && !files.isEmpty())) {
+		if (baseUri != null || basePath != null || updateHandler != null || launcher != null || properties.isEmpty()
+						|| !files.isEmpty()) {
 
 			builder.append(">\n");
 
@@ -172,7 +163,7 @@ public class ConfigMapper extends XmlMapper {
 				builder.append("/>\n");
 			}
 
-			if (properties != null && properties.size() > 0) {
+			if (!properties.isEmpty()) {
 				builder.append("    <properties>\n");
 
 				for (Property p : properties) {
@@ -182,8 +173,7 @@ public class ConfigMapper extends XmlMapper {
 					builder.append(" value=\"" + p.getValue() + "\"");
 
 					if (p.getOs() != null)
-						builder.append(" os=\"" + p.getOs()
-										.getShortName() + "\"");
+						builder.append(" os=\"" + p.getOs().getShortName() + "\"");
 
 					builder.append("/>\n");
 				}
@@ -191,7 +181,7 @@ public class ConfigMapper extends XmlMapper {
 				builder.append("    </properties>\n");
 			}
 
-			if (files != null && files.size() > 0) {
+			if (!files.isEmpty()) {
 				builder.append("    <files>\n");
 
 				for (FileMapper fm : files) {
@@ -274,9 +264,7 @@ public class ConfigMapper extends XmlMapper {
 
 	public static ConfigMapper read(Reader reader) throws IOException {
 		try {
-			Document doc = DocumentBuilderFactory.newInstance()
-							.newDocumentBuilder()
-							.parse(new InputSource(reader));
+			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new InputSource(reader));
 			NodeList list = doc.getChildNodes();
 			for (int i = 0; i < list.getLength(); i++) {
 				Node n = list.item(i);
@@ -285,7 +273,7 @@ public class ConfigMapper extends XmlMapper {
 				}
 			}
 
-			return new ConfigMapper();
+			throw new IllegalStateException("Root element must by 'configuration'.");
 		} catch (SAXException | ParserConfigurationException e) {
 			throw new IOException(e);
 		}

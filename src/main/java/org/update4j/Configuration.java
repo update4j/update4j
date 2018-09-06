@@ -123,7 +123,7 @@ import org.update4j.util.Warning;
  * {@link Configuration#builder()} is the entry point to the config builder API.
  * 
  * <p>
- * Here's a sample config created with the config:
+ * Here's a sample config created with this approach:
  * 
  * <pre>
  * Configuration config = Configuration.builder()
@@ -392,8 +392,8 @@ import org.update4j.util.Warning;
  * 
  * <h3>Signature</h3>
  * <p>
- * Optionally, to prevent Man-in-the-middle (MITM) attacks, you can sign the
- * files via the {@code signer()} method in the Builder API, or
+ * Optionally, to secure your clients in the event of server compromise, you can
+ * sign the files via the {@code signer()} method in the Builder API, or
  * {@link Configuration#sync(PrivateKey)}. If you used the {@link PublicKey}
  * overload of {@code update()} or {@code updateTemp()} it will verify all files
  * and reject the download if they fail.
@@ -445,7 +445,6 @@ public class Configuration {
 	private String updateHandler;
 	private String launcher;
 
-	private List<FileMetadata> files;
 	private List<FileMetadata> unmodifiableFiles;
 	private PropertyManager propertyManager;
 
@@ -1393,72 +1392,64 @@ public class Configuration {
 
 		List<FileMetadata> files = new ArrayList<>();
 
-		if (configMapper.files != null) {
-			for (FileMapper fm : configMapper.files) {
-				FileMetadata.Builder fileBuilder = FileMetadata.builder().baseUri(config.getBaseUri()).basePath(
-								config.getBasePath());
+		for (FileMapper fm : configMapper.files) {
+			FileMetadata.Builder fileBuilder = FileMetadata.builder().baseUri(config.getBaseUri()).basePath(
+							config.getBasePath());
 
-				if (fm.uri != null) {
-					String s = config.resolvePlaceholders(fm.uri, true, fm.os != null && fm.os != OS.CURRENT);
+			if (fm.uri != null) {
+				String s = config.resolvePlaceholders(fm.uri, true, fm.os != null && fm.os != OS.CURRENT);
 
-					// Might happen when trying to parse foreign os properties
-					if (!PropertyManager.containsPlaceholder(s)) {
-						fileBuilder.uri(URI.create(s));
-					}
+				// Might happen when trying to parse foreign os properties
+				if (!PropertyManager.containsPlaceholder(s)) {
+					fileBuilder.uri(URI.create(s));
 				}
-
-				if (fm.path != null) {
-					String s = config.resolvePlaceholders(fm.path, true, fm.os != null && fm.os != OS.CURRENT);
-
-					if (!PropertyManager.containsPlaceholder(s)) {
-						fileBuilder.path(Paths.get(s));
-					}
-				}
-
-				if (fm.checksum != null)
-					fileBuilder.checksum(fm.checksum);
-
-				if (fm.size != null)
-					fileBuilder.size(fm.size);
-
-				if (fm.os != null)
-					fileBuilder.os(fm.os);
-
-				// defaults to false
-				fileBuilder.modulepath(fm.modulepath != null && fm.modulepath);
-				fileBuilder.classpath(fm.classpath != null && fm.classpath);
-				fileBuilder.ignoreBootConflict(fm.ignoreBootConflict != null && fm.ignoreBootConflict);
-
-				if (fm.comment != null)
-					fileBuilder.comment(config.resolvePlaceholders(fm.comment, false));
-
-				if (fm.signature != null)
-					fileBuilder.signature(fm.signature);
-
-				if (fm.addExports != null) {
-					fileBuilder.exports(fm.addExports);
-				}
-				if (fm.addOpens != null) {
-					fileBuilder.opens(fm.addOpens);
-				}
-				if (fm.addReads != null) {
-					fileBuilder.reads(fm.addReads);
-				}
-
-				FileMetadata file = fileBuilder.build();
-				for (FileMetadata prevFile : files) {
-					if (prevFile.getPath().equals(file.getPath())) {
-						throw new IllegalStateException("2 files resolve to same 'path': " + file.getPath());
-					}
-				}
-
-				files.add(file);
 			}
+
+			if (fm.path != null) {
+				String s = config.resolvePlaceholders(fm.path, true, fm.os != null && fm.os != OS.CURRENT);
+
+				if (!PropertyManager.containsPlaceholder(s)) {
+					fileBuilder.path(Paths.get(s));
+				}
+			}
+
+			if (fm.checksum != null)
+				fileBuilder.checksum(fm.checksum);
+
+			if (fm.size != null)
+				fileBuilder.size(fm.size);
+
+			if (fm.os != null)
+				fileBuilder.os(fm.os);
+
+			// defaults to false
+			fileBuilder.modulepath(fm.modulepath != null && fm.modulepath);
+			fileBuilder.classpath(fm.classpath != null && fm.classpath);
+			fileBuilder.ignoreBootConflict(fm.ignoreBootConflict != null && fm.ignoreBootConflict);
+
+			if (fm.comment != null) {
+				fileBuilder.comment(config.resolvePlaceholders(fm.comment, false));
+			}
+
+			if (fm.signature != null) {
+				fileBuilder.signature(fm.signature);
+			}
+
+			fileBuilder.exports(fm.addExports);
+			fileBuilder.opens(fm.addOpens);
+			fileBuilder.reads(fm.addReads);
+
+			FileMetadata file = fileBuilder.build();
+			for (FileMetadata prevFile : files) {
+				if (prevFile.getPath().equals(file.getPath())) {
+					throw new IllegalStateException("2 files resolve to same 'path': " + file.getPath());
+				}
+			}
+
+			files.add(file);
 		}
 
-		config.files = files;
-		config.unmodifiableFiles = Collections.unmodifiableList(config.files);
-
+		config.unmodifiableFiles = Collections.unmodifiableList(files);
 		config.mapper = configMapper;
 
 		return config;
@@ -1684,7 +1675,7 @@ public class Configuration {
 	}
 
 	/**
-	 * This class use used to generate new configurations when a new draft is
+	 * This class is used to generate new configurations when a new draft is
 	 * released. This might be called directly in code or used in various build
 	 * plugins.
 	 * 
@@ -2103,11 +2094,10 @@ public class Configuration {
 			if (launcher != null)
 				mapper.launcher = pm.implyPlaceholders(launcher, matcher, false);
 
-			if (properties.size() > 0)
-				mapper.properties = properties;
+			if (!properties.isEmpty())
+				mapper.properties.addAll(properties);
 
-			if (files.size() > 0) {
-				mapper.files = new ArrayList<>();
+			if (!files.isEmpty()) {
 				for (FileMetadata.Reference fileRef : files) {
 					mapper.files.add(fileRef.getFileMapper(pm, baseUri, basePath, matcher, signer));
 				}

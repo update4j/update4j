@@ -34,9 +34,9 @@ public class FileMapper extends XmlMapper {
 	public String comment;
 	public Boolean ignoreBootConflict;
 	public String signature;
-	public List<AddPackage> addExports;
-	public List<AddPackage> addOpens;
-	public List<String> addReads;
+	public final List<AddPackage> addExports;
+	public final List<AddPackage> addOpens;
+	public final List<String> addReads;
 
 	public FileMapper() {
 		addExports = new ArrayList<>();
@@ -62,14 +62,9 @@ public class FileMapper extends XmlMapper {
 		ignoreBootConflict = copy.ignoreBootConflict;
 		signature = copy.signature;
 
-		if (copy.addExports != null)
-			addExports.addAll(copy.addExports);
-
-		if (copy.addOpens != null)
-			addOpens.addAll(copy.addOpens);
-
-		if (copy.addReads != null)
-			addReads.addAll(copy.addReads);
+		addExports.addAll(copy.addExports);
+		addOpens.addAll(copy.addOpens);
+		addReads.addAll(copy.addReads);
 	}
 
 	@Override
@@ -124,8 +119,6 @@ public class FileMapper extends XmlMapper {
 	}
 
 	private void parseExports(NodeList list) {
-		addExports = new ArrayList<>();
-
 		for (int i = 0; i < list.getLength(); i++) {
 			Node n = list.item(i);
 			if ("exports".equals(n.getNodeName())) {
@@ -139,8 +132,6 @@ public class FileMapper extends XmlMapper {
 	}
 
 	private void parseOpens(NodeList list) {
-		addOpens = new ArrayList<>();
-
 		for (int i = 0; i < list.getLength(); i++) {
 			Node n = list.item(i);
 			if ("opens".equals(n.getNodeName())) {
@@ -154,8 +145,6 @@ public class FileMapper extends XmlMapper {
 	}
 
 	private void parseReads(NodeList list) {
-		addReads = new ArrayList<>();
-
 		for (int i = 0; i < list.getLength(); i++) {
 			Node n = list.item(i);
 			if ("reads".equals(n.getNodeName())) {
@@ -203,12 +192,11 @@ public class FileMapper extends XmlMapper {
 			builder.append(" signature=\"" + signature + "\"");
 		}
 
-		if ((addExports != null && addExports.size() > 0) || (addOpens != null && addOpens.size() > 0)
-						|| (addReads != null && addReads.size() > 0)) {
+		if (!addExports.isEmpty() || !addOpens.isEmpty() || !addReads.isEmpty()) {
 
 			builder.append(">\n");
 
-			if (addExports != null && addExports.size() > 0) {
+			if (!addExports.isEmpty()) {
 				builder.append("            <addExports>\n");
 
 				for (AddPackage ap : addExports) {
@@ -220,7 +208,7 @@ public class FileMapper extends XmlMapper {
 				builder.append("            </addExports>\n");
 			}
 
-			if (addOpens != null && addOpens.size() > 0) {
+			if (!addOpens.isEmpty()) {
 				builder.append("            <addOpens>\n");
 
 				for (AddPackage ap : addOpens) {
@@ -232,7 +220,7 @@ public class FileMapper extends XmlMapper {
 				builder.append("            </addOpens>\n");
 			}
 
-			if (addReads != null && addReads.size() > 0) {
+			if (!addReads.isEmpty()) {
 				builder.append("            <addReads>\n");
 
 				for (String r : addReads) {

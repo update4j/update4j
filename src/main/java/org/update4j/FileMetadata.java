@@ -92,9 +92,9 @@ public class FileMetadata {
 		this.ignoreBootConflict = ignoreBootConflict;
 		this.signature = signature;
 
-		this.addExports = Collections.unmodifiableList(addExports);
-		this.addOpens = Collections.unmodifiableList(addOpens);
-		this.addReads = Collections.unmodifiableList(addReads);
+		this.addExports = Collections.unmodifiableList(new ArrayList<>(addExports));
+		this.addOpens = Collections.unmodifiableList(new ArrayList<>(addOpens));
+		this.addReads = Collections.unmodifiableList(new ArrayList<>(addReads));
 	}
 
 	public URI getUri() {
@@ -434,9 +434,9 @@ public class FileMetadata {
 									.encodeToString(sig);
 
 				mapper.comment = pm.implyPlaceholders(getComment(), matcher, false);
-				mapper.addExports = getAddExports();
-				mapper.addOpens = getAddOpens();
-				mapper.addReads = getAddReads();
+				mapper.addExports.addAll(getAddExports());
+				mapper.addOpens.addAll(getAddOpens());
+				mapper.addReads.addAll(getAddReads());
 
 				return mapper;
 			} catch (IOException e) {
@@ -626,9 +626,9 @@ public class FileMetadata {
 			if (basePath != null && path != null) {
 				this.path = basePath.resolve(path);
 			}
-
+			
 			return new FileMetadata(uri, path, os, checksum, size, classpath, modulepath, comment, ignoreBootConflict,
-							signature, addExports, addOpens, addReads);
+							signature,addExports, addOpens, addReads);
 		}
 	}
 }
