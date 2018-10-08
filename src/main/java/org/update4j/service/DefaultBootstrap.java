@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,6 +35,8 @@ import org.update4j.Bootstrap;
 import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
 import org.update4j.Update;
+import org.update4j.util.PathUtils;
+import org.update4j.util.PropertyManager;
 
 public class DefaultBootstrap implements Delegate {
 
@@ -48,6 +51,10 @@ public class DefaultBootstrap implements Delegate {
 
 	private static final String PATTERN = "(?:\\s*=)?\\s*(.+)";
 
+	static {
+        PathUtils.init();
+    }
+
 	@Override
 	public long version() {
 		return Long.MIN_VALUE;
@@ -55,68 +62,13 @@ public class DefaultBootstrap implements Delegate {
 
 	@Override
 	public void main(List<String> args) throws Throwable {
-		if (args.isEmpty()) {
-			welcome();
-			return;
-		}
 
-		for (String arg : args) {
-			arg = arg.trim();
+        if (args.isEmpty()) {
+            welcome();
+            return;
+        }
 
-			// let's try first those who don't need regex for performance
-			if (arg.equals("--syncLocal")) {
-				validateNotSet(syncLocal, "syncLocal");
-				syncLocal = true;
-				continue;
-			} else if (arg.equals("--launchFirst")) {
-				validateNotSet(launchFirst, "launchFirst");
-				launchFirst = true;
-				continue;
-			} else if (arg.equals("--stopOnUpdateError")) {
-				validateNotSet(stopOnUpdateError, "stopOnUpdateError");
-				stopOnUpdateError = true;
-				continue;
-			} else if (arg.equals("--singleInstance")) {
-				validateNotSet(singleInstance, "singleInstance");
-				singleInstance = true;
-				continue;
-			}
-
-			Matcher m = Pattern.compile("--remote" + PATTERN).matcher(arg);
-			if (m.matches()) {
-				validateNotSet(remote, "remote");
-				remote = m.group(1);
-				continue;
-			}
-			m = Pattern.compile("--local" + PATTERN).matcher(arg);
-			if (m.matches()) {
-				validateNotSet(local, "local");
-				local = m.group(1);
-				continue;
-			}
-			m = Pattern.compile("--cert" + PATTERN).matcher(arg);
-			if (m.matches()) {
-				validateNotSet(cert, "cert");
-				cert = m.group(1);
-				continue;
-			}
-		}
-
-		if (remote == null && local == null) {
-			throw new IllegalArgumentException("One of --remote or --local must be supplied.");
-		}
-
-		if (launchFirst && local == null) {
-			throw new IllegalArgumentException("--launchFirst requires a local configuration.");
-		}
-
-		if (syncLocal && remote == null) {
-			throw new IllegalArgumentException("--syncLocal requires a remote configuration.");
-		}
-
-		if (syncLocal && local == null) {
-			throw new IllegalArgumentException("--syncLocal requires a local configuration.");
-		}
+	    parseArgs(args);
 
 		if (singleInstance) {
 			SingleInstanceManager.execute();
@@ -128,6 +80,77 @@ public class DefaultBootstrap implements Delegate {
 			updateFirst(args);
 		}
 	}
+
+	void parseArgs(List<String> args){
+
+	    //using empty property manager to replace placeholders in commandline
+        ArrayList<String> props = new ArrayList<>(System.getenv().keySet());
+        for(Object o: System.getProperties().keySet()){
+            if(o instanceof String && !(((String)o).indexOf("java.command")>-1)){
+                props.add((String)o);
+            }
+        }
+        PropertyManager pm = new PropertyManager(new ArrayList<>(), props);
+
+        for (String arg : args) {
+            arg = arg.trim();
+
+            // let's try first those who don't need regex for performance
+            if (arg.equals("--syncLocal")) {
+                validateNotSet(syncLocal, "syncLocal");
+                syncLocal = true;
+                continue;
+            } else if (arg.equals("--launchFirst")) {
+                validateNotSet(launchFirst, "launchFirst");
+                launchFirst = true;
+                continue;
+            } else if (arg.equals("--stopOnUpdateError")) {
+                validateNotSet(stopOnUpdateError, "stopOnUpdateError");
+                stopOnUpdateError = true;
+                continue;
+            } else if (arg.equals("--singleInstance")) {
+                validateNotSet(singleInstance, "singleInstance");
+                singleInstance = true;
+                continue;
+            }
+
+            Matcher m = Pattern.compile("--remote" + PATTERN).matcher(arg);
+            if (m.matches()) {
+                validateNotSet(remote, "remote");
+                remote = m.group(1);
+                continue;
+            }
+            m = Pattern.compile("--local" + PATTERN).matcher(arg);
+            if (m.matches()) {
+                validateNotSet(local, "local");
+                local = pm.resolvePlaceholders(m.group(1),true);
+                continue;
+            }
+            m = Pattern.compile("--cert" + PATTERN).matcher(arg);
+            if (m.matches()) {
+                validateNotSet(cert, "cert");
+                cert = m.group(1);
+                continue;
+            }
+        }
+
+        if (remote == null && local == null) {
+            throw new IllegalArgumentException("One of --remote or --local must be supplied.");
+        }
+
+        if (launchFirst && local == null) {
+            throw new IllegalArgumentException("--launchFirst requires a local configuration.");
+        }
+
+        if (syncLocal && remote == null) {
+            throw new IllegalArgumentException("--syncLocal requires a remote configuration.");
+        }
+
+        if (syncLocal && local == null) {
+            throw new IllegalArgumentException("--syncLocal requires a local configuration.");
+        }
+    }
+
 
 	private void validateNotSet(boolean val, String command) {
 		if (val)
@@ -356,4 +379,9 @@ public class DefaultBootstrap implements Delegate {
 						+ "\t\tSingleInstanceManager class.\n");
 		
 	}
+
+
+	public String getLocal(){
+	    return local;
+    }
 }

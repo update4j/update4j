@@ -1,0 +1,18 @@
+
+apply plugin: 'java'
+
+
+ext{
+    mainClass='org.update4jGradleExample.HelloWorld'
+    applicationName = "DepotAnalyzer"
+    moduleName = 'org.update4jGradleExample'
+}
+
+apply from: project.file('update4j.gradle')
+
+
+classes.dependsOn rootProject.jar
+
+
+
+

@@ -1,0 +1,121 @@
+
+ext.moduleName='org.update4j'
+
+allprojects {
+
+    apply plugin: 'java'
+    apply plugin: 'jacoco'
+    
+    version = '1.2.2' //same version for all subprojects
+
+    group = 'org.update4j'
+
+    sourceCompatibility = 1.10
+    targetCompatibility = 1.10
+
+    apply plugin: 'maven-publish'
+
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            url "https://repo1.maven.org/maven2"
+        }
+    }
+
+    dependencies {
+        testCompile (
+                [group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.3.1'],
+                [group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.3.1']
+        )
+    }
+
+
+    task wrapper(type: Wrapper) {
+        gradleVersion = '4.9'
+    }
+
+    sourceSets {
+        if (!JavaVersion.current().isJava9Compatible()) {
+            main {
+                java {
+                    exclude '**/module-info.java'
+                }
+            }
+        }
+    }
+
+
+    jar{
+
+    }
+
+    compileJava {
+        if (JavaVersion.current().isJava9Compatible()) {
+            inputs.property("moduleName", moduleName)
+            doFirst {
+                options.compilerArgs = [
+                        '--module-path', classpath.asPath,
+                ]
+                classpath = files()
+            }
+
+            javadoc {
+                exclude "**/module-info.java"
+                options.addStringOption('-module-path', classpath.asPath)
+            }
+        }
+    }
+
+    compileTestJava {
+        // use legacy execution for test, as many modules are still problematic
+        /*if (JavaVersion.current().isJava9Compatible()) {
+            inputs.property("moduleName", moduleName)
+            doFirst {
+                options.compilerArgs = [
+                        '--module-path', classpath.asPath,
+                        '--add-modules', 'junit',
+                        '--add-reads', "$moduleName=junit",
+                        '--patch-module', "$moduleName=" + files(sourceSets.test.java.srcDirs).asPath,
+                ]
+                classpath = files()
+            }
+        }*/
+    }
+
+
+    test {
+        useJUnitPlatform()
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
+    }
+
+    jacocoTestReport {
+        reports {
+            xml.enabled false
+            csv.enabled true
+            //html.destination file("${buildDir}/jacocoHtml")
+        }
+    }
+
+    javadoc{
+
+    }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+    }
+}
+
+
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'update4j',
+                'Implementation-Version': version,
+                'Main-Class': 'org.update4j.Bootstrap'
+    }
+}
+
+

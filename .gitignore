@@ -87,3 +87,5 @@ buildNumber.properties
 .classpath
 /.settings/
 /build/
+/.gradle/
+/gradle/

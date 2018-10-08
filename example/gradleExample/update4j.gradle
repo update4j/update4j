@@ -1,0 +1,421 @@
+
+buildscript {
+    repositories { mavenCentral() }
+    dependencies {
+        //using maven package
+        //classpath(group: 'org.update4j', name: 'update4j', version: "${version}")
+
+        //using jar of root project (jar must exist, so run ./gradlew jar first once)
+        classpath(rootProject.files("build/libs/update4j-${version}.jar"))
+    }
+}
+
+import org.update4j.FileMetadata
+import org.update4j.mapper.ConfigMapper
+import org.update4j.mapper.FileMapper
+
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.util.jar.JarFile
+import groovy.io.FileType
+
+
+ext{
+    // build directory setup
+    distDir = "build/distribution"
+    defaultDeploy = "${distDir}/update4jDeploy"
+    defaultInstall = "${distDir}/update4jBoot/install"
+    defaultBootPackage = "${distDir}/update4jBoot/package"
+    //update4j setup
+    defaultRemote = "file:///"+project.file(defaultDeploy).toPath().toAbsolutePath()+"/update4j.xml"
+    defaultAppName = 'Update4jGradleExample'
+    vendor = 'org.update4j'
+    defaultAppData = '${stdUserAppData}'+"/${defaultAppName}" //store in os specific path
+    //defaultAppData = '${bootJar}' //store in directory of jar
+
+    // if none of below is set, modules will be added to the module path and legacy jars to the classpath
+    modulesOnly = false // all jars will be added to the module path
+    classpathOnly = false // all jars will be added to the classpath
+}
+
+
+////////////// Configure Update4j /////////////////
+
+
+
+task deployJars{
+    dependsOn jar
+    ext.deployDir = defaultDeploy
+    doLast{
+        project.copy {
+            from configurations.runtime
+            from jar
+            into deployDir
+        }
+    }
+}
+
+task deploySignedJars(type: SignDirectory){
+    dependsOn deployJars
+    directory="${defaultDeploy}"
+}
+
+
+def isModule(File f){
+    return new JarFile(f).getJarEntry("module-info.class") != null;
+}
+
+task configUpdate4j(){
+    group 'build'
+    ext.deployDir = defaultDeploy
+    ext.bootDir = defaultBootPackage
+    ext.mainClass = project.mainClass
+    dependsOn deploySignedJars
+
+    outputs.file(project.file(ext.deployDir).toPath().resolve("update4j.xml"))
+
+    doLast{
+
+        def cb = org.update4j.Configuration.builder();
+        org.update4j.util.PathUtils.setVars(); //sometimes the System properties are not correctly fetched by gradle...
+        println "Data: "+System.getProperty("stdUserAppData")
+        println "PathUtils: "+org.update4j.util.PathUtils.stdUserAppData
+        // base URI from where to download, overridable in each individual file setting
+        //production
+        //var base = "https://example.com/"
+        //local testing
+        def base = "file://"+project.file(deployDir).absoluteFile
+        def baseCache = "${defaultAppData}"
+        cb.baseUri(base) //App dir
+        cb.basePath(baseCache)
+        cb.property("app.name", "${applicationName}")
+        cb.property("default.launcher.main.class", mainClass)
+
+        project.file(deployDir).eachFileRecurse(FileType.FILES) {
+            file ->
+                println file
+                if(!file.name.equals("update4j.xml")){
+                    def fData = FileMetadata.readFrom(file.toPath())
+                    fData.path(project.file(deployDir).toPath().relativize(file.toPath()).toString())
+                    if (file.name.endsWith(".jar")){
+                        if(classpathOnly){
+                            fData.classpath()
+                        } else if(modulesOnly) {
+                            fData.modulepath()
+                        } else {
+                            if(isModule(file)){
+                                fData.modulepath()
+                            } else {
+                                fData.classpath()
+                            }
+                        }
+                    }
+                    cb.file(fData)
+                }
+        }
+
+        def config = cb.build()
+        BufferedWriter out = null
+        try {
+            java.nio.file.Path p=project.file(deployDir).toPath()
+            Files.createDirectories(p)
+            out = Files.newBufferedWriter(p.resolve("update4j.xml"))
+            config.write(out);
+        } finally {
+            if(out != null){
+                out.close()
+            }
+        }
+    }
+}
+
+
+task update4jDeploy{
+    group 'application'
+    description 'creates the deploy package, that should be stored on the server'
+
+    dependsOn configUpdate4j
+
+}
+
+task bootCert(type: ExportCertificate){
+    certFile defaultBootPackage+"/app.crt"
+}
+
+task update4jBoot{
+    group 'application'
+    description 'creates a manually runnable package'
+
+    dependsOn bootCert
+
+    ext.bootDir = defaultBootPackage
+    ext.appName = defaultAppName
+    ext.remote = "file:///"+project.file(defaultDeploy).toPath().toAbsolutePath()+"/update4j.xml"
+
+    doLast{
+        //copy outputs of the project
+        project.copy {
+            from buildscript.configurations.classpath
+            into bootDir
+            include "update4j-*.jar"
+        }
+        String commandline = "java -jar update4j-*.jar"
+        commandline+=" '--remote=${remote}' '--local=${defaultAppData}/update4j.xml'"
+        commandline+=" --syncLocal"
+        commandline+=" --cert ./app.crt"
+        file(bootDir+"/start.bat").text = commandline
+        file(bootDir+"/start.sh").text = "#!/bin/sh\n"+commandline
+        file(bootDir+"/start.sh").setExecutable(true,false)
+    }
+}
+
+
+//just run the update4j jar
+task testUpdate4j(type: JavaExec){
+    group 'debug'
+    classpath buildscript.configurations.classpath
+    main = 'org.update4j.Bootstrap'
+    args+=[]
+}
+
+
+
+//////////////  Application packaging /////////////
+
+task update4jInstall(type: ApplicationJavaDeployerNative){
+    dependsOn update4jDeploy, update4jBoot //boot required for update4j.jar
+    mainClassName 'org.update4j.Bootstrap'
+    mainModuleName 'org.update4j'
+    outdir defaultInstall
+    appName "${defaultAppName}"
+    jarDir "${defaultBootPackage}"
+    String escapedLocal="--local=${defaultAppData}/update4j.xml"
+    if (System.properties['os.name'].toLowerCase().contains('mac') || System.properties['os.name'].toLowerCase().contains('linux'))
+        escapedLocal=escapedLocal.replaceAll('\\$','\\\\\\$')
+    println escapedLocal
+    progArgs+=["--remote=${defaultRemote}",
+               escapedLocal,
+               '--syncLocal',
+    ]
+}
+
+
+
+/////////////////// signing files //////////////////
+
+
+task generateKey(type: Exec, group: 'application'){
+    outputs.file(project.file('src/main/ssl/keystore.jks'))
+    // java-key
+    // keytool -genkeypair -keystore keystorer.jks -validity 3650 -alias codeKey
+        executable "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/bin/keytool"
+        args += '-genkeypair'
+        args += ['-keystore', "${project.rootProject.file('src/main/ssl/keystore.jks').absoluteFile}"]
+        args += ['-validity', '3650']
+        args += ['-storepass', 'aaaaaa']
+        args += ['-keypass', 'aaaaaa']
+        args += ['-alias', 'codeKey']
+
+
+    doFirst {
+        standardInput = System.in
+    }
+    doLast {
+        for(str in commandLine){
+            print str + " "
+        }
+        println ''
+    }
+}
+
+public class SignDirectory extends DefaultTask {
+
+    String directory="${project.jar.destinationDir}"
+
+
+    SignDirectory(){
+        dependsOn 'jar'
+        description 'Packages the jar file as native application'
+    }
+
+
+    @TaskAction
+    def exec(){
+        signFilesInDirecory(Paths.get(directory).toFile(),true)
+    }
+
+    def signFilesInDirecory(File dir, boolean recursive){
+        for (File f: dir.listFiles()){
+            if(f.name.indexOf(".jar")>-1){
+                signJarFile(f)
+            } else if(f.isDirectory()&&recursive) {
+                signFilesInDirecory(f,recursive)
+            }
+        }
+    }
+
+    def signJarFile(File f){
+        project.exec{
+            executable "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/bin/jarsigner"
+            args += ['-keystore', "${project.file('src/main/ssl/keystore.jks').absoluteFile}"]
+            args += ['-storepass', 'aaaaaa']
+            args += ['-keypass', 'aaaaaa']
+            args += [f.absoluteFile] //jarfile
+            args += ['codeKey']
+
+            for(str in commandLine){
+                print str + " "
+            }
+            println ''
+
+        }
+    }
+
+}
+
+public class ExportCertificate extends DefaultTask {
+
+    String certFile="${project.jar.destinationDir}"
+
+
+    ExportCertificate(){
+        dependsOn 'jar'
+        description 'Packages the jar file as native application'
+    }
+
+
+    @TaskAction
+    def exec(){
+        project.file(certFile).parentFile.mkdirs()
+        //keytool -export -keystore examplestore -alias signFiles -file Example.cer
+        project.exec{
+            executable "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/bin/keytool"
+            args += ['-export']
+            args += ['-keystore', "${project.file('src/main/ssl/keystore.jks').absoluteFile}"]
+            args += ['-storepass', 'aaaaaa']
+            args += ['-keypass', 'aaaaaa']
+            args += ['-alias','codeKey']
+            args += ['-file',"${certFile}"]
+
+            for(str in commandLine){
+                print str + " "
+            }
+            println ''
+
+        }
+    }
+
+}
+
+
+////////////////  native installer //////////////
+
+public class ApplicationJavaDeployer extends DefaultTask {
+    String mainClassName=project.mainClass
+    String mainModuleName=project.name
+    String appName=project.name
+    String subdir=""
+    String outdir="${project.buildDir}/distribution/packages/"
+    def progArgs=[ ]
+    def jvmOptions=[  ]
+    def jvmProperties=[ ]
+    def iconpath
+
+    String jarDir=project.jar.destinationDir
+
+    List<String> packArgs = new ArrayList<>();
+
+    ApplicationJavaDeployer(){
+        group 'application'
+        dependsOn 'jar'
+        description 'Packages the jar file as native application'
+    }
+
+    def collectArgs(){
+        packArgs+='-v'
+        packArgs+='-allpermissions'
+        packArgs+=['-outdir', "${outdir}/${subdir}"]
+        packArgs+=['-outfile', "${appName}"]
+        packArgs += [
+                '--module-path',jarDir+":${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/jmods",
+                '-m', "${this.mainModuleName}/${this.mainClassName}",
+                '-name', "${appName}",
+                '-title', "${appName}",
+                '-vendor', "${project.vendor}"
+        ]
+
+        for(arg in jvmOptions){
+            packArgs+="-BjvmOptions=${arg}"
+        }
+        for(prop in jvmProperties){
+            packArgs+="-BjvmProperties=${prop}"
+        }
+        for(arg in progArgs){
+            packArgs+=['-argument',arg]
+        }
+    }
+
+    @TaskAction
+    def exec(){
+        collectArgs()
+
+
+        project.exec{
+            println org.gradle.internal.jvm.Jvm.current().getJavaHome()
+            println jvmOptions
+            println jvmProperties
+            println iconpath
+            executable "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/bin/javapackager"
+            args += packArgs
+
+
+            for(str in commandLine){
+                print str + " "
+            }
+            println ''
+
+
+
+        }
+    }
+
+}
+
+public class ApplicationJavaDeployerNative extends ApplicationJavaDeployer {
+    def iconpath
+    String bundles='all';
+    boolean allModules = true
+
+
+    @Override
+    def collectArgs() {
+        packArgs+='-deploy'
+        super.collectArgs()
+
+        packArgs+='-native'
+        packArgs+=bundles
+        packArgs+="-BappVersion=${project.version}"
+        //packArgs+="-Bicon=${iconpath}"
+
+
+        // add all modules
+        def files = new File(jarDir).listFiles();
+
+        for(f in files){
+            println 'adding file ' + f.getName()
+            packArgs += [ '-srcfiles', "${f.getAbsolutePath()}" ]
+        }
+        String modules=""
+        if(allModules){
+            for(f in project.file("${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/jmods").listFiles()){
+                String mod=f.getName()
+                mod=mod.substring(0,mod.length()-".jmod".length())
+                println 'adding module ' + mod
+                modules += (modules.equals("")?'':',')+mod
+            }
+            packArgs += [ '--add-modules', modules ]
+
+        }
+
+    }
+}

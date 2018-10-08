@@ -407,7 +407,7 @@ public class PropertyManager {
 		if (value != null) {
 			if (PLACEHOLDER.matcher(value)
 							.find()) {
-				throw new IllegalStateException("System properties must not contain placeholders.");
+				throw new IllegalStateException("System properties must not contain placeholders. "+ key +" "+value);
 			}
 
 			return value;

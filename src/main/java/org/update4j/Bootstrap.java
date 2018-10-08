@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 
 import org.update4j.service.Delegate;
 import org.update4j.service.Service;
+import org.update4j.util.PathUtils;
 import org.update4j.util.StringUtils;
 
 /**
@@ -40,6 +41,10 @@ public class Bootstrap {
 	 * The version of the current build of the framework.
 	 */
 	public static final String VERSION = "1.2.2";
+
+	static{
+        PathUtils.init(); //init, so that variables in program arguments are replaced
+    }
 
 	/**
 	 * The main method to start the bootstrap application in Delegate Mode from

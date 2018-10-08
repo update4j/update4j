@@ -61,10 +61,7 @@ import org.update4j.mapper.FileMapper;
 import org.update4j.service.Launcher;
 import org.update4j.service.Service;
 import org.update4j.service.UpdateHandler;
-import org.update4j.util.FileUtils;
-import org.update4j.util.PropertyManager;
-import org.update4j.util.StringUtils;
-import org.update4j.util.Warning;
+import org.update4j.util.*;
 
 /**
  * This class is the heart of the framework. It contains all the logic required
@@ -449,6 +446,10 @@ public class Configuration {
 	private PropertyManager propertyManager;
 
 	private ConfigMapper mapper;
+
+    static{
+        PathUtils.init(); //init, so that variables in configuration are replaced
+    }
 
 	private Configuration() {
 	}
