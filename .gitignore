@@ -88,4 +88,3 @@ buildNumber.properties
 /.settings/
 /build/
 /.gradle/
-/gradle/

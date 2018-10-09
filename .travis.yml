@@ -4,5 +4,5 @@ jdk:
 sudo: false
 script:
   - mvn clean verify
-  - gradle wrapper
+  - ./gradlew wrapper
   - ./gradlew test
