@@ -2,11 +2,11 @@
 buildscript {
     repositories { mavenCentral() }
     dependencies {
-        //using maven package
-        //classpath(group: 'org.update4j', name: 'update4j', version: "${version}")
+        //using maven package (will not work with veersion 1.2.2 and below!
+        classpath(group: 'org.update4j', name: 'update4j', version: "${version}")
 
         //using jar of root project (jar must exist, so run ./gradlew jar first once)
-        classpath(rootProject.files("build/libs/update4j-${version}.jar"))
+        //classpath(rootProject.files("build/libs/update4j-${version}.jar"))
     }
 }
 
@@ -16,6 +16,8 @@ import org.update4j.mapper.FileMapper
 
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.security.KeyStore
+import java.security.PrivateKey
 import java.util.jar.JarFile
 import groovy.io.FileType
 
@@ -36,6 +38,13 @@ ext{
     // if none of below is set, modules will be added to the module path and legacy jars to the classpath
     modulesOnly = false // all jars will be added to the module path
     classpathOnly = false // all jars will be added to the classpath
+
+    // signing
+    //you may change this section according to your security requirements...
+    keypw = 'aaaaaa'
+    storepw = 'aaaaaa'
+    storefile = project.file('src/main/ssl/keystore.jks')
+    keyalias = 'codeKey'
 }
 
 
@@ -72,6 +81,7 @@ task configUpdate4j(){
     ext.mainClass = project.mainClass
     dependsOn deploySignedJars
 
+    inputs.dir(project.file(ext.deployDir).toPath()) //will always run as update4j.xml is in path...
     outputs.file(project.file(ext.deployDir).toPath().resolve("update4j.xml"))
 
     doLast{
@@ -90,6 +100,23 @@ task configUpdate4j(){
         cb.basePath(baseCache)
         cb.property("app.name", "${applicationName}")
         cb.property("default.launcher.main.class", mainClass)
+
+        //retrieve key from keystore for update4j signing
+        FileInputStream storeIs = null
+        PrivateKey privateKey = null
+        try {
+            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType())
+            storeIs=new FileInputStream(storefile)
+            keystore.load(storeIs, storepw.toCharArray())
+            privateKey = (PrivateKey)keystore.getKey(keyalias, keypw.toCharArray());
+        } finally { //just throw the exception, so build fails
+            if(storeIs!=null)
+                try{storeIs.close()}catch(Exception e){}
+        }
+        if(privateKey == null){
+            throw new RuntimeException("Private key is null")
+        }
+        cb.signer(privateKey)
 
         project.file(deployDir).eachFileRecurse(FileType.FILES) {
             file ->
@@ -140,6 +167,8 @@ task update4jDeploy{
 
 task bootCert(type: ExportCertificate){
     certFile defaultBootPackage+"/app.crt"
+    inputs.file(storefile)
+    outputs.file(certFile)
 }
 
 task update4jBoot{
@@ -163,6 +192,7 @@ task update4jBoot{
         commandline+=" '--remote=${remote}' '--local=${defaultAppData}/update4j.xml'"
         commandline+=" --syncLocal"
         commandline+=" --cert ./app.crt"
+        commandline+="\n"
         file(bootDir+"/start.bat").text = commandline
         file(bootDir+"/start.sh").text = "#!/bin/sh\n"+commandline
         file(bootDir+"/start.sh").setExecutable(true,false)
@@ -183,7 +213,7 @@ task testUpdate4j(type: JavaExec){
 //////////////  Application packaging /////////////
 
 task update4jInstall(type: ApplicationJavaDeployerNative){
-    dependsOn update4jDeploy, update4jBoot //boot required for update4j.jar
+    dependsOn update4jDeploy, update4jBoot //boot required for update4j.jar and public certificate
     mainClassName 'org.update4j.Bootstrap'
     mainModuleName 'org.update4j'
     outdir defaultInstall
@@ -208,13 +238,13 @@ task generateKey(type: Exec, group: 'application'){
     outputs.file(project.file('src/main/ssl/keystore.jks'))
     // java-key
     // keytool -genkeypair -keystore keystorer.jks -validity 3650 -alias codeKey
-        executable "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/bin/keytool"
-        args += '-genkeypair'
-        args += ['-keystore', "${project.rootProject.file('src/main/ssl/keystore.jks').absoluteFile}"]
-        args += ['-validity', '3650']
-        args += ['-storepass', 'aaaaaa']
-        args += ['-keypass', 'aaaaaa']
-        args += ['-alias', 'codeKey']
+    executable "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/bin/keytool"
+    args += '-genkeypair'
+    args += ['-keystore', "${storefile.absoluteFile}"]
+    args += ['-validity', '3650']
+    args += ['-storepass', project.storepw]
+    args += ['-keypass', project.keypw]
+    args += ['-alias',project.keyalias]
 
 
     doFirst {
@@ -257,11 +287,11 @@ public class SignDirectory extends DefaultTask {
     def signJarFile(File f){
         project.exec{
             executable "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/bin/jarsigner"
-            args += ['-keystore', "${project.file('src/main/ssl/keystore.jks').absoluteFile}"]
-            args += ['-storepass', 'aaaaaa']
-            args += ['-keypass', 'aaaaaa']
+            args += ['-keystore', "${project.storefile.absoluteFile}"]
+            args += ['-storepass', project.storepw]
+            args += ['-keypass', project.keypw]
             args += [f.absoluteFile] //jarfile
-            args += ['codeKey']
+            args += [project.keyalias]
 
             for(str in commandLine){
                 print str + " "
@@ -291,10 +321,10 @@ public class ExportCertificate extends DefaultTask {
         project.exec{
             executable "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/bin/keytool"
             args += ['-export']
-            args += ['-keystore', "${project.file('src/main/ssl/keystore.jks').absoluteFile}"]
-            args += ['-storepass', 'aaaaaa']
-            args += ['-keypass', 'aaaaaa']
-            args += ['-alias','codeKey']
+            args += ['-keystore', "${project.storefile.absoluteFile}"]
+            args += ['-storepass', project.storepw]
+            args += ['-keypass', project.keypw]
+            args += ['-alias',project.keyalias]
             args += ['-file',"${certFile}"]
 
             for(str in commandLine){

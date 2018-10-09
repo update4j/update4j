@@ -2,4 +2,6 @@ language: java
 jdk:
   - oraclejdk9
 sudo: false
-script: mvn clean verify
+script:
+  - mvn clean verify
+  - ./gradlew test
