@@ -77,7 +77,7 @@ import org.update4j.util.Warning;
  * machine, not both. The documentation of each method will point that out.
  * 
  * <p>
- * A configuration is linked to an XML file, and this class provide methods to
+ * A configuration (or config) is linked to an XML file, and this class provide methods to
  * read, write, generate and sync configurations. Once a configuration has been
  * created, it is immutable and cannot be modified. There are methods to
  * manipulate the XML elements and create new configurations from them, but the
@@ -86,8 +86,6 @@ import org.update4j.util.Warning;
  * <h2>Terminology</h2>
  * <p>
  * <ul>
- * <li><b>Config</b> &mdash; For the purpose of brevity we will refer to a
- * configuration as a 'config'.</li>
  * <li><b>Bootstrap Application</b> &mdash; The JVM startup application that
  * solely does the update and launch logic or anything at that level apart from
  * the Business Application.</li>
@@ -303,9 +301,9 @@ import org.update4j.util.Warning;
  * <p>
  * You can update before launching so the subsequent launch always has the
  * newest version, or you can update afterwards and only get the new version on
- * next restart. In the latter case you cannot update existing files, since the
- * JVM locks them upon launch; you can call any of the {@code updateTemp()}
- * overloads and complete the launch on next restart via
+ * next restart. In the latter case &mdash; on Windows &mdash; you cannot update
+ * existing files, since the JVM locks them upon launch; you can call any of the
+ * {@code updateTemp()} overloads and complete the launch on next restart via
  * {@link Update#finalizeUpdate(Path)}.
  * 
  * <p>
@@ -358,7 +356,7 @@ import org.update4j.util.Warning;
  * 	// some random method
  * 	Configuration config = getConfig();
  * 	// we don't want to hang, so we can update immediately
- * 	new Thread(() -> config.launch());
+ * 	new Thread(() -> config.launch()).start();
  * 
  * 	// and *after* launch do the update
  * 	if (config.requiresUpdate()) {
