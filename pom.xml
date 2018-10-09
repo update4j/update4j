@@ -95,8 +95,9 @@
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>3.0.1</version>
 				<configuration>
-					<additionalOptions>-html5</additionalOptions>
+					<noqualifier>all</noqualifier>
 					<failOnError>false</failOnError>
+					<additionalOptions>-html5</additionalOptions>
 				</configuration>
 				<executions>
 					<execution>
