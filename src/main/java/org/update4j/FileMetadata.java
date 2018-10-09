@@ -29,10 +29,37 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.update4j.mapper.ConfigMapper;
 import org.update4j.mapper.FileMapper;
 import org.update4j.util.FileUtils;
 import org.update4j.util.PropertyManager;
 
+/**
+ * This class represents a managed file (&mdash;in sense of updating and
+ * dynamically loading onto a JVM instance upon launch) in this framework. It
+ * corresponds with the {@code <file>} XML element.
+ * 
+ * <p>
+ * Some metadata is required for updating only, some are required for launch
+ * only, and some are for both. The documentation will try to point that out for
+ * each field.
+ * 
+ * <p>
+ * An instance of this class cannot be created directly, only
+ * {@link Configuration.Builder} and {@link Configuration#parse(ConfigMapper)}
+ * can. For both approaches you use a special interim object: The builder takes
+ * a {@link FileMetadata.Reference} object in the {@code file()} method &mdash;
+ * created by either {@link FileMetadata#readFrom(Path)} for single files, or
+ * {@link FileMetadata#streamDirectory(Path)} for a complete directory. The
+ * {@code parse()} method works with the {@link ConfigMapper} class that lists
+ * files with {@link FileMapper}s.
+ * 
+ * <p>
+ * An instance of this class is immutable and thus thread-safe.
+ * 
+ * @author Mordechai Meisels
+ *
+ */
 public class FileMetadata {
 
 	private final URI uri;
@@ -97,22 +124,91 @@ public class FileMetadata {
 		this.addReads = Collections.unmodifiableList(new ArrayList<>(addReads));
 	}
 
+	/**
+	 * Returns the download URI for this file. This might be directly expressed in
+	 * the {@code uri} attribute as an absolute uri, or relative to the base uri, or
+	 * &mdash; if missing &mdash; inferred from the {@code path} attribute.
+	 * 
+	 * <p>
+	 * When inferring from the path it will use the complete path structure if
+	 * &mdash; and only if &mdash; the path is relative to the base path. Otherwise
+	 * it will only use the last part (i.e. the "filename").
+	 * 
+	 * 
+	 * <p>
+	 * If this file is marked for a foreign OS and the URI has a foreign property in
+	 * the file (a property marked for a different {@code os}), it will return
+	 * {@code null}.
+	 * 
+	 * <p>
+	 * This field is only used for updating.
+	 * 
+	 * @return The download URI for this file.
+	 */
 	public URI getUri() {
 		return uri;
 	}
 
+	/**
+	 * Returns the local path for this file. This might be directly expressed in the
+	 * {@code path} attribute as an absolute path, or relative to the base path, or
+	 * &mdash; if missing &mdash; inferred from the {@code uri} attribute.
+	 * 
+	 * <p>
+	 * When inferring from the uri it will use the complete path structure if
+	 * &mdash; and only if &mdash; the uri is relative to the base uri. Otherwise it
+	 * will only use the last part (i.e. the "filename").
+	 * 
+	 * <p>
+	 * If this file is marked for a foreign OS and the path has a foreign property
+	 * in the file (a property marked for a different {@code os}), it will return
+	 * {@code null}.
+	 * 
+	 * <p>
+	 * This field is used for both updating and launching.
+	 * 
+	 * @return The local path for this file.
+	 */
 	public Path getPath() {
 		return path;
 	}
 
+	/**
+	 * Returns the operating system expressed in the {@code os} attribute, or
+	 * {@code null} if non.
+	 * 
+	 * <p>
+	 * This field is used for both updating and launching.
+	 * 
+	 * @return The operating system expressed in the {@code os} attribute, or
+	 *         {@code null} if non.
+	 */
 	public OS getOs() {
 		return os;
 	}
 
+	/**
+	 * Returns the Adler32 checksum of this file. Used to check if an update is
+	 * needed and to validate the file post-download.
+	 * 
+	 * <p>
+	 * This field is only used for updating.
+	 * 
+	 * @return The Adler32 checksum of this file.
+	 */
 	public long getChecksum() {
 		return checksum;
 	}
 
+	/**
+	 * Returns the file size. Used to check if an update is needed, validate the
+	 * file post-download, and to calculate proper download deltas.
+	 * 
+	 * <p>
+	 * This field is only used for updating.
+	 * 
+	 * @return The file size.
+	 */
 	public long getSize() {
 		return size;
 	}
@@ -167,9 +263,8 @@ public class FileMetadata {
 
 	public static Stream<Reference> streamDirectory(Path dir) {
 		try {
-			return Files.walk(dir)
-							.filter(p -> Files.isRegularFile(p))
-							.map(FileMetadata::readFrom);
+			return Files.walk(dir).filter(p -> Files.isRegularFile(p)).map(FileMetadata::readFrom).peek(
+							fm -> fm.path(dir.relativize(fm.getSource())));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -430,8 +525,7 @@ public class FileMetadata {
 
 				byte[] sig = getSignature(key);
 				if (sig != null)
-					mapper.signature = Base64.getEncoder()
-									.encodeToString(sig);
+					mapper.signature = Base64.getEncoder().encodeToString(sig);
 
 				mapper.comment = pm.implyPlaceholders(getComment(), matcher, false);
 				mapper.addExports.addAll(getAddExports());
@@ -552,8 +646,7 @@ public class FileMetadata {
 		}
 
 		Builder signature(String signature) {
-			return signature(Base64.getDecoder()
-							.decode(signature));
+			return signature(Base64.getDecoder().decode(signature));
 		}
 
 		private void validateAddReads(List<String> list) {
@@ -604,15 +697,12 @@ public class FileMetadata {
 			}
 
 			// relativization gets messed up if relative path has a leading slash
-			if (uri != null && !uri.isAbsolute() && uri.getPath()
-							.startsWith("/")) {
-				uri = URI.create("/")
-								.relativize(uri);
+			if (uri != null && !uri.isAbsolute() && uri.getPath().startsWith("/")) {
+				uri = URI.create("/").relativize(uri);
 			}
 
 			if (path != null && !path.isAbsolute() && path.startsWith("/")) {
-				path = Paths.get("/")
-								.relativize(path);
+				path = Paths.get("/").relativize(path);
 			}
 
 			if (os == null && path != null) {
@@ -626,9 +716,9 @@ public class FileMetadata {
 			if (basePath != null && path != null) {
 				this.path = basePath.resolve(path);
 			}
-			
+
 			return new FileMetadata(uri, path, os, checksum, size, classpath, modulepath, comment, ignoreBootConflict,
-							signature,addExports, addOpens, addReads);
+							signature, addExports, addOpens, addReads);
 		}
 	}
 }

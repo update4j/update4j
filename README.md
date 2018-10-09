@@ -1,4 +1,4 @@
-# update4j <sup><sup>beta</sup></sup> &nbsp; &nbsp; &nbsp; [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Migrating%20to%20Java%209%3F%20Check%20out%20the%20powerful%20and%20flexible%20update%2Flaunch%20framework%20%23update4j%20and%20make%20your%20app%20remotely%20updatable.&via=github&hashtags=java,java9,webstart&url=https://github.com/update4j/update4j)
+# [![update4j-logo][3]][3]
 
 [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.2.2-yellow.svg)](https://search.maven.org/search?q=org.update4j)    [![Gitter](https://badges.gitter.im/update4j/update4j.svg)](https://gitter.im/update4j/update4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
@@ -35,7 +35,7 @@ the application would pass its command-line arguments to the existing running in
 
 ## Installation & Usage
 
-Install using Maven:
+Download from the [release](https://github.com/update4j/update4j/releases) page, or install using Maven:
 
 ```xml
 <dependency>
@@ -69,10 +69,11 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 * *Upcoming Release*
   * Java 11 compatibility: Removed JavaFX modules by using a multi-release `module-info.class` file.
-  * On Windows, check if old files are locked *before* completing update to prevent breaking consistency (as the feature added in previous release didn't handle file locks in an atomically).
-  * On Unix-like operating systems, unlink old file before moving new file to allow overwriting locked files.
+  * Safer file overriding by properly handling file locks.
   * `ConfigMapper` and `FileMapper` lists are now `final`, to prevent accidental `NPE`.
+  * `FileMetadata::streamDirectory` now automatically presets `path` attribute to actual filename _relative to_ the streaming directory, instead of absolute source path.
 * **1.2.2**
+  * Removed `DefaultUpdateHandler` percentage output to avoid problems with Eclipse console.
   * Added `DefaultBootstrap` with a straightforward CLI, and `DefaultLauncher`.
   * Added `Configuration.sync()` methods.
   * Additional file validation on update and renaming `UpdateManager.verifyingFileSignature()` to `validatingFile()` to include all of them.
@@ -114,3 +115,4 @@ This project is licensed under the [Apache Software License 2.0](http://www.apac
 
   [1]: https://i.stack.imgur.com/Hz1G7.gif
   [2]: https://i.stack.imgur.com/Ttf8Z.gif
+  [3]: https://i.stack.imgur.com/L6WAF.jpg
