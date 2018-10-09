@@ -10,8 +10,8 @@ allprojects {
 
     group = 'org.update4j'
 
-    sourceCompatibility = 1.10
-    targetCompatibility = 1.10
+    sourceCompatibility = 1.9
+    targetCompatibility = 1.9
 
     apply plugin: 'maven-publish'
 
