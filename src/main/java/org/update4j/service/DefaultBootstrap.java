@@ -136,7 +136,7 @@ public class DefaultBootstrap implements Delegate {
             }
 
             //unknown argument
-			throw new IllegalArgumentException("Unknown argument: "+arg);
+			//throw new IllegalArgumentException("Unknown argument: "+arg);
         }
 
         if (remote == null && local == null) {
