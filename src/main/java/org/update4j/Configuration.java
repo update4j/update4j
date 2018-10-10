@@ -77,11 +77,11 @@ import org.update4j.util.Warning;
  * machine, not both. The documentation of each method will point that out.
  * 
  * <p>
- * A configuration (or config) is linked to an XML file, and this class provide methods to
- * read, write, generate and sync configurations. Once a configuration has been
- * created, it is immutable and cannot be modified. There are methods to
- * manipulate the XML elements and create new configurations from them, but the
- * original remains untouched.
+ * A configuration (or config) is linked to an XML file, and this class provide
+ * methods to read, write, generate and sync configurations. Once a
+ * configuration has been created, it is immutable and cannot be modified. There
+ * are methods to manipulate the XML elements and create new configurations from
+ * them, but the original remains untouched.
  * 
  * <h2>Terminology</h2>
  * <p>
@@ -582,7 +582,9 @@ public class Configuration {
 	 * Returns the {@link Property} with the corresponding key, or {@code null} if
 	 * missing. If there are more than one property with the given key (if they are
 	 * platform specific), only the one corresponding to this system will be
-	 * returned.
+	 * returned. It will still return a foreign property if no property resolves for
+	 * the current system; {@link #getUserPropertyForCurrentOs(String)} would return
+	 * {@code null} in this case.
 	 * 
 	 * @param key
 	 *            The key of the property.
@@ -814,7 +816,7 @@ public class Configuration {
 	 * 
 	 * @return If at-least one file requires an update.
 	 * @throws IOException
-	 *             If any {@code IOException} arises will reading the files.
+	 *             If any {@code IOException} arises while reading the files.
 	 */
 	public boolean requiresUpdate() throws IOException {
 		for (FileMetadata file : getFiles()) {
