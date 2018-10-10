@@ -7,10 +7,10 @@ buildscript {
     repositories { mavenCentral() }
     dependencies {
         //using maven package (will not work with version 1.2.2 and below!
-        //classpath(group: 'org.update4j', name: 'update4j', version: "${update4jVersion}")
+        classpath(group: 'org.update4j', name: 'update4j', version: "${update4jVersion}")
 
         //using jar of root project (jar must exist, so run ./gradlew jar first once)
-        classpath(rootProject.files("build/libs/update4j-${update4jVersion}.jar"))
+        //classpath(rootProject.files("build/libs/update4j-${update4jVersion}.jar"))
     }
 }
 
@@ -171,7 +171,7 @@ task update4jDeploy{
 
 task bootCert(type: ExportCertificate){
     description "exports the public key from the keystore"
-    certFile "tmp/app.crt"
+    certFile "${buildDir}/tmp/app.crt"
     inputs.file(storefile)
     outputs.file(certFile)
 }
@@ -193,7 +193,7 @@ task bootSignedJar(type: SignDirectory){
         project.exec {
             executable "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/bin/jar"
             args += ['uf', "${bootDir}/update4j-${update4jVersion}.jar"]
-            args += ['-C',"tmp",'app.crt']
+            args += ['-C',"${buildDir}/tmp",'app.crt']
 
             for(str in commandLine){
                 print str + " "

@@ -38,14 +38,10 @@ There are three update4j specific gradle targets:
   through the variable ``allModules``. If set to false, only the required modules of update4j will be included.
   
 - Signing: All files are signed by update4j with the key in ``src/main/sll/keystore.jks``. The keystore and parameters 
-  can be modified in the variables section at the top of ``update4j.gradle``. All jars in the package directory are 
-  signed additionally.
+  can be modified in the variables section at the top of ``update4j.gradle``. The public key is embedded in the 
+  update4j.jar in the boot directory and the installers, which is also signed afterwards. 
+  All jars in the package directory are signed additionally.
 
 ## Tested
 
 On Mac only
-
-## TODO
-
-- [ ] signing -> verify installer retrieves cert file, verify package retrieves cert
-
