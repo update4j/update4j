@@ -7,10 +7,17 @@ buildscript {
     repositories { mavenCentral() }
     dependencies {
         //using maven package (will not work with version 1.2.2 and below!
-        classpath(group: 'org.update4j', name: 'update4j', version: "${update4jVersion}")
+        //classpath(group: 'org.update4j', name: 'update4j', version: "${update4jVersion}")
 
         //using jar of root project (jar must exist, so run ./gradlew jar first once)
-        //classpath(rootProject.files("build/libs/update4j-${update4jVersion}.jar"))
+        if(rootProject.file("build/libs/update4j-${update4jVersion}.jar").exists()){
+            classpath(rootProject.files("build/libs/update4j-${update4jVersion}.jar"))
+        } else {
+            //using maven as fallback, to build jar - build of update4jInstall must be triggered again
+            logger.warn('Using maven as fallback to build update4j.jar first'+
+                    ' - changes to the current source will not be available')
+            classpath(group: 'org.update4j', name: 'update4j', version: "${update4jVersion}")
+        }
     }
 }
 

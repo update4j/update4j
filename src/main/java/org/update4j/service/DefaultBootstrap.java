@@ -33,7 +33,7 @@ import org.update4j.Bootstrap;
 import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
 import org.update4j.Update;
-import org.update4j.signing.CertificateBuilder;
+import org.update4j.util.CertificateBuilder;
 import org.update4j.util.PathUtils;
 import org.update4j.util.PropertyManager;
 
@@ -85,9 +85,7 @@ public class DefaultBootstrap implements Delegate {
 	    //using empty property manager to replace placeholders in commandline
         ArrayList<String> props = new ArrayList<>(System.getenv().keySet());
         for(Object o: System.getProperties().keySet()){
-            if(o instanceof String && !(((String)o).indexOf("java.command")>-1)){
-                props.add((String)o);
-            }
+        	props.add((String)o);
         }
         PropertyManager pm = new PropertyManager(new ArrayList<>(), props);
 
@@ -371,12 +369,14 @@ public class DefaultBootstrap implements Delegate {
 						+ "\t\tconfiguration file. If it fails to download or command is missing, it will\n"
 						+ "\t\tfall back to local.\n\n"
 						+ "\t--local=[path] - The path of a local configuration to use if the remote failed to download\n"
-						+ "\t\tor was not passed. If both remote and local fail, startup fails.\n\n"
+						+ "\t\tor was not passed. If both remote and local fail, startup fails. You may also use variables e.g. \n"
+						+ "\t\t${stdUserAppData} which refers to the platform dependent application data directory\n\n"
 						+ "\t--syncLocal - Sync the local configuration with the remote if it downloaded successfully.\n"
 						+ "\t\tUseful to still allow launching without Internet connection. Default will not sync unless\n"
 						+ "\t\t--launchFirst was specified.\n\n"
 						+ "\t--cert=[path] - A path to an X.509 certificate file to use to verify signatures. If missing,\n"
-						+ "\t\tno signature verification will be performed.\n\n"
+						+ "\t\tno signature verification will be performed. The path may also point to a included java\n"
+						+ "\t\tresource e.g. res:/app.crt, if the file is embedded in the root directory of the jar\n\n"
 						+ "\t--launchFirst - If specified, it will first launch the local application then silently\n"
 						+ "\t\tdownload the update; the update will be available only on next restart. It will still\n"
 						+ "\t\tdownload the remote and update first if the local config requires an update\n"

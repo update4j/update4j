@@ -1,6 +1,7 @@
-package org.update4j.signing;
+package org.update4j.util;
 
 import org.junit.jupiter.api.Test;
+import org.update4j.util.CertificateBuilder;
 
 import java.nio.file.Paths;
 import java.security.cert.Certificate;

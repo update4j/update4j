@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -32,6 +33,8 @@ import org.update4j.PlaceholderMatchType;
 import org.update4j.Property;
 
 public class PropertyManager {
+
+	private static final Logger log = Logger.getLogger(PropertyManager.class.getName());
 
 	public static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{([^}]+)\\}");
 
@@ -315,7 +318,16 @@ public class PropertyManager {
 
 		if (systemProperties != null) {
 			for (String sysProp : systemProperties) {
-				resolved.put(sysProp, trySystemProperty(sysProp, true));
+				String propVal=null;
+				try{
+					propVal= trySystemProperty(sysProp, true);
+				} catch(Exception e){
+					log.warning("Couldn't  retrieve value for "+sysProp
+							+" errors might result trying to use this value. "+e.getMessage());
+				}
+				if(propVal!=null){
+					resolved.put(sysProp, propVal);
+				}
 			}
 		}
 

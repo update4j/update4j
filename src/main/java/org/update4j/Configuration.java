@@ -630,11 +630,12 @@ public class Configuration {
 	 * property.
 	 * 
 	 * <p>
-	 * 
-	 * @apiNote Although everything in this class is immutable, this is the only
-	 *          thing that can change after construction by calling
-	 *          {@link Configuration#resolvePlaceholders(String)} and the passed
-	 *          string has a reference to a system property.
+	 * <i><b>ApiNote:</b><br>
+	 * Although everything in this class is immutable, this is the only
+	 * hing that can change after construction by calling
+	 * {@link Configuration#resolvePlaceholders(String)} and the passed
+	 * string has a reference to a system property.
+	 * </i>
 	 * 
 	 * @return A map of the keys and real values of the properties, after resolving
 	 *         the placeholders, never {@code null}.

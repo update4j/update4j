@@ -1,4 +1,4 @@
-package org.update4j.signing;
+package org.update4j.util;
 
 import java.io.InputStream;
 import java.nio.file.Files;
