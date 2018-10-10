@@ -68,6 +68,8 @@ For more information refer to [Starting the Application](https://github.com/upda
 ## Change Log
 
 * *Upcoming Release*
+  * You can now sign the configuration itself to ensure integrity of non-file elements, as paths and properties.
+  * `FileMetadata.getSignature()` now returns a `String` instead of `byte[]` to avoid modification.
   * Java 11 compatibility: Removed JavaFX modules by using a multi-release `module-info.class` file.
   * Safer file overriding by properly handling file locks.
   * `ConfigMapper` and `FileMapper` lists are now `final`, to prevent accidental `NPE`.

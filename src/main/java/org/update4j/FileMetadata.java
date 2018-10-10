@@ -71,14 +71,14 @@ public class FileMetadata {
 	private final boolean modulepath;
 	private final String comment;
 	private final boolean ignoreBootConflict;
-	private final byte[] signature;
+	private final String signature;
 
 	private final List<AddPackage> addExports;
 	private final List<AddPackage> addOpens;
 	private final List<String> addReads;
 
 	private FileMetadata(URI uri, Path path, OS os, long checksum, long size, boolean classpath, boolean modulepath,
-					String comment, boolean ignoreBootConflict, byte[] signature, List<AddPackage> addExports,
+					String comment, boolean ignoreBootConflict, String signature, List<AddPackage> addExports,
 					List<AddPackage> addOpens, List<String> addReads) {
 
 		this.uri = uri;
@@ -229,7 +229,7 @@ public class FileMetadata {
 		return ignoreBootConflict;
 	}
 
-	public byte[] getSignature() {
+	public String getSignature() {
 		return signature;
 	}
 
@@ -557,7 +557,7 @@ public class FileMetadata {
 		private boolean modulepath;
 		private String comment;
 		private boolean ignoreBootConflict;
-		private byte[] signature;
+		private String signature;
 
 		private List<AddPackage> addExports;
 		private List<AddPackage> addOpens;
@@ -638,15 +638,11 @@ public class FileMetadata {
 
 			return this;
 		}
-
-		Builder signature(byte[] signature) {
-			this.signature = signature;
-
-			return this;
-		}
-
+		
 		Builder signature(String signature) {
-			return signature(Base64.getDecoder().decode(signature));
+			this.signature = signature;
+			
+			return this;
 		}
 
 		private void validateAddReads(List<String> list) {

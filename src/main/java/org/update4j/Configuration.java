@@ -22,6 +22,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
@@ -38,6 +39,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -391,10 +394,23 @@ import org.update4j.util.Warning;
  * <h3>Signature</h3>
  * <p>
  * Optionally, to secure your clients in the event of server compromise, you can
- * sign the files via the {@code signer()} method in the Builder API, or
- * {@link Configuration#sync(PrivateKey)}. If you used the {@link PublicKey}
- * overload of {@code update()} or {@code updateTemp()} it will verify all files
- * and reject the download if they fail.
+ * sign the configuration and files via the {@code signer()} method in the
+ * Builder API, or {@link Configuration#sync(PrivateKey)}.
+ * 
+ * <p>
+ * The config signature ensures that it has not been tampered, as changed URIs,
+ * paths or properties. Changes that are not significant to the framework, as
+ * whitespaces or element/attribute order do not matter. Changing element order
+ * in lists (i.e. properties or files) do change the ordering in the
+ * end-resulting list, and is part of the signature. The {@code instant} field
+ * is never part of the signature. To verify the config itself, read it with the
+ * {@link #read(Reader, PublicKey)} overload, or invoke
+ * {@link #verifyConfiguration(PublicKey)}.
+ * 
+ * <p>
+ * To verify files on update, use the {@link PublicKey} overload of
+ * {@code update()} or {@code updateTemp()} and it will reject the download if
+ * any file fails.
  * 
  * <h1>Launching</h1>
  * <p>
@@ -437,6 +453,7 @@ import org.update4j.util.Warning;
 public class Configuration {
 
 	private Instant timestamp;
+	private String signature;
 
 	private URI baseUri;
 	private Path basePath;
@@ -468,6 +485,25 @@ public class Configuration {
 	 */
 	public Instant getTimestamp() {
 		return timestamp;
+	}
+
+	/**
+	 * Returns the signature for this configuration. The signature ensures that the
+	 * config has not been tampered. Changes that are not significant to the
+	 * framework, as whitespaces or element/attribute order do not matter. Changing
+	 * element order in lists (i.e. properties or files) do change the ordering in
+	 * the end-resulting list, and is part of the signature.
+	 * 
+	 * <p>
+	 * The {@code instant} field is never part of the signature.
+	 * 
+	 * <p>
+	 * This field is read from the {@code signature} in the <em>root</em> node.
+	 * 
+	 * @return The signature for this configuration.
+	 */
+	public String getSignature() {
+		return signature;
 	}
 
 	/**
@@ -1108,7 +1144,7 @@ public class Configuration {
 			if (file.getSignature() == null)
 				throw new SecurityException("Missing signature.");
 
-			if (!sig.verify(file.getSignature()))
+			if (!sig.verify(Base64.getDecoder().decode(file.getSignature())))
 				throw new SecurityException("Signature verification failed.");
 		}
 
@@ -1341,6 +1377,28 @@ public class Configuration {
 	}
 
 	/**
+	 * Reads and parses a configuration XML then verifies the configuration
+	 * signature against the public key.
+	 * 
+	 * @param reader
+	 *            The {@code Reader} for reading the XML. @return A {@code
+	 * Configuration} as parsed from the given XML.
+	 * @throws IOException
+	 *             Any exception that arises while reading.
+	 * @throws SecurityException
+	 *             If the configuration does not have a signature, or if
+	 *             verification failed.
+	 */
+	public static Configuration read(Reader reader, PublicKey key) throws IOException {
+		ConfigMapper configMapper = ConfigMapper.read(reader);
+
+		Configuration config = parseImpl(configMapper);
+		config.verifyConfiguration(key);
+
+		return config;
+	}
+
+	/**
 	 * Parses a configuration from the given XML mapper.
 	 * 
 	 * @param mapper
@@ -1365,6 +1423,8 @@ public class Configuration {
 			config.timestamp = Instant.parse(configMapper.timestamp);
 		else
 			config.timestamp = Instant.now();
+
+		config.signature = configMapper.signature;
 
 		if (configMapper.baseUri != null) {
 			String uri = config.resolvePlaceholders(configMapper.baseUri, true);
@@ -1522,7 +1582,7 @@ public class Configuration {
 	 * rest.
 	 * 
 	 * @param signer
-	 *            The {@link PrivateKey} to use for file signing.
+	 *            The {@link PrivateKey} to use for config and file signing.
 	 * @return A new {@code Configuration} with synced file metadata.
 	 * @throws IOException
 	 *             If any exception arises while reading file metadata.
@@ -1552,7 +1612,7 @@ public class Configuration {
 	 * @param overrideBasePath
 	 *            The {@code Path} to use instead of the base path to lookup files.
 	 * @param signer
-	 *            The {@link PrivateKey} to use for file signing.
+	 *            The {@link PrivateKey} to use for config and file signing.
 	 * @return A new {@code Configuration} with synced file metadata.
 	 * @throws IOException
 	 *             If any exception arises while reading file metadata
@@ -1560,6 +1620,7 @@ public class Configuration {
 	public Configuration sync(Path overrideBasePath, PrivateKey signer) throws IOException {
 		ConfigMapper newMapper = generateXmlMapper();
 
+		boolean changed = false;
 		for (int i = 0; i < getFiles().size(); i++) {
 
 			FileMetadata fm = getFiles().get(i);
@@ -1590,13 +1651,54 @@ public class Configuration {
 
 			if (fm.getSize() != fileMapper.size || fm.getChecksum() != checksum) {
 				System.out.println("[INFO] Synced '" + path.getFileName() + "'.");
-
-				newMapper.timestamp = Instant.now().toString();
+				changed = true;
 			}
 
 		}
 
+		if (changed) {
+			newMapper.timestamp = Instant.now().toString();
+		}
+
+		if (signer == null) {
+			newMapper.signature = null;
+		} else {
+			newMapper.signature = newMapper.sign(signer);
+		}
+
 		return parseImpl(newMapper);
+	}
+
+	/**
+	 * Verifies this config against this public key and throws a
+	 * {@code SecurityException} if the config doesn't have a signature or if
+	 * verification failed.
+	 * 
+	 * <p>
+	 * This process does <em>not</em> check individual file signatures.
+	 * 
+	 * @param key
+	 *            The public key to check against.
+	 */
+	public void verifyConfiguration(PublicKey key) {
+		if (getSignature() == null) {
+			throw new SecurityException("No signature in configuration root node.");
+		}
+
+		try {
+			Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
+			sign.initVerify(key);
+			sign.update(mapper.getChildrenXml().getBytes("UTF-8"));
+
+			if (!sign.verify(Base64.getDecoder().decode(getSignature()))) {
+				throw new SecurityException("Signature verification failed.");
+			}
+
+		} catch (InvalidKeyException | SignatureException e) {
+			throw new RuntimeException(e);
+		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+			throw new AssertionError(e);
+		}
 	}
 
 	/**
@@ -1845,8 +1947,8 @@ public class Configuration {
 		}
 
 		/**
-		 * Set the private key to use for file signing. If not set, the files will not
-		 * be signed.
+		 * Set the private key to use for configuration and file signing. If not set,
+		 * they will not be signed.
 		 * 
 		 * @param key
 		 *            the {@link PrivateKey} for file signing.
@@ -2101,6 +2203,10 @@ public class Configuration {
 				for (FileMetadata.Reference fileRef : files) {
 					mapper.files.add(fileRef.getFileMapper(pm, baseUri, basePath, matcher, signer));
 				}
+			}
+
+			if (getSigner() != null) {
+				mapper.signature = mapper.sign(getSigner());
 			}
 
 			return Configuration.parseImpl(mapper, pm);

@@ -16,9 +16,18 @@
 package org.update4j.mapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,6 +49,7 @@ import org.xml.sax.SAXException;
 public class ConfigMapper extends XmlMapper {
 
 	public String timestamp;
+	public String signature;
 	public String baseUri;
 	public String basePath;
 	public String updateHandler;
@@ -60,6 +70,7 @@ public class ConfigMapper extends XmlMapper {
 	public ConfigMapper(ConfigMapper copy) {
 		this();
 		timestamp = copy.timestamp;
+		signature = copy.signature;
 		baseUri = copy.baseUri;
 		basePath = copy.basePath;
 		updateHandler = copy.updateHandler;
@@ -75,6 +86,7 @@ public class ConfigMapper extends XmlMapper {
 			return;
 
 		timestamp = getAttributeValue(node, "timestamp");
+		signature = getAttributeValue(node, "signature");
 
 		NodeList children = node.getChildNodes();
 
@@ -87,8 +99,8 @@ public class ConfigMapper extends XmlMapper {
 				updateHandler = getAttributeValue(n, "updateHandler");
 				launcher = getAttributeValue(n, "launcher");
 			} else if ("properties".equals(n.getNodeName())) {
-				parseProperties(n.getChildNodes()); // FIXME for removal 
-			} else if ("files".equals(n.getNodeName()) || "libraries".equals(n.getNodeName())) {
+				parseProperties(n.getChildNodes());
+			} else if ("files".equals(n.getNodeName())) {
 				parseFiles(n.getChildNodes());
 			}
 		}
@@ -132,71 +144,100 @@ public class ConfigMapper extends XmlMapper {
 		if (timestamp != null) {
 			builder.append(" timestamp=\"" + timestamp + "\"");
 		}
+		if (signature != null) {
+			builder.append(" signature=\"" + signature + "\"");
+		}
 
-		if (baseUri != null || basePath != null || updateHandler != null || launcher != null || properties.isEmpty()
-						|| !files.isEmpty()) {
+		String children = getChildrenXml();
 
+		if (!children.isEmpty()) {
 			builder.append(">\n");
-
-			if (baseUri != null || basePath != null) {
-				builder.append("    <base");
-
-				if (baseUri != null) {
-					builder.append(" uri=\"" + baseUri + "\"");
-				}
-				if (basePath != null) {
-					builder.append(" path=\"" + basePath + "\"");
-				}
-
-				builder.append("/>\n");
-			}
-			if (updateHandler != null || launcher != null) {
-				builder.append("    <provider");
-
-				if (updateHandler != null) {
-					builder.append(" updateHandler=\"" + updateHandler + "\"");
-				}
-				if (launcher != null) {
-					builder.append(" launcher=\"" + launcher + "\"");
-				}
-
-				builder.append("/>\n");
-			}
-
-			if (!properties.isEmpty()) {
-				builder.append("    <properties>\n");
-
-				for (Property p : properties) {
-					builder.append("        <property");
-
-					builder.append(" key=\"" + p.getKey() + "\"");
-					builder.append(" value=\"" + p.getValue() + "\"");
-
-					if (p.getOs() != null)
-						builder.append(" os=\"" + p.getOs().getShortName() + "\"");
-
-					builder.append("/>\n");
-				}
-
-				builder.append("    </properties>\n");
-			}
-
-			if (!files.isEmpty()) {
-				builder.append("    <files>\n");
-
-				for (FileMapper fm : files) {
-					builder.append(fm.toXml());
-				}
-
-				builder.append("    </files>\n");
-			}
-
+			builder.append(children);
 			builder.append("</configuration>");
 		} else {
 			builder.append("/>\n");
 		}
 
 		return builder.toString();
+	}
+
+	public String getChildrenXml() {
+
+		// no children
+		if (baseUri == null && basePath == null && updateHandler == null && launcher == null && properties.isEmpty()
+						&& files.isEmpty()) {
+			return "";
+		}
+
+		StringBuilder builder = new StringBuilder();
+
+		if (baseUri != null || basePath != null) {
+			builder.append("    <base");
+
+			if (baseUri != null) {
+				builder.append(" uri=\"" + baseUri + "\"");
+			}
+			if (basePath != null) {
+				builder.append(" path=\"" + basePath + "\"");
+			}
+
+			builder.append("/>\n");
+		}
+		if (updateHandler != null || launcher != null) {
+			builder.append("    <provider");
+
+			if (updateHandler != null) {
+				builder.append(" updateHandler=\"" + updateHandler + "\"");
+			}
+			if (launcher != null) {
+				builder.append(" launcher=\"" + launcher + "\"");
+			}
+
+			builder.append("/>\n");
+		}
+
+		if (!properties.isEmpty()) {
+			builder.append("    <properties>\n");
+
+			for (Property p : properties) {
+				builder.append("        <property");
+
+				builder.append(" key=\"" + p.getKey() + "\"");
+				builder.append(" value=\"" + p.getValue() + "\"");
+
+				if (p.getOs() != null)
+					builder.append(" os=\"" + p.getOs().getShortName() + "\"");
+
+				builder.append("/>\n");
+			}
+
+			builder.append("    </properties>\n");
+		}
+
+		if (!files.isEmpty()) {
+			builder.append("    <files>\n");
+
+			for (FileMapper fm : files) {
+				builder.append(fm.toXml());
+			}
+
+			builder.append("    </files>\n");
+		}
+
+		return builder.toString();
+	}
+
+	public String sign(PrivateKey key) {
+		try {
+			Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
+			sign.initSign(key);
+			sign.update(getChildrenXml().getBytes("UTF-8"));
+			return Base64.getEncoder().encodeToString(sign.sign());
+		} catch (InvalidKeyException | SignatureException e) {
+			throw new RuntimeException(e);
+		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+			throw new AssertionError(e);
+		}
 	}
 
 	//	@Override

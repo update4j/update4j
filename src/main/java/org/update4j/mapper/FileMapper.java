@@ -69,7 +69,7 @@ public class FileMapper extends XmlMapper {
 
 	@Override
 	public void parse(Node node) {
-		if (!"file".equals(node.getNodeName()) && !"library".equals(node.getNodeName()))
+		if (!"file".equals(node.getNodeName()))
 			return;
 
 		uri = getAttributeValue(node, "uri");
