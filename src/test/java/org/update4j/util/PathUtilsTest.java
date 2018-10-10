@@ -14,4 +14,9 @@ public class PathUtilsTest {
                 "User path not included in local application data directory");
     }
 
+	@Test
+	public void constructorTest(){
+		//shall not explode
+		new PathUtils();
+	}
 }

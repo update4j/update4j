@@ -69,6 +69,43 @@ public class SigningTest {
 	}
 
 
+	@Test
+	public void noSignatureTest() throws Throwable{ //everything should work
+		//given
+		File f=local.resolve("config.xml").toFile();
+		assertTrue(!f.exists(),"Directory not cleaned up before test");
+		//jar file should have been updated/downloaded
+		f=local.resolve(jarFile).toFile();
+		assertTrue(!f.exists(),"Directory not cleaned up before test");
+
+		//when
+
+		//create remote with signatures
+		//copy a file to remote directory
+		Files.copy(Paths.get(SigningTest.class.getResource("/"+jarFile).toURI()),remote.resolve(jarFile));
+		//create configuration
+		Configuration config = createTestConfig(false,local,remote,remote.resolve("config.xml"));
+		//copy certificate
+		byte[] key = publicKey.getEncoded();
+		FileOutputStream keyfos = new FileOutputStream(local.toString()+"/app.crt");
+		keyfos.write(key);
+		keyfos.close();
+
+		//run Bootstrap without certificate - should fail and neither download file nor configuration
+		Bootstrap.main(new String[]{
+				"--syncLocal",
+				"--local=" + local.toAbsolutePath() + "/config.xml",
+				"--remote=file://" + remote.toAbsolutePath() + "/config.xml"
+		});
+
+		//check
+		//config should have been updated/downloaded
+		f=local.resolve("config.xml").toFile();
+		assertTrue(f.exists(),"Config has not been downloaded");
+		//jar file should have been updated/downloaded
+		f=local.resolve(jarFile).toFile();
+		assertTrue(f.exists(),"Jar File has not been downloaded");
+	}
 
 	@Test
 	public void localCertificateWithSignatureTest() throws Throwable{ //everything should work
@@ -99,6 +136,45 @@ public class SigningTest {
 					"--remote=file://" + remote.toAbsolutePath() + "/config.xml",
 					"--cert="+local.toString()+"/app.crt"
 			});
+
+		//check
+		//config should have been updated/downloaded
+		f=local.resolve("config.xml").toFile();
+		assertTrue(f.exists(),"Config has not been downloaded");
+		//jar file should have been updated/downloaded
+		f=local.resolve(jarFile).toFile();
+		assertTrue(f.exists(),"Jar File has not been downloaded");
+	}
+
+	@Test
+	public void embeddedCertificateWithSignatureTest() throws Throwable{ //everything should work
+		//given
+		File f=local.resolve("config.xml").toFile();
+		assertTrue(!f.exists(),"Directory not cleaned up before test");
+		//jar file should have been updated/downloaded
+		f=local.resolve(jarFile).toFile();
+		assertTrue(!f.exists(),"Directory not cleaned up before test");
+
+		//when
+
+		//create remote with signatures
+		//copy a file to remote directory
+		Files.copy(Paths.get(SigningTest.class.getResource("/"+jarFile).toURI()),remote.resolve(jarFile));
+		//create configuration
+		Configuration config = createTestConfig(true,local,remote,remote.resolve("config.xml"));
+		//copy certificate
+		byte[] key = publicKey.getEncoded();
+		FileOutputStream keyfos = new FileOutputStream(local.toString()+"/app.crt");
+		keyfos.write(key);
+		keyfos.close();
+
+		//run Bootstrap without certificate - should fail and neither download file nor configuration
+		Bootstrap.main(new String[]{
+				"--syncLocal",
+				"--local=" + local.toAbsolutePath() + "/config.xml",
+				"--remote=file://" + remote.toAbsolutePath() + "/config.xml",
+				"--cert=res:/certificate.crt"
+		});
 
 		//check
 		//config should have been updated/downloaded
@@ -230,6 +306,46 @@ public class SigningTest {
 			//fail("Bootstrap did not fail, but no public key has been provided and Configuration includes Signatures");
 		} catch(Exception e){ //which Exception should be thrown?!
 
+		}
+
+		//check
+		//config should not have been updated
+		f=local.resolve("config.xml").toFile();
+		assertTrue(!f.exists(),"Config has been downloaded, but no public key has been provided and Configuration includes Signatures");
+		//jar file should not have been loaded
+		f=local.resolve(jarFile).toFile();
+		assertTrue(!f.exists(),"Jar File has been downloaded, but no public key has been provided and Configuration includes Signatures");
+	}
+
+	@Test
+	public void noCertTest() throws Throwable{
+		//given
+		File f=local.resolve("config.xml").toFile();
+		assertTrue(!f.exists(),"Directory not cleaned up before test");
+		//jar file should have been updated/downloaded
+		f=local.resolve(jarFile).toFile();
+		assertTrue(!f.exists(),"Directory not cleaned up before test");
+
+		//when
+		//create remote with signatures
+		//copy a file to remote directory
+		Files.copy(Paths.get(SigningTest.class.getResource("/"+jarFile).toURI()),remote.resolve(jarFile));
+		//create configuration
+		Configuration config = createTestConfig(false,local,remote,remote.resolve("config.xml"));
+
+		//run Bootstrap without certificate - should fail and neither download file nor configuration
+		try {
+			Bootstrap.main(new String[]{
+					"--syncLocal",
+					"--local=" + local.toAbsolutePath() + "/config.xml",
+					"--remote=file://" + remote.toAbsolutePath() + "/config.xml",
+					"--cert="
+			});
+			fail("Bootstrap did not fail, but no public key has been provided and Configuration includes Signatures");
+		} catch(RuntimeException e){
+
+		} catch(Throwable t){
+			fail("Wrong type of Exception occurred");
 		}
 
 		//check

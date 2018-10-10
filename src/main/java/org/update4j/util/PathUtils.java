@@ -2,9 +2,12 @@ package org.update4j.util;
 
 import org.update4j.OS;
 
-import java.io.File;
 import java.util.logging.Logger;
 
+/**
+ * This class provides common locations in a platform independent form.
+ * These variables are added to the system properties and can be referenced in the configuration or command line.
+ */
 public class PathUtils {
 
     private final static Logger log= Logger.getLogger(PathUtils.class.getName());
@@ -19,7 +22,6 @@ public class PathUtils {
      * </ul>
      */
     public final static String stdUserAppData;
-    public final static String bootJar;
 
     static{
         //stdUserAppData
@@ -36,30 +38,23 @@ public class PathUtils {
             stdUserAppData = System.getProperty("user.home");
         }
 
-        //bootJar
-        String tmp = null;
-        try {
-            tmp = new File(PathUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile().getAbsolutePath();
-        } catch (Exception e) {
-            log.warning("Could not retrieve path of update4j jar file: "+e.getMessage());
-        }
-        bootJar = tmp;
-
         setVars();
     }
 
     /**
-     * This method initializes the path variables
+     * This method initializes the path variables. Initialization is performed during loading the class.
+	 * This method can be used to ensure the class is loaded.
      */
     public static void init(){} //static init...
 
+	/**
+	 * Sets the System properties to the current value of the variables.
+	 * This method is called during static initialization, so the user is not required to invoke it.
+	 */
     public static void setVars(){
         //log.info("stdUserAppData is: "+stdUserAppData);
         if(stdUserAppData != null)
             System.setProperty("stdUserAppData",stdUserAppData);
-        //log.info("bootJar is: "+bootJar);
-        if(bootJar != null)
-            System.setProperty("bootJar",bootJar);
     }
 
 }

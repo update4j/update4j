@@ -16,7 +16,6 @@
 package org.update4j.service;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
@@ -25,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.PublicKey;
-import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -35,6 +33,7 @@ import org.update4j.Bootstrap;
 import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
 import org.update4j.Update;
+import org.update4j.signing.CertificateBuilder;
 import org.update4j.util.PathUtils;
 import org.update4j.util.PropertyManager;
 
@@ -130,8 +129,16 @@ public class DefaultBootstrap implements Delegate {
             if (m.matches()) {
                 validateNotSet(cert, "cert");
                 cert = m.group(1);
+                try{
+                	CertificateBuilder.from(cert);
+				} catch(Exception e) {
+					throw new RuntimeException("Certificate option specified, but certificate doesn't exist: "+cert,e);
+				}
                 continue;
             }
+
+            //unknown argument
+			throw new IllegalArgumentException("Unknown argument: "+arg);
         }
 
         if (remote == null && local == null) {
@@ -186,14 +193,6 @@ public class DefaultBootstrap implements Delegate {
 			return;
 		}
 
-		if (syncLocal) {
-			if (remoteConfig != null && !remoteConfig.equals(localConfig))
-				try (Writer out = Files.newBufferedWriter(Paths.get(local))) {
-					remoteConfig.write(out);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-		}
 
 		Configuration config = remoteConfig != null ? remoteConfig : localConfig;
 
@@ -201,15 +200,26 @@ public class DefaultBootstrap implements Delegate {
 			PublicKey pk = null;
 
 			if (cert != null) {
-				CertificateFactory cf = CertificateFactory.getInstance("X.509");
-				try (InputStream in = Files.newInputStream(Paths.get(cert))) {
-					pk = cf.generateCertificate(in).getPublicKey();
+				try {
+					pk = CertificateBuilder.from(cert).getPublicKey();
+				} catch(Exception e){
+					throw new RuntimeException("Couldn't read certificate",e);
 				}
 			}
 
 			boolean success = config.update(pk);
+
 			if (!success && stopOnUpdateError) {
 				return;
+			} else if (success){
+				if (syncLocal) {
+					if (remoteConfig != null && !remoteConfig.equals(localConfig))
+						try (Writer out = Files.newBufferedWriter(Paths.get(local))) {
+							remoteConfig.write(out);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+				}
 			}
 		}
 
@@ -261,9 +271,10 @@ public class DefaultBootstrap implements Delegate {
 				PublicKey pk = null;
 
 				if (cert != null) {
-					CertificateFactory cf = CertificateFactory.getInstance("X.509");
-					try (InputStream in = Files.newInputStream(Paths.get(cert))) {
-						pk = cf.generateCertificate(in).getPublicKey();
+					try {
+						pk = CertificateBuilder.from(cert).getPublicKey();
+					} catch(Exception e){
+						throw new RuntimeException("Couldn't read certificate",e);
 					}
 				}
 
@@ -279,9 +290,10 @@ public class DefaultBootstrap implements Delegate {
 				PublicKey pk = null;
 
 				if (cert != null) {
-					CertificateFactory cf = CertificateFactory.getInstance("X.509");
-					try (InputStream in = Files.newInputStream(Paths.get(cert))) {
-						pk = cf.generateCertificate(in).getPublicKey();
+					try {
+						pk = CertificateBuilder.from(cert).getPublicKey();
+					} catch(Exception e){
+						throw new RuntimeException("Couldn't read certificate",e);
 					}
 				}
 

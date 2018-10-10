@@ -1,12 +1,16 @@
 
+
 buildscript {
+    ext{
+        update4jVersion = version
+    }
     repositories { mavenCentral() }
     dependencies {
-        //using maven package (will not work with veersion 1.2.2 and below!
-        classpath(group: 'org.update4j', name: 'update4j', version: "${version}")
+        //using maven package (will not work with version 1.2.2 and below!
+        //classpath(group: 'org.update4j', name: 'update4j', version: "${update4jVersion}")
 
         //using jar of root project (jar must exist, so run ./gradlew jar first once)
-        //classpath(rootProject.files("build/libs/update4j-${version}.jar"))
+        classpath(rootProject.files("build/libs/update4j-${update4jVersion}.jar"))
     }
 }
 
@@ -166,32 +170,54 @@ task update4jDeploy{
 }
 
 task bootCert(type: ExportCertificate){
-    certFile defaultBootPackage+"/app.crt"
+    description "exports the public key from the keystore"
+    certFile "tmp/app.crt"
     inputs.file(storefile)
     outputs.file(certFile)
+}
+
+
+task bootSignedJar(type: SignDirectory){
+    description "copies the update4j jar inot the package directory, adds the certificate into the jar and signes the jar"
+    dependsOn deployJars, bootCert
+    ext.bootDir = defaultBootPackage
+    directory="${bootDir}"
+    doFirst{
+        //copy outputs of the project
+        project.copy {
+            from buildscript.configurations.classpath
+            into bootDir
+            include "update4j-${update4jVersion}.jar"
+        }
+        //inject certificate into jar file
+        project.exec {
+            executable "${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/bin/jar"
+            args += ['uf', "${bootDir}/update4j-${update4jVersion}.jar"]
+            args += ['-C',"tmp",'app.crt']
+
+            for(str in commandLine){
+                print str + " "
+            }
+            println ''
+        }
+    }
 }
 
 task update4jBoot{
     group 'application'
     description 'creates a manually runnable package'
 
-    dependsOn bootCert
+    dependsOn bootSignedJar
 
     ext.bootDir = defaultBootPackage
     ext.appName = defaultAppName
     ext.remote = "file:///"+project.file(defaultDeploy).toPath().toAbsolutePath()+"/update4j.xml"
 
     doLast{
-        //copy outputs of the project
-        project.copy {
-            from buildscript.configurations.classpath
-            into bootDir
-            include "update4j-*.jar"
-        }
         String commandline = "java -jar update4j-*.jar"
         commandline+=" '--remote=${remote}' '--local=${defaultAppData}/update4j.xml'"
         commandline+=" --syncLocal"
-        commandline+=" --cert ./app.crt"
+        commandline+=" --cert=res:/app.crt"
         commandline+="\n"
         file(bootDir+"/start.bat").text = commandline
         file(bootDir+"/start.sh").text = "#!/bin/sh\n"+commandline
@@ -212,7 +238,7 @@ task testUpdate4j(type: JavaExec){
 
 //////////////  Application packaging /////////////
 
-task update4jInstall(type: ApplicationJavaDeployerNative){
+task update4jInstall(type: ApplicationJavaDeployer){
     dependsOn update4jDeploy, update4jBoot //boot required for update4j.jar and public certificate
     mainClassName 'org.update4j.Bootstrap'
     mainModuleName 'org.update4j'
@@ -222,10 +248,11 @@ task update4jInstall(type: ApplicationJavaDeployerNative){
     String escapedLocal="--local=${defaultAppData}/update4j.xml"
     if (System.properties['os.name'].toLowerCase().contains('mac') || System.properties['os.name'].toLowerCase().contains('linux'))
         escapedLocal=escapedLocal.replaceAll('\\$','\\\\\\$')
-    println escapedLocal
+    //println escapedLocal
     progArgs+=["--remote=${defaultRemote}",
                escapedLocal,
                '--syncLocal',
+               ' --cert=res:/app.crt'
     ]
 }
 
@@ -350,6 +377,8 @@ public class ApplicationJavaDeployer extends DefaultTask {
     def jvmOptions=[  ]
     def jvmProperties=[ ]
     def iconpath
+    String bundles='all';
+    boolean allModules = true
 
     String jarDir=project.jar.destinationDir
 
@@ -362,6 +391,9 @@ public class ApplicationJavaDeployer extends DefaultTask {
     }
 
     def collectArgs(){
+        packArgs+='-deploy'
+        packArgs+='-native'
+        packArgs+=bundles
         packArgs+='-v'
         packArgs+='-allpermissions'
         packArgs+=['-outdir', "${outdir}/${subdir}"]
@@ -382,6 +414,23 @@ public class ApplicationJavaDeployer extends DefaultTask {
         }
         for(arg in progArgs){
             packArgs+=['-argument',arg]
+        }
+        packArgs+="-BappVersion=${project.version}"
+        //packArgs+="-Bicon=${iconpath}"
+
+
+        // add all modules
+        def files = new File(jarDir).listFiles();
+        String modules=""
+        if(allModules){
+            for(f in project.file("${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/jmods").listFiles()){
+                String mod=f.getName()
+                mod=mod.substring(0,mod.length()-".jmod".length())
+                println 'adding module ' + mod
+                modules += (modules.equals("")?'':',')+mod
+            }
+            packArgs += [ '--add-modules', modules ]
+
         }
     }
 
@@ -409,43 +458,4 @@ public class ApplicationJavaDeployer extends DefaultTask {
         }
     }
 
-}
-
-public class ApplicationJavaDeployerNative extends ApplicationJavaDeployer {
-    def iconpath
-    String bundles='all';
-    boolean allModules = true
-
-
-    @Override
-    def collectArgs() {
-        packArgs+='-deploy'
-        super.collectArgs()
-
-        packArgs+='-native'
-        packArgs+=bundles
-        packArgs+="-BappVersion=${project.version}"
-        //packArgs+="-Bicon=${iconpath}"
-
-
-        // add all modules
-        def files = new File(jarDir).listFiles();
-
-        for(f in files){
-            println 'adding file ' + f.getName()
-            packArgs += [ '-srcfiles', "${f.getAbsolutePath()}" ]
-        }
-        String modules=""
-        if(allModules){
-            for(f in project.file("${org.gradle.internal.jvm.Jvm.current().getJavaHome()}/jmods").listFiles()){
-                String mod=f.getName()
-                mod=mod.substring(0,mod.length()-".jmod".length())
-                println 'adding module ' + mod
-                modules += (modules.equals("")?'':',')+mod
-            }
-            packArgs += [ '--add-modules', modules ]
-
-        }
-
-    }
 }

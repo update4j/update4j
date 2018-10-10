@@ -115,14 +115,14 @@ import org.update4j.util.*;
  * <p>
  * There are 3 ways generate configs.
  * 
- * <h3>1. Using the Builder API</h3>
+ * <h2>1. Using the Builder API</h2>
  * <p>
  * {@link Configuration#builder()} is the entry point to the config builder API.
  * 
  * <p>
  * Here's a sample config created with this approach:
  * 
- * <pre>
+ * <pre>{@code
  * Configuration config = Configuration.builder()
  * 				// resolve uri and path of each individual file against the base.
  * 				// if not present you must provider the absolute location to every individual file
@@ -148,10 +148,10 @@ import org.update4j.util.*;
  * 
  * 				// we're done!
  * 				.build();
- * </pre>
+ * }</pre>
  * 
  * 
- * <h3>2. Synchronizing Existing Configuration</h3>
+ * <h2>2. Synchronizing Existing Configuration</h2>
  * <p>
  * If you already have a configuration but you changed files without adding or
  * removing files, you might synchronize the file size, checksum and signature
@@ -162,7 +162,7 @@ import org.update4j.util.*;
  * <p>
  * Given this XML {@code config.xml}:
  * 
- * <pre>
+ * <pre>{@code
  * <xmp>
  * <configuration timestamp="2018-08-22T19:31:40.448450500Z">
  *     <base uri="https://example.com/" path="${user.loc}"/>
@@ -174,7 +174,7 @@ import org.update4j.util.*;
  *     </files>
  * </configuration>
  * </xmp>
- * </pre>
+ * }</pre>
  * 
  * <p>
  * 
@@ -204,7 +204,7 @@ import org.update4j.util.*;
  * If you want to add a new file you should manually add the filename in the
  * config XML and {@code sync()} will do the rest:
  * 
- * <pre>
+ * <pre>{@code
  * <xmp>
  * <files>
  *         <file path="file1.jar" size="1348" checksum="fd7adfb7"/>
@@ -213,10 +213,10 @@ import org.update4j.util.*;
  *         <file path="file2.jar" />
  * </files>
  * </xmp>
- * </pre>
+ * }</pre>
  * 
  * 
- * <h3>3. Manual XML Manipulation</h3>
+ * <h2>3. Manual XML Manipulation</h2>
  * <p>
  * You can access the XML DOM with the {@link ConfigMapper} class and load a
  * config using {@link Configuration#parse(ConfigMapper)} to obtain a new
@@ -321,7 +321,7 @@ import org.update4j.util.*;
  * <p>
  * Regular updating (not {@code updateTemp()}):
  * 
- * <pre>
+ * <pre>{@code
  * // loads a registered provider or DefaultUpdateHandler if non are found.
  * config.update(); // returns a boolean if succeeded
  * 
@@ -336,13 +336,13 @@ import org.update4j.util.*;
  * 
  * // update and validate against the public key
  * config.update(myPubKey);
- * </pre>
+ * }</pre>
  * 
  * <p>
  * Or you can update to a temporary location and finalize on next restart.
  * Here's a sample lifecycle:
  * 
- * <pre>
+ * <pre>{@code
  * public static void main(String[] args) throws IOException {
  * 	// the temporary location
  * 	Path temp = Paths.get("update");
@@ -362,7 +362,7 @@ import org.update4j.util.*;
  * 		config.updateTemp(temp);
  * 	}
  * }
- * </pre>
+ * }</pre>
  * 
  * <h3>Consistency</h3>
  * <p>
@@ -721,13 +721,13 @@ public class Configuration {
 	 * {@code "/"} are treated identical. This is intended to match more strings in
 	 * a platform independent way.
 	 * 
-	 * <pre>
+	 * <pre>{@code
 	 * String old = "C:/Users/User/Desktop";
 	 * String newString = config.implyPlaceholders(old, true);
 	 * 
 	 * // -> newString is "${user.home}/Desktop" even though the real system
 	 * // property value is "C:\\Users\\User" on Windows
-	 * </pre>
+	 * }</pre>
 	 * 
 	 * <p>
 	 * If the given string is {@code null}, the same value will be returned.
@@ -762,8 +762,6 @@ public class Configuration {
 	 * 
 	 * @param str
 	 *            The string to attempt to replace with placeholders.
-	 * @param isPath
-	 *            Whether the given string is a path like string.
 	 * @return The replaced string, or {@code null} if {@code null} was passed.
 	 */
 	public String implyPlaceholders(String str, PlaceholderMatchType matchType) {
@@ -778,13 +776,13 @@ public class Configuration {
 	 * {@code "/"} are treated identical. This is intended to match more strings in
 	 * a platform independent way.
 	 * 
-	 * <pre>
+	 * <pre>{@code
 	 * String old = "C:/Users/User/Desktop";
 	 * String newString = config.implyPlaceholders(old, true);
 	 * 
 	 * // -> newString is "${user.home}/Desktop" even though the real system
 	 * // property value is "C:\\Users\\User" on Windows
-	 * </pre>
+	 * }</pre>
 	 * 
 	 * <p>
 	 * You can specify how matches should be found by passing the
@@ -1105,7 +1103,8 @@ public class Configuration {
 							+ Long.toHexString(file.getChecksum()) + ", found: " + Long.toHexString(actualChecksum));
 		}
 
-		if (sig != null) {
+		//sig: signature in config, file.getSignature: local signature, if public key is available
+		if (sig != null || file.getSignature() != null) {
 			if (file.getSignature() == null)
 				throw new SecurityException("Missing signature.");
 
@@ -1691,16 +1690,16 @@ public class Configuration {
 	 * <p>
 	 * To refer to a property {@code my.prop} with the value {@code Hello}:
 	 * 
-	 * <pre>
+	 * <pre>{@code
 	 * "${my.prop} World!" -> "Hello World"
-	 * </pre>
+	 * }</pre>
 	 * 
 	 * <p>
 	 * Or, on Windows:
 	 * 
-	 * <pre>
-	 * "${LOCALAPPDATA}/My App" -> "C:/Users/&lt;user-name&gt;/AppData/Local/My App"
-	 * </pre>
+	 * <pre>{@code
+	 * "${LOCALAPPDATA}/My App" -> "C:/Users/<user-name>/AppData/Local/My App"
+	 * }</pre>
 	 * 
 	 * <p>
 	 * Placeholder references are resolved when {@code build()} is called.
