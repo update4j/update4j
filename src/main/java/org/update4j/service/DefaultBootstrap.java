@@ -87,7 +87,7 @@ public class DefaultBootstrap implements Delegate {
         for(Object o: System.getProperties().keySet()){
         	props.add((String)o);
         }
-        PropertyManager pm = new PropertyManager(new ArrayList<>(), props);
+        PropertyManager pm = new PropertyManager(null, null);
 
         for (String arg : args) {
             arg = arg.trim();

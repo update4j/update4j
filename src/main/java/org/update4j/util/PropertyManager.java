@@ -318,16 +318,7 @@ public class PropertyManager {
 
 		if (systemProperties != null) {
 			for (String sysProp : systemProperties) {
-				String propVal=null;
-				try{
-					propVal= trySystemProperty(sysProp, true);
-				} catch(Exception e){
-					log.warning("Couldn't  retrieve value for "+sysProp
-							+" errors might result trying to use this value. "+e.getMessage());
-				}
-				if(propVal!=null){
-					resolved.put(sysProp, propVal);
-				}
+				resolved.put(sysProp, trySystemProperty(sysProp, true));
 			}
 		}
 
