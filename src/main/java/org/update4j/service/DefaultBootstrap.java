@@ -83,10 +83,6 @@ public class DefaultBootstrap implements Delegate {
 	void parseArgs(List<String> args){
 
 	    //using empty property manager to replace placeholders in commandline
-        ArrayList<String> props = new ArrayList<>(System.getenv().keySet());
-        for(Object o: System.getProperties().keySet()){
-        	props.add((String)o);
-        }
         PropertyManager pm = new PropertyManager(null, null);
 
         for (String arg : args) {
