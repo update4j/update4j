@@ -995,6 +995,11 @@ public class Configuration {
 
 					// Some downloads may fail with HTTP/403, this may solve it
 					connection.addRequestProperty("User-Agent", "Mozilla/5.0");
+					// Set a connection timeout of 10 seconds
+					connection.setConnectTimeout(10 * 1000);
+					// Set a read timeout of 10 seconds
+					connection.setReadTimeout(10 * 1000);
+
 					try (InputStream in = connection.getInputStream();
 									OutputStream out = Files.newOutputStream(output)) {
 
