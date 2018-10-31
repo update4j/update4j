@@ -183,6 +183,9 @@ public class FileUtils {
 	}
 
 	public static void windowsHide(Path file) {
+		if (OS.CURRENT != OS.WINDOWS)
+			return;
+
 		try {
 			Files.setAttribute(file, "dos:hidden", true);
 		} catch (Exception e) {
@@ -190,6 +193,9 @@ public class FileUtils {
 	}
 
 	public static void windowsUnhide(Path file) {
+		if (OS.CURRENT != OS.WINDOWS)
+			return;
+
 		try {
 			Files.setAttribute(file, "dos:hidden", false);
 		} catch (Exception e) {
