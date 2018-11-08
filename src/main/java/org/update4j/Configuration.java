@@ -913,6 +913,11 @@ public class Configuration {
 
 	private boolean updateImpl(Path tempDir, PublicKey key, UpdateHandler handler,
 					Consumer<? super UpdateHandler> handlerSetup) {
+		
+		if(key == null) {
+			Warning.signature();
+		}
+		
 		boolean updateTemp = tempDir != null;
 		boolean success;
 
@@ -1686,24 +1691,7 @@ public class Configuration {
 	 *            The public key to check against.
 	 */
 	public void verifyConfiguration(PublicKey key) {
-		if (getSignature() == null) {
-			throw new SecurityException("No signature in configuration root node.");
-		}
-
-		try {
-			Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
-			sign.initVerify(key);
-			sign.update(mapper.getChildrenXml().getBytes("UTF-8"));
-
-			if (!sign.verify(Base64.getDecoder().decode(getSignature()))) {
-				throw new SecurityException("Signature verification failed.");
-			}
-
-		} catch (InvalidKeyException | SignatureException e) {
-			throw new RuntimeException(e);
-		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-			throw new AssertionError(e);
-		}
+		mapper.verifySignature(key);
 	}
 
 	/**

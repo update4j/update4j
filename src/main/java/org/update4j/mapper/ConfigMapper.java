@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.util.ArrayList;
@@ -161,11 +162,11 @@ public class ConfigMapper extends XmlMapper {
 		return builder.toString();
 	}
 
-	public String getChildrenXml() {
+	private String getChildrenXml() {
 
 		// no children
 		if (baseUri == null && basePath == null && updateHandler == null && launcher == null && properties.isEmpty()
-						&& files.isEmpty()) {
+				&& files.isEmpty()) {
 			return "";
 		}
 
@@ -240,68 +241,87 @@ public class ConfigMapper extends XmlMapper {
 		}
 	}
 
-	//	@Override
-	//	public Node toNode(Document doc) {
-	//		Element e = doc.createElement("configuration");
+	public void verifySignature(PublicKey key) {
+		if (signature == null) {
+			throw new SecurityException("No signature in configuration root node.");
+		}
+
+		try {
+			Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
+			sign.initVerify(key);
+			sign.update(getChildrenXml().getBytes("UTF-8"));
+
+			if (!sign.verify(Base64.getDecoder().decode(signature))) {
+				throw new SecurityException("Signature verification failed.");
+			}
+
+		} catch (InvalidKeyException | SignatureException | NoSuchAlgorithmException | UnsupportedEncodingException e) {
+			throw new SecurityException(e);
+		}
+	}
+
+	// @Override
+	// public Node toNode(Document doc) {
+	// Element e = doc.createElement("configuration");
 	//
-	//		if (timestamp != null)
-	//			e.setAttribute("timestamp", timestamp);
+	// if (timestamp != null)
+	// e.setAttribute("timestamp", timestamp);
 	//
-	//		if (baseUri != null && basePath != null) {
-	//			Element base = doc.createElement("base");
+	// if (baseUri != null && basePath != null) {
+	// Element base = doc.createElement("base");
 	//
-	//			if (baseUri != null)
-	//				base.setAttribute("uri", baseUri);
-	//			if (basePath != null)
-	//				base.setAttribute("path", basePath);
+	// if (baseUri != null)
+	// base.setAttribute("uri", baseUri);
+	// if (basePath != null)
+	// base.setAttribute("path", basePath);
 	//
-	//			e.appendChild(base);
-	//		}
+	// e.appendChild(base);
+	// }
 	//
-	//		if (updateHandler != null && launcher != null) {
-	//			Element provider = doc.createElement("provider");
+	// if (updateHandler != null && launcher != null) {
+	// Element provider = doc.createElement("provider");
 	//
-	//			if (updateHandler != null)
-	//				provider.setAttribute("updateHandler", updateHandler);
-	//			if (launcher != null)
-	//				provider.setAttribute("launcher", launcher);
+	// if (updateHandler != null)
+	// provider.setAttribute("updateHandler", updateHandler);
+	// if (launcher != null)
+	// provider.setAttribute("launcher", launcher);
 	//
-	//			e.appendChild(provider);
-	//		}
+	// e.appendChild(provider);
+	// }
 	//
-	//		if (properties != null && properties.size() > 0) {
+	// if (properties != null && properties.size() > 0) {
 	//
-	//			Element props = doc.createElement("properties");
+	// Element props = doc.createElement("properties");
 	//
-	//			for (Property p : properties) {
-	//				Element prop = doc.createElement("property");
-	//				prop.setAttribute("key", p.getKey());
-	//				prop.setAttribute("value", p.getValue());
+	// for (Property p : properties) {
+	// Element prop = doc.createElement("property");
+	// prop.setAttribute("key", p.getKey());
+	// prop.setAttribute("value", p.getValue());
 	//
-	//				if (p.getOs() != null) {
-	//					prop.setAttribute("os", p.getOs()
-	//									.getShortName());
-	//				}
+	// if (p.getOs() != null) {
+	// prop.setAttribute("os", p.getOs()
+	// .getShortName());
+	// }
 	//
-	//				props.appendChild(prop);
-	//			}
+	// props.appendChild(prop);
+	// }
 	//
-	//			e.appendChild(props);
-	//		}
+	// e.appendChild(props);
+	// }
 	//
-	//		if (files != null && files.size() > 0) {
+	// if (files != null && files.size() > 0) {
 	//
-	//			Element f = doc.createElement("files");
+	// Element f = doc.createElement("files");
 	//
-	//			for (FileMapper fm : files) {
-	//				f.appendChild(fm.toNode(doc));
-	//			}
+	// for (FileMapper fm : files) {
+	// f.appendChild(fm.toNode(doc));
+	// }
 	//
-	//			e.appendChild(f);
-	//		}
+	// e.appendChild(f);
+	// }
 	//
-	//		return e;
-	//	}
+	// return e;
+	// }
 
 	public static ConfigMapper read(Reader reader) throws IOException {
 		try {

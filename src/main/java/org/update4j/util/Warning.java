@@ -102,7 +102,7 @@ public class Warning {
 							+ "\tvalid zip file and if present in the boot modulepath it will prevent JVM startup.\n"
 							+ "\tIn order to prevent accidental breakage of your application among\n"
 							+ "\tall your clients, the download was rejected.\n"
-							+ "\tIf this is ONLY loaded on the boot CLASSPATH or the business application,\n"
+							+ "\tIf this is ONLY loaded on the boot *classpath* or the business application,\n"
 							+ "\tand great caution was taken it should not be included in the boot modulepath, you may\n"
 							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
 							+ "\tthe configuration.\n");
@@ -115,7 +115,7 @@ public class Warning {
 							+ "' is not a valid Java identifier.\n"
 							+ "\tIn order to prevent accidental breakage of your application among\n"
 							+ "\tall your clients, the download was rejected.\n"
-							+ "\tIf this is ONLY loaded on the boot CLASSPATH or the business application,\n"
+							+ "\tIf this is only loaded on the boot *classpath* or the *business* application,\n"
 							+ "\tand great caution was taken it should not be included in the boot modulepath, you may\n"
 							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
 							+ "\tthe configuration.\n");
@@ -128,7 +128,7 @@ public class Warning {
 			System.err.println("WARNING: Module '" + moduleName + "' already exists in the boot modulepath.\n"
 							+ "\tIn order to prevent accidental breakage of your application among\n"
 							+ "\tall your clients, the download was rejected.\n"
-							+ "\tIf this is ONLY loaded on the boot CLASSPATH or the business application,\n"
+							+ "\tIf this is only loaded on the boot *classpath* or the *business* application,\n"
 							+ "\tand great caution was taken it should not be included in the boot modulepath, you may\n"
 							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
 							+ "\tthe configuration.\n");
@@ -140,10 +140,16 @@ public class Warning {
 			System.err.println("WARNING: Package '" + packageName + "' already exists in the boot modulepath.\n"
 							+ "\tIn order to prevent accidental breakage of your application among\n"
 							+ "\tall your clients, the download was rejected.\n"
-							+ "\tIf this is ONLY loaded on the boot CLASSPATH or the business application,\n"
+							+ "\tIf this is only loaded on the boot *classpath* or the *business* application,\n"
 							+ "\tand great caution was taken it should not be included in the boot modulepath, you may\n"
 							+ "\toverride this restriction by setting 'ignoreBootConflict=\"true\"' in\n"
 							+ "\tthe configuration.\n");
+		}
+	}
+	
+	public static void signature() {
+		if(shouldWarn("signature")) {
+			System.err.println("WARNING: Updating without signature validation is strongly discouraged.");
 		}
 	}
 

@@ -15,6 +15,7 @@
  */
 package org.update4j;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,8 +34,6 @@ import org.update4j.util.StringUtils;
  *
  */
 public class Bootstrap {
-	
-	
 
 	/**
 	 * The version of the current build of the framework.
@@ -83,17 +82,37 @@ public class Bootstrap {
 	 */
 	public static void main(String[] args) throws Throwable {
 		String override = null;
-
 		Pattern pattern = Pattern.compile("--delegate(?:\\s*=)?\\s*(" + StringUtils.CLASS_REGEX + ")");
-		for (String s : args) {
-			Matcher matcher = pattern.matcher(s);
+
+		List<String> argsList = List.of(args);
+		List<String> bootArgs;
+
+		int separatorIdx = argsList.indexOf("--");
+		if (separatorIdx < 0) {
+			bootArgs = argsList;
+		} else {
+			bootArgs = argsList.subList(0, separatorIdx);
+		}
+
+		for (int i = 0; i < bootArgs.size(); i++) {
+
+			String arg = bootArgs.get(i).trim();
+
+			Matcher matcher = pattern.matcher(arg);
 			if (matcher.matches()) {
 				override = matcher.group(1);
 				break;
+			} else if ("--delegate".equals(arg)) {
+				if (i == bootArgs.size() - 1) {
+					throw new IllegalArgumentException("Missing value for \"--delegate\"");
+				}
+				override = bootArgs.get(++i).trim();
+				break;
 			}
+
 		}
 
-		start(override, List.of(args));
+		start(override, argsList);
 	}
 
 	/**
@@ -101,8 +120,7 @@ public class Bootstrap {
 	 * {@link Delegate} (specified by {@link Service#version()}) currently present
 	 * in the classpath or modulepath.
 	 * 
-	 * @throws Throwable
-	 *             Any throwable thrown in the bootstrap.
+	 * @throws Throwable Any throwable thrown in the bootstrap.
 	 */
 	public static void start() throws Throwable {
 		start((String) null);
@@ -118,8 +136,7 @@ public class Bootstrap {
 	 * highest versioned provider (specified by {@link Service#version()}) will be
 	 * used instead.
 	 * 
-	 * @throws Throwable
-	 *             Any throwable thrown in the bootstrap.
+	 * @throws Throwable Any throwable thrown in the bootstrap.
 	 */
 	public static void start(String override) throws Throwable {
 		start(override, List.of());
@@ -128,8 +145,7 @@ public class Bootstrap {
 	/**
 	 * Starts the bootstrap running the given {@link Delegate}.
 	 * 
-	 * @throws Throwable
-	 *             Any throwable thrown in the bootstrap.
+	 * @throws Throwable Any throwable thrown in the bootstrap.
 	 */
 	public static void start(Delegate delegate) throws Throwable {
 		start(delegate, List.of());
@@ -141,8 +157,7 @@ public class Bootstrap {
 	 * in the classpath or modulepath, with the given list as command-line
 	 * arguments.
 	 * 
-	 * @throws Throwable
-	 *             Any throwable thrown in the bootstrap.
+	 * @throws Throwable Any throwable thrown in the bootstrap.
 	 */
 	public static void start(List<String> args) throws Throwable {
 		start((String) null, args);
@@ -158,8 +173,7 @@ public class Bootstrap {
 	 * highest versioned provider (specified by {@link Service#version()}) will be
 	 * used instead.
 	 * 
-	 * @throws Throwable
-	 *             Any throwable thrown in the bootstrap.
+	 * @throws Throwable Any throwable thrown in the bootstrap.
 	 */
 	public static void start(String override, List<String> args) throws Throwable {
 		start(Service.loadService(Delegate.class, override), args);
@@ -169,8 +183,7 @@ public class Bootstrap {
 	 * Starts the bootstrap running the given {@link Delegate}, with the given list
 	 * as command-line arguments.
 	 * 
-	 * @throws Throwable
-	 *             Any throwable thrown in the bootstrap.
+	 * @throws Throwable Any throwable thrown in the bootstrap.
 	 */
 	public static void start(Delegate delegate, List<String> args) throws Throwable {
 		delegate.main(args);
