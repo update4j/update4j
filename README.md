@@ -70,7 +70,9 @@ For more information refer to [Starting the Application](https://github.com/upda
 * *Upcoming Release*
   * You can now sign the configuration itself to ensure integrity of non-file elements, as paths and properties.
   * `FileMetadata.getSignature()` now returns a `String` instead of `byte[]` to avoid modification.
-  * Java 11 compatibility: Removed JavaFX modules by using a multi-release `module-info.class` file.
+  * Java 11 compatibility: Removed JavaFX modules.
+  * Fixed single instance bug on Linux.
+  * Connection/read timeouts at 10 seconds.
   * Safer file overriding by properly handling file locks.
   * `ConfigMapper` and `FileMapper` lists are now `final`, to prevent accidental `NPE`.
   * `FileMetadata::streamDirectory` now automatically presets `path` attribute to actual filename _relative to_ the streaming directory, instead of absolute source path.

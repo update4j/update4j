@@ -45,18 +45,6 @@ module org.update4j {
 	requires transitive java.xml;
 
 	/*
-	 * TODO:
-	 * How do we continue with Java 11???
-	 */
-	requires javafx.base;
-	requires javafx.controls;
-	requires javafx.fxml;
-	requires javafx.graphics;
-	requires javafx.media;
-	requires javafx.swing;
-	requires javafx.web;
-
-	/*
 	 * Rarely used. If you want them resolved, require it in bootstrap application module.
 	 */
 	//	requires java.jnlp;
