@@ -334,7 +334,7 @@ public class ConfigMapper extends XmlMapper {
 				}
 			}
 
-			throw new IllegalStateException("Root element must by 'configuration'.");
+			throw new IllegalStateException("Root element must be 'configuration'.");
 		} catch (SAXException | ParserConfigurationException e) {
 			throw new IOException(e);
 		}
