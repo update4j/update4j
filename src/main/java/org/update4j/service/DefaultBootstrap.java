@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,6 +36,7 @@ import org.update4j.Bootstrap;
 import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
 import org.update4j.Update;
+import org.update4j.util.ArgUtils;
 
 public class DefaultBootstrap implements Delegate {
 
@@ -49,8 +51,6 @@ public class DefaultBootstrap implements Delegate {
 
 	private PublicKey pk = null;
 
-	private static final String PATTERN = "(?:\\s*=)?\\s*(.+)";
-
 	@Override
 	public long version() {
 		return Long.MIN_VALUE;
@@ -63,16 +63,7 @@ public class DefaultBootstrap implements Delegate {
 			return;
 		}
 
-		List<String> bootArgs;
-
-		int separatorIdx = args.indexOf("--");
-		if (separatorIdx < 0) {
-			bootArgs = args;
-		} else {
-			bootArgs = args.subList(0, separatorIdx);
-		}
-
-		parseArgs(bootArgs);
+		parseArgs(ArgUtils.beforeSeparator(args));
 
 		if (remote == null && local == null) {
 			throw new IllegalArgumentException("One of --remote or --local must be supplied.");
@@ -100,81 +91,66 @@ public class DefaultBootstrap implements Delegate {
 				pk = cf.generateCertificate(in).getPublicKey();
 			}
 		}
+		
+		List<String> businessArgs = ArgUtils.afterSeparator(args);
 
 		if (launchFirst) {
-			launchFirst(args);
+			launchFirst(businessArgs);
 		} else {
-			updateFirst(args);
+			updateFirst(businessArgs);
 		}
 	}
 
 	private void parseArgs(List<String> bootArgs) {
 
-		for (int i = 0; i < bootArgs.size(); i++) {
-			String arg = bootArgs.get(i).trim();
+		Map<String, String> parsed = ArgUtils.parseArgs(bootArgs);
+		for (Map.Entry<String, String> e : parsed.entrySet()) {
+			String arg = e.getKey();
 
-			// let's try first those who don't need regex for performance
-			if (arg.equals("--syncLocal")) {
+			if ("syncLocal".equals(arg)) {
 				validateNotSet(syncLocal, "syncLocal");
+				ArgUtils.validateNoValue(e);
 				syncLocal = true;
 				continue;
-			} else if (arg.equals("--launchFirst")) {
+			}
+			if("launchFirst".equals(arg)) {
 				validateNotSet(launchFirst, "launchFirst");
+				ArgUtils.validateNoValue(e);
 				launchFirst = true;
 				continue;
-			} else if (arg.equals("--stopOnUpdateError")) {
+			}
+			if("stopOnUpdateError".equals(arg)) {
 				validateNotSet(stopOnUpdateError, "stopOnUpdateError");
+				ArgUtils.validateNoValue(e);
 				stopOnUpdateError = true;
 				continue;
-			} else if (arg.equals("--singleInstance")) {
+			}
+			if("singleInstance".equals(arg)) {
 				validateNotSet(singleInstance, "singleInstance");
+				ArgUtils.validateNoValue(e);
 				singleInstance = true;
 				continue;
-			} else if (arg.equals("--remote")) {
+			}
+			if("remote".equals(arg)) {
 				validateNotSet(remote, "remote");
-				i++;
-				validateHasValue("remote", bootArgs, i);
-				remote = bootArgs.get(i).trim();
+				ArgUtils.validateHasValue(e);
+				remote = e.getValue();
 				continue;
-			} else if (arg.equals("--local")) {
+			}
+			if("local".equals(arg)) {
 				validateNotSet(local, "local");
-				i++;
-				validateHasValue("local", bootArgs, i);
-				local = bootArgs.get(i).trim();
+				ArgUtils.validateHasValue(e);
+				local = e.getValue();
 				continue;
-			} else if (arg.equals("--cert")) {
+			}
+			if("cert".equals(arg)) {
 				validateNotSet(cert, "cert");
-				i++;
-				validateHasValue("cert", bootArgs, i);
-				cert = bootArgs.get(i).trim();
-				continue;
-			} else if (arg.equals("--delegate")) {
-				i++;
-				validateHasValue("delegate", bootArgs, i);
-				continue; // just ignore
-			}
-
-			Matcher m = Pattern.compile("--remote" + PATTERN).matcher(arg);
-			if (m.matches()) {
-				validateNotSet(remote, "remote");
-				remote = m.group(1);
+				ArgUtils.validateHasValue(e);
+				cert = e.getValue();
 				continue;
 			}
-			m = Pattern.compile("--local" + PATTERN).matcher(arg);
-			if (m.matches()) {
-				validateNotSet(local, "local");
-				local = m.group(1);
-				continue;
-			}
-			m = Pattern.compile("--cert" + PATTERN).matcher(arg);
-			if (m.matches()) {
-				validateNotSet(cert, "cert");
-				cert = m.group(1);
-				continue;
-			}
-			m = Pattern.compile("--delegate" + PATTERN).matcher(arg);
-			if (m.matches()) {
-				continue; // just ignore;
+			if("delegate".equals(arg)) {
+				continue; // ignore;
 			}
 
 			throw new IllegalArgumentException(
@@ -184,18 +160,12 @@ public class DefaultBootstrap implements Delegate {
 
 	private void validateNotSet(boolean val, String command) {
 		if (val)
-			throw new IllegalArgumentException("Duplicate --" + command + " command.");
+			throw new IllegalArgumentException("Duplicate '--" + command + "' command.");
 	}
 
 	private void validateNotSet(String val, String command) {
 		if (val != null)
-			throw new IllegalArgumentException("Duplicate --" + command + " command.");
-	}
-
-	private void validateHasValue(String argName, List<String> list, int index) {
-		if (index >= list.size() || list.get(index).startsWith("--")) {
-			throw new IllegalArgumentException("Missing value for \"--" + argName + "\".");
-		}
+			throw new IllegalArgumentException("Duplicate '--" + command + "' command.");
 	}
 
 	private void updateFirst(List<String> args) throws Throwable {
@@ -353,7 +323,7 @@ public class DefaultBootstrap implements Delegate {
 				+ "\t\t  You will not be able to update the bootstrap application (as code cannot update itself),\n"
 				+ "\t\t  only the business application will be updatable.\n\n"
 				+ "\t\t- Delegate Mode: Move your main method into an implementation of Delegate\n"
-				+ "\t\t  and start the framework just as you did now, i.e. calling *update4j's* main method.\n"
+				+ "\t\t  and start the framework just as you did now, i.e. calling update4j's main method.\n"
 				+ "\t\t  This allows you to update the bootstrap application by releasing a newer version\n"
 				+ "\t\t  with a higher version() number and make it visible to the JVM boot classpath\n"
 				+ "\t\t  or modulepath by placing it in the right directory.\n"

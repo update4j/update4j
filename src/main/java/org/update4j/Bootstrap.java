@@ -15,14 +15,11 @@
  */
 package org.update4j;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import java.util.Map;
 import org.update4j.service.Delegate;
 import org.update4j.service.Service;
-import org.update4j.util.StringUtils;
+import org.update4j.util.ArgUtils;
 
 /**
  * This class consists of convenience methods and the module's main method to
@@ -82,31 +79,17 @@ public class Bootstrap {
 	 */
 	public static void main(String[] args) throws Throwable {
 		String override = null;
-		Pattern pattern = Pattern.compile("--delegate(?:\\s*=)?\\s*(" + StringUtils.CLASS_REGEX + ")");
-
+		
 		List<String> argsList = List.of(args);
-		List<String> bootArgs;
+		List<String> bootArgs = ArgUtils.beforeSeparator(argsList);
+		Map<String, String> parsed = ArgUtils.parseArgs(bootArgs);
+		
+		for (Map.Entry<String, String> e : parsed.entrySet()) {
 
-		int separatorIdx = argsList.indexOf("--");
-		if (separatorIdx < 0) {
-			bootArgs = argsList;
-		} else {
-			bootArgs = argsList.subList(0, separatorIdx);
-		}
-
-		for (int i = 0; i < bootArgs.size(); i++) {
-
-			String arg = bootArgs.get(i).trim();
-
-			Matcher matcher = pattern.matcher(arg);
-			if (matcher.matches()) {
-				override = matcher.group(1);
-				break;
-			} else if ("--delegate".equals(arg)) {
-				if (i == bootArgs.size() - 1) {
-					throw new IllegalArgumentException("Missing value for \"--delegate\"");
-				}
-				override = bootArgs.get(++i).trim();
+			if("delegate".equals(e.getKey())) {
+				ArgUtils.validateHasValue(e);
+				override = e.getValue();
+				
 				break;
 			}
 
