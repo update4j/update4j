@@ -91,7 +91,7 @@ public class DefaultBootstrap implements Delegate {
 				pk = cf.generateCertificate(in).getPublicKey();
 			}
 		}
-		
+
 		List<String> businessArgs = ArgUtils.afterSeparator(args);
 
 		if (launchFirst) {
@@ -113,48 +113,48 @@ public class DefaultBootstrap implements Delegate {
 				syncLocal = true;
 				continue;
 			}
-			if("launchFirst".equals(arg)) {
+			if ("launchFirst".equals(arg)) {
 				validateNotSet(launchFirst, "launchFirst");
 				ArgUtils.validateNoValue(e);
 				launchFirst = true;
 				continue;
 			}
-			if("stopOnUpdateError".equals(arg)) {
+			if ("stopOnUpdateError".equals(arg)) {
 				validateNotSet(stopOnUpdateError, "stopOnUpdateError");
 				ArgUtils.validateNoValue(e);
 				stopOnUpdateError = true;
 				continue;
 			}
-			if("singleInstance".equals(arg)) {
+			if ("singleInstance".equals(arg)) {
 				validateNotSet(singleInstance, "singleInstance");
 				ArgUtils.validateNoValue(e);
 				singleInstance = true;
 				continue;
 			}
-			if("remote".equals(arg)) {
+			if ("remote".equals(arg)) {
 				validateNotSet(remote, "remote");
 				ArgUtils.validateHasValue(e);
 				remote = e.getValue();
 				continue;
 			}
-			if("local".equals(arg)) {
+			if ("local".equals(arg)) {
 				validateNotSet(local, "local");
 				ArgUtils.validateHasValue(e);
 				local = e.getValue();
 				continue;
 			}
-			if("cert".equals(arg)) {
+			if ("cert".equals(arg)) {
 				validateNotSet(cert, "cert");
 				ArgUtils.validateHasValue(e);
 				cert = e.getValue();
 				continue;
 			}
-			if("delegate".equals(arg)) {
+			if ("delegate".equals(arg)) {
 				continue; // ignore;
 			}
 
 			throw new IllegalArgumentException(
-					"Unknown option \"" + arg + "\". Separate business app arguments with '--'.");
+							"Unknown option \"" + arg + "\". Separate business app arguments with '--'.");
 		}
 	}
 
@@ -173,15 +173,11 @@ public class DefaultBootstrap implements Delegate {
 		Configuration localConfig = null;
 
 		if (remote != null) {
-			try (Reader in = openConnection(new URL(remote))) {
-				remoteConfig = getConfig(in);
-			}
+			remoteConfig = getRemoteConfig();
 		}
 
 		if (local != null) {
-			try (Reader in = Files.newBufferedReader(Paths.get(local))) {
-				localConfig = getConfig(in);
-			}
+			localConfig = getLocalConfig();
 		}
 
 		if (remoteConfig == null && localConfig == null) {
@@ -220,9 +216,7 @@ public class DefaultBootstrap implements Delegate {
 		}
 
 		Configuration localConfig = null;
-		try (Reader in = Files.newBufferedReader(Paths.get(local))) {
-			localConfig = getConfig(in);
-		}
+		localConfig = getLocalConfig();
 
 		boolean localNotReady = localConfig == null || localConfig.requiresUpdate();
 
@@ -234,9 +228,7 @@ public class DefaultBootstrap implements Delegate {
 
 		Configuration remoteConfig = null;
 		if (remote != null) {
-			try (Reader in = openConnection(new URL(remote))) {
-				remoteConfig = getConfig(in);
-			}
+			remoteConfig = getRemoteConfig();
 		}
 
 		boolean failedRemoteUpdate = false;
@@ -270,11 +262,11 @@ public class DefaultBootstrap implements Delegate {
 		}
 
 	}
-	
+
 	private Reader openConnection(URL url) throws IOException {
 
 		URLConnection connection = url.openConnection();
-		
+
 		// Some downloads may fail with HTTP/403, this may solve it
 		connection.addRequestProperty("User-Agent", "Mozilla/5.0");
 		// Set a connection timeout of 10 seconds
@@ -285,8 +277,23 @@ public class DefaultBootstrap implements Delegate {
 		return new InputStreamReader(connection.getInputStream());
 	}
 
-	private Configuration getConfig(Reader in) {
-		try {
+	private Configuration getLocalConfig() {
+		try (Reader in = Files.newBufferedReader(Paths.get(local))) {
+			if (pk == null) {
+				return Configuration.read(in);
+			} else {
+				return Configuration.read(in, pk);
+
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	private Configuration getRemoteConfig() {
+		try (Reader in = openConnection(new URL(remote))) {
 			if (pk == null) {
 				return Configuration.read(in);
 			} else {
