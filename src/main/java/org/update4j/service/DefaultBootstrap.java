@@ -22,9 +22,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.util.List;
@@ -198,12 +196,15 @@ public class DefaultBootstrap implements Delegate {
 		}
 
 		if (syncLocal && !failedRemoteUpdate) {
-			if (remoteConfig != null && !remoteConfig.equals(localConfig))
-				try (Writer out = Files.newBufferedWriter(Paths.get(local))) {
+			if (remoteConfig != null && !remoteConfig.equals(localConfig)) {
+				Path path = Paths.get(local);
+				Files.createDirectories(path.getParent());
+				try (Writer out = Files.newBufferedWriter(path)) {
 					remoteConfig.write(out);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
+			}
 		}
 
 		config.launch(args);
