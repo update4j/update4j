@@ -285,7 +285,8 @@ public class DefaultBootstrap implements Delegate {
 				return Configuration.read(in, pk);
 
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
+			// All exceptions just returns null, never fail
 			e.printStackTrace();
 		}
 
@@ -300,7 +301,7 @@ public class DefaultBootstrap implements Delegate {
 				return Configuration.read(in, pk);
 
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 
 		}
