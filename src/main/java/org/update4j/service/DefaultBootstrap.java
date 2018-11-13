@@ -29,9 +29,6 @@ import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.update4j.Bootstrap;
 import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
