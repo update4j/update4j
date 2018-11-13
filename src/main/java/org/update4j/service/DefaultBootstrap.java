@@ -197,16 +197,12 @@ public class DefaultBootstrap implements Delegate {
 			}
 		}
 
-		if (syncLocal && !failedRemoteUpdate) {
-			if (remoteConfig != null && !remoteConfig.equals(localConfig))
-				try (Writer out = Files.newBufferedWriter(Paths.get(local))) {
-					remoteConfig.write(out);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+		if (syncLocal && !failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
+			syncLocal(remoteConfig);
 		}
 
 		config.launch(args);
+
 	}
 
 	private void launchFirst(List<String> args) throws Throwable {
@@ -254,11 +250,7 @@ public class DefaultBootstrap implements Delegate {
 		}
 
 		if (!failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
-			try (Writer out = Files.newBufferedWriter(Paths.get(local))) {
-				remoteConfig.write(out);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			syncLocal(remoteConfig);
 		}
 
 	}
@@ -307,6 +299,20 @@ public class DefaultBootstrap implements Delegate {
 		}
 
 		return null;
+	}
+
+	private void syncLocal(Configuration remoteConfig) {
+		Path localPath = Paths.get(local);
+		try {
+			if (localPath.getParent() != null)
+				Files.createDirectories(localPath.getParent());
+
+			try (Writer out = Files.newBufferedWriter(localPath)) {
+				remoteConfig.write(out);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	// @formatter:off
