@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.PublicKey;
@@ -174,7 +175,7 @@ public class DefaultBootstrap implements Delegate {
 		}
 
 		if (local != null) {
-			localConfig = getLocalConfig();
+			localConfig = getLocalConfig(remote != null  && syncLocal);
 		}
 
 		if (remoteConfig == null && localConfig == null) {
@@ -209,7 +210,7 @@ public class DefaultBootstrap implements Delegate {
 		}
 
 		Configuration localConfig = null;
-		localConfig = getLocalConfig();
+		localConfig = getLocalConfig(false);
 
 		boolean localNotReady = localConfig == null || localConfig.requiresUpdate();
 
@@ -266,13 +267,17 @@ public class DefaultBootstrap implements Delegate {
 		return new InputStreamReader(connection.getInputStream());
 	}
 
-	private Configuration getLocalConfig() {
+	private Configuration getLocalConfig(boolean ignoreFileNotFound) {
 		try (Reader in = Files.newBufferedReader(Paths.get(local))) {
 			if (pk == null) {
 				return Configuration.read(in);
 			} else {
 				return Configuration.read(in, pk);
 
+			}
+		} catch (NoSuchFileException e) {
+			if(!ignoreFileNotFound) {
+				e.printStackTrace();
 			}
 		} catch (Exception e) {
 			// All exceptions just returns null, never fail
