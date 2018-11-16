@@ -44,25 +44,12 @@
 				<version>3.7.0</version>
 				<configuration>
 					<release>9</release>
-					<archive>
-						<manifest>
-							<mainClass>org.update4j.Main</mainClass>
-						</manifest>
-					</archive>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>3.1.0</version>
-				<configuration>
-					<archive>
-						<addMavenDescriptor>false</addMavenDescriptor>
-						<manifestEntries>
-							<Multi-Release>true</Multi-Release>
-						</manifestEntries>
-					</archive>
-				</configuration>
 			</plugin>
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
@@ -101,7 +88,7 @@
 				</configuration>
 				<executions>
 					<execution>
-						<phase>compile</phase>
+						<phase>package</phase>
 						<goals>
 							<goal>javadoc</goal>
 							<goal>jar</goal>
