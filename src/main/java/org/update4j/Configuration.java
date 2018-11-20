@@ -996,17 +996,9 @@ public class Configuration {
 					}
 					downloadedCollection.put(file, output);
 
-					URLConnection connection = file.getUri().toURL().openConnection();
-
-					// Some downloads may fail with HTTP/403, this may solve it
-					connection.addRequestProperty("User-Agent", "Mozilla/5.0");
-					// Set a connection timeout of 10 seconds
-					connection.setConnectTimeout(10 * 1000);
-					// Set a read timeout of 10 seconds
-					connection.setReadTimeout(10 * 1000);
-
-					try (InputStream in = connection.getInputStream();
-									OutputStream out = Files.newOutputStream(output)) {
+					URL url = file.getUri().toURL();
+					try (InputStream in = handler.connect(file, url);
+							OutputStream out = Files.newOutputStream(output)) {
 
 						// We should set download progress only AFTER the request has returned.
 						// The delay can be monitored by the difference between calls from startDownload to this.

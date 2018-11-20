@@ -15,6 +15,9 @@
  */
 package org.update4j.service;
 
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Path;
 
 import org.update4j.FileMetadata;
@@ -36,6 +39,21 @@ public interface UpdateHandler extends Service {
 	void doneCheckUpdates() throws Throwable;
 
 	void startDownloads() throws Throwable;
+	
+	default InputStream connect(FileMetadata file, URL url) throws Throwable {
+
+		URLConnection connection = url.openConnection();
+
+		// Some downloads may fail with HTTP/403, this may solve it
+		connection.addRequestProperty("User-Agent", "Mozilla/5.0");
+		// Set a connection timeout of 10 seconds
+		connection.setConnectTimeout(10 * 1000);
+		// Set a read timeout of 10 seconds
+		connection.setReadTimeout(10 * 1000);
+		
+		return connection.getInputStream();
+		
+	}
 	
 	void startDownloadFile(FileMetadata file) throws Throwable;
 	
