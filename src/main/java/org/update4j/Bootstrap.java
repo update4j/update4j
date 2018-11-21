@@ -65,7 +65,7 @@ public class Bootstrap {
 	 * delegate class name using the {@code --delegate} option:
 	 * 
 	 * <pre>
-	 * $ java --module-path . --module org.update4j --delegate=com.example.MyDelegate
+	 * $ java --module-path . --module org.update4j --delegate com.example.MyDelegate
 	 * </pre>
 	 * 
 	 * The class name should be the <i>Canonical Class Name</i> i.e. the String
