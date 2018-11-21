@@ -1364,6 +1364,221 @@ public class Configuration {
 	}
 
 	/**
+	 * Convenience method to delete files only present in {@code oldConfig} and
+	 * clean up app directory.
+	 * 
+	 * <p>
+	 * <b>Caution:</b> This method does not guarantee all files are actually
+	 * removed. Many things can go wrong and new updates should <em>never</em> rely
+	 * on this operation. Don't release new bootstrap modules with existing module
+	 * or package names (by marking {@code ignoreBootConflict} to {@code true}) even
+	 * if the old "should" be deleted here. For service providers, increment the
+	 * {@code version()} to let update4j know it should select the new, even if the
+	 * old is deleted here.
+	 * 
+	 * 
+	 * <p>
+	 * A file in the old configuration is considered "old" if that file:
+	 * 
+	 * <ul>
+	 * <li>Exists.</li>
+	 * <li>Is not present in the current configuration. It will query the underlying
+	 * operating system to check equality instead of comparing path names.</li>
+	 * <li>If the file's checksum matches the checksum listed in the old config.
+	 * This is an extra - optional - layer of safety to prevent unwanted files from
+	 * being deleted. You can turn off this check by calling
+	 * {@link #deleteOldFiles(Configuration, boolean, int)} instead.
+	 * </ul>
+	 * 
+	 * <p>
+	 * Files that are not marked with either {@code classpath} or {@code modulepath}
+	 * in the config, will be assumed to run in the bootstrap; therefore will not be
+	 * deleted immediately. Instead, they will be queued to be deleted when the JVM
+	 * shuts down by spawning a new system-dependent process with 5 seconds delay
+	 * (you can change the delay by calling
+	 * {@link #deleteOldFiles(Configuration, boolean, int)} instead. Files that are
+	 * marked with {@code classpath} or {@code modulepath} will try to be deleted
+	 * immediately. If it fails (e.g. you called this method from the business
+	 * application and the files are locked by operating system), it will queue them
+	 * together with the bootstrap files.
+	 * 
+	 * <p>
+	 * Please note: Long running shutdown hooks may keep files locked thus
+	 * preventing them from being deleted. Call
+	 * {@link #deleteOldFiles(Configuration, boolean, int)} and increase the
+	 * {@code secondsDelay} to ensure it runs after all shutdown hooks completed.
+	 * 
+	 * <p>
+	 * You <em>must</em> not call this method if:
+	 * 
+	 * <pre>
+	 * this.requiresUpdate() == true
+	 * </pre>
+	 * 
+	 * in other words, you must first update the current config, or if using
+	 * {@code updateTemp()} you must first call {@link Update#finalizeUpdate(Path)}.
+	 * 
+	 * 
+	 * @param oldConfig The old configuration.
+	 * @throws IllegalStateException If this method is called but the current
+	 *                               configuration is not up-to-date.
+	 * @throws IOException           If checking if current config is up-to-date,
+	 *                               checking file equality, or calculating checksum
+	 *                               failed.
+	 */
+	public void deleteOldFiles(Configuration oldConfig) throws IOException {
+		deleteOldFiles(oldConfig, true, 5);
+	}
+
+	/**
+	 * Convenience method to delete files only present in {@code oldConfig} and
+	 * clean up app directory.
+	 * 
+	 * <p>
+	 * <b>Caution:</b> This method does not guarantee all files are actually
+	 * removed. Many things can go wrong and new updates should <em>never</em> rely
+	 * on this operation. Don't release new bootstrap modules with existing module
+	 * or package names (by marking {@code ignoreBootConflict} to {@code true}) even
+	 * if the old "should" be deleted here. For service providers, increment the
+	 * {@code version()} to let update4j know it should select the new, even if the
+	 * old is deleted here.
+	 * 
+	 * <p>
+	 * A file in the old configuration is considered "old" if that file:
+	 * 
+	 * <ul>
+	 * <li>Exists.</li>
+	 * <li>Is not present in the current configuration. It will query the underlying
+	 * operating system to check equality instead of comparing path names.</li>
+	 * <li>If {@code matchChecksum} is {@code true} &mdash; if the file's checksum
+	 * matches the checksum listed in the old config. This is an extra - optional -
+	 * layer of safety to prevent unwanted files from being deleted.
+	 * </ul>
+	 * 
+	 * <p>
+	 * Files that are not marked with either {@code classpath} or {@code modulepath}
+	 * in the config, will be assumed to run in the bootstrap; therefore will not be
+	 * deleted immediately. Instead, they will be queued to be deleted when the JVM
+	 * shuts down by spawning a new system-dependent process with
+	 * {@code secondsDelay} seconds delay. Files that are marked with
+	 * {@code classpath} or {@code modulepath} will try to be deleted immediately.
+	 * If it fails (e.g. you called this method from the business application and
+	 * the files are locked by operating system), it will queue them together with
+	 * the bootstrap files.
+	 * 
+	 * <p>
+	 * Please note: Long running shutdown hooks may keep files locked thus
+	 * preventing them from being deleted. Increase the {@code secondsDelay} to
+	 * ensure it runs after all shutdown hooks completed. {@code secondsDelay} will
+	 * never be less than 1; smaller values will be adjusted.
+	 * 
+	 * <p>
+	 * You <em>must</em> not call this method if:
+	 * 
+	 * <pre>
+	 * this.requiresUpdate() == true
+	 * </pre>
+	 * 
+	 * in other words, you must first update the current config, or if using
+	 * {@code updateTemp()} you must first call {@link Update#finalizeUpdate(Path)}.
+	 * 
+	 * 
+	 * @param oldConfig     The old configuration.
+	 * @param matchChecksum Whether checksums should be checked and delete only if
+	 *                      matching.
+	 * @param secondsDelay  Second to delay deletion after JVM shut down. If less
+	 *                      the 1, it will be adjusted to 1.
+	 * @throws IllegalStateException If this method is called but the current
+	 *                               configuration is not up-to-date.
+	 * @throws IOException           If checking if current config is up-to-date,
+	 *                               checking file equality, or calculating checksum
+	 *                               failed.
+	 */
+	public void deleteOldFiles(Configuration oldConfig, boolean matchChecksum, int secondsDelay) throws IOException {
+		if (requiresUpdate()) {
+			throw new IllegalStateException("Current configuration is not up-to-date, refusing to delete.");
+		}
+
+		List<FileMetadata> oldFiles = getOldFiles(oldConfig, matchChecksum);
+		if (oldFiles.isEmpty())
+			return;
+
+		List<Path> delayedDelete = new ArrayList<>();
+		for (FileMetadata file : oldFiles) {
+			if (file.isClasspath() || file.isModulepath()) {
+				try {
+					Files.deleteIfExists(file.getPath());
+				} catch (IOException e) {
+					e.printStackTrace();
+					delayedDelete.add(file.getPath());
+				}
+			} else {
+				delayedDelete.add(file.getPath());
+			}
+		}
+
+		if (!delayedDelete.isEmpty())
+			FileUtils.delayedDelete(delayedDelete, secondsDelay);
+	}
+
+	/**
+	 * Returns a list of files of old files present in {@code oldConfig}ut not in
+	 * the current.
+	 * 
+	 * 
+	 * <p>
+	 * A file in the old configuration is considered "old" if that file:
+	 * 
+	 * <ul>
+	 * <li>Exists.</li>
+	 * <li>Is not present in the current configuration. It will query the underlying
+	 * operating system to check equality instead of comparing path names.</li>
+	 * <li>If {@code matchChecksum} is {@code true} &mdash; if the file's checksum
+	 * matches the checksum listed in the old config.
+	 * </ul>
+	 * 
+	 * <p>
+	 * Old files are assumed safe to be removed with
+	 * {@link #deleteOldFiles(Configuration, boolean, int)}.
+	 * 
+	 * 
+	 * @param oldConfig     The old configuration.
+	 * @param matchChecksum Whether checksums should be matching in order to consider it old.
+	 * @return A list of old files.
+	 * @throws IOException If checking file equality, or calculating checksum
+	 *                     failed.
+	 */
+	public List<FileMetadata> getOldFiles(Configuration oldConfig, boolean matchChecksum) throws IOException {
+		List<FileMetadata> oldFiles = new ArrayList<>();
+
+		outer: for (FileMetadata file : oldConfig.getFiles()) {
+			if (!Files.exists(file.getPath())) {
+				continue;
+			}
+
+			for (FileMetadata newFile : getFiles()) {
+				if (Files.isSameFile(newFile.getPath(), file.getPath())) {
+					continue outer;
+				}
+			}
+
+			oldFiles.add(file);
+		}
+
+		if (matchChecksum) {
+			ListIterator<FileMetadata> iter = oldFiles.listIterator();
+			while (iter.hasNext()) {
+				FileMetadata f = iter.next();
+				if (f.requiresUpdate()) {
+					iter.remove();
+				}
+			}
+		}
+
+		return oldFiles;
+	}
+
+	/**
 	 * Reads and parses a configuration XML.
 	 * 
 	 * @param reader

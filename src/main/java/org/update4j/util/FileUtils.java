@@ -19,6 +19,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.ProcessBuilder.Redirect;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.DirectoryStream;
@@ -31,9 +32,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.Adler32;
 import java.util.zip.ZipFile;
 
@@ -134,7 +139,7 @@ public class FileUtils {
 			String uri = URLEncoder.encode(path.toString().replace("\\", "/"), "UTF-8");
 
 			uri = uri.replace("%2F", "/") // We still need directory structure
-							.replace("+", "%20"); // "+" only means space in queries, not in paths
+					.replace("+", "%20"); // "+" only means space in queries, not in paths
 			return URI.create(uri);
 		} catch (UnsupportedEncodingException e) {
 			throw new AssertionError(e);
@@ -240,5 +245,28 @@ public class FileUtils {
 		} finally {
 			Files.deleteIfExists(temp);
 		}
+	}
+
+	public static void delayedDelete(Collection<Path> files, int secondsDelay) {
+		secondsDelay = Math.max(secondsDelay, 1);
+		List<String> filenames = files.stream().map(Path::toString).collect(Collectors.toList());
+		List<String> commands = new ArrayList<>();
+		
+		if(OS.CURRENT == OS.WINDOWS) {
+			commands.addAll(List.of("cmd", "/c", "timeout", "" + secondsDelay, "/NOBREAK", "&", "del"));
+		} else {
+			commands.addAll(List.of("sleep", "" + secondsDelay, ";", "rm"));
+		}
+		
+		commands.addAll(filenames);
+		ProcessBuilder pb = new ProcessBuilder(commands).inheritIO();
+
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			try {
+				pb.start();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}));
 	}
 }
