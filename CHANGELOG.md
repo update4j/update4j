@@ -1,4 +1,7 @@
 
+* **1.3.2**
+  * Control how files are downloaded with `UpdateHandler::connect`.
+  * Delete old files with `Configuration::deleteOldFiles`.
 * **1.3.1**
   * `DefaultBootstrap` sync local now creates directories to write local config.
   * `DefaultBootstrap` remote signature failure would not fall back to local.
