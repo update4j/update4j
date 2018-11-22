@@ -1,5 +1,5 @@
 
-* **1.3.2**
+* **1.3.2** *— h/t [@ChristianCiach](https://github.com/ChristianCiach)*
   * Control how files are downloaded with `UpdateHandler::connect`.
   * Delete old files with `Configuration::deleteOldFiles`.
 * **1.3.1**
