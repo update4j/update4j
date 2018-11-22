@@ -19,7 +19,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.lang.ProcessBuilder.Redirect;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.DirectoryStream;
@@ -249,18 +248,23 @@ public class FileUtils {
 
 	public static void delayedDelete(Collection<Path> files, int secondsDelay) {
 		secondsDelay = Math.max(secondsDelay, 1);
-		List<String> filenames = files.stream().map(Path::toString).collect(Collectors.toList());
 		List<String> commands = new ArrayList<>();
-		
-		if(OS.CURRENT == OS.WINDOWS) {
-			commands.addAll(List.of("cmd", "/c", "timeout", "" + secondsDelay, "/NOBREAK", "&", "del"));
+
+		String filenames = files.stream()
+						.map(Path::toString)
+						.map(f -> "\"" + f.replace("\"", "\\\"") + "\"")
+						.collect(Collectors.joining(" "));
+
+		if (OS.CURRENT == OS.WINDOWS) {
+			commands.addAll(List.of("cmd", "/c"));
+			commands.add("ping localhost -n " + (secondsDelay + 1) + " & del " + filenames);
 		} else {
-			commands.addAll(List.of("sleep", "" + secondsDelay, ";", "rm"));
+			commands.addAll(List.of("sh", "-c"));
+			commands.add("sleep " + secondsDelay + " ; rm " + filenames);
 		}
 		
-		commands.addAll(filenames);
-		ProcessBuilder pb = new ProcessBuilder(commands).inheritIO();
-
+		ProcessBuilder pb = new ProcessBuilder(commands);
+		
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				pb.start();

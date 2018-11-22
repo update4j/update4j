@@ -1562,18 +1562,14 @@ public class Configuration {
 				}
 			}
 
+			if(matchChecksum) {
+				if(file.requiresUpdate())
+					continue;
+			}
+			
 			oldFiles.add(file);
 		}
 
-		if (matchChecksum) {
-			ListIterator<FileMetadata> iter = oldFiles.listIterator();
-			while (iter.hasNext()) {
-				FileMetadata f = iter.next();
-				if (f.requiresUpdate()) {
-					iter.remove();
-				}
-			}
-		}
 
 		return oldFiles;
 	}
