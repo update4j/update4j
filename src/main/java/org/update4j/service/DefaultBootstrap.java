@@ -175,7 +175,7 @@ public class DefaultBootstrap implements Delegate {
 		}
 
 		if (local != null) {
-			localConfig = getLocalConfig(remote != null  && syncLocal);
+			localConfig = getLocalConfig(remote != null && syncLocal);
 		}
 
 		if (remoteConfig == null && localConfig == null) {
@@ -276,7 +276,7 @@ public class DefaultBootstrap implements Delegate {
 
 			}
 		} catch (NoSuchFileException e) {
-			if(!ignoreFileNotFound) {
+			if (!ignoreFileNotFound) {
 				e.printStackTrace();
 			}
 		} catch (Exception e) {

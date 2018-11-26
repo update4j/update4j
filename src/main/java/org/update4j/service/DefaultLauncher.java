@@ -55,7 +55,7 @@ public class DefaultLauncher implements Launcher {
 			Method method = clazz.getMethod("main", String[].class);
 
 			method.invoke(null, new Object[] { context.getArgs().toArray(new String[0]) });
-			
+
 		} catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 						| NoSuchMethodException | SecurityException e) {
 			throw new RuntimeException(e);

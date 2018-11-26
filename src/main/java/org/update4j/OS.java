@@ -21,8 +21,7 @@ public enum OS {
 	public static final OS CURRENT;
 
 	static {
-		String os = System.getProperty("os.name", "generic")
-						.toLowerCase();
+		String os = System.getProperty("os.name", "generic").toLowerCase();
 
 		if ((os.contains("mac")) || (os.contains("darwin")))
 			CURRENT = MAC;

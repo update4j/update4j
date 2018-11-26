@@ -16,11 +16,9 @@
 package org.update4j.mapper;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.nio.file.Files;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -167,7 +165,7 @@ public class ConfigMapper extends XmlMapper {
 
 		// no children
 		if (baseUri == null && basePath == null && updateHandler == null && launcher == null && properties.isEmpty()
-				&& files.isEmpty()) {
+						&& files.isEmpty()) {
 			return "";
 		}
 

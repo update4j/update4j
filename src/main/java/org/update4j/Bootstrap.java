@@ -79,17 +79,17 @@ public class Bootstrap {
 	 */
 	public static void main(String[] args) throws Throwable {
 		String override = null;
-		
+
 		List<String> argsList = List.of(args);
 		List<String> bootArgs = ArgUtils.beforeSeparator(argsList);
 		Map<String, String> parsed = ArgUtils.parseArgs(bootArgs);
-		
+
 		for (Map.Entry<String, String> e : parsed.entrySet()) {
 
-			if("delegate".equals(e.getKey())) {
+			if ("delegate".equals(e.getKey())) {
 				ArgUtils.validateHasValue(e);
 				override = e.getValue();
-				
+
 				break;
 			}
 
@@ -103,7 +103,8 @@ public class Bootstrap {
 	 * {@link Delegate} (specified by {@link Service#version()}) currently present
 	 * in the classpath or modulepath.
 	 * 
-	 * @throws Throwable Any throwable thrown in the bootstrap.
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
 	 */
 	public static void start() throws Throwable {
 		start((String) null);
@@ -119,7 +120,8 @@ public class Bootstrap {
 	 * highest versioned provider (specified by {@link Service#version()}) will be
 	 * used instead.
 	 * 
-	 * @throws Throwable Any throwable thrown in the bootstrap.
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
 	 */
 	public static void start(String override) throws Throwable {
 		start(override, List.of());
@@ -128,7 +130,8 @@ public class Bootstrap {
 	/**
 	 * Starts the bootstrap running the given {@link Delegate}.
 	 * 
-	 * @throws Throwable Any throwable thrown in the bootstrap.
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
 	 */
 	public static void start(Delegate delegate) throws Throwable {
 		start(delegate, List.of());
@@ -140,7 +143,8 @@ public class Bootstrap {
 	 * in the classpath or modulepath, with the given list as command-line
 	 * arguments.
 	 * 
-	 * @throws Throwable Any throwable thrown in the bootstrap.
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
 	 */
 	public static void start(List<String> args) throws Throwable {
 		start((String) null, args);
@@ -156,7 +160,8 @@ public class Bootstrap {
 	 * highest versioned provider (specified by {@link Service#version()}) will be
 	 * used instead.
 	 * 
-	 * @throws Throwable Any throwable thrown in the bootstrap.
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
 	 */
 	public static void start(String override, List<String> args) throws Throwable {
 		start(Service.loadService(Delegate.class, override), args);
@@ -166,7 +171,8 @@ public class Bootstrap {
 	 * Starts the bootstrap running the given {@link Delegate}, with the given list
 	 * as command-line arguments.
 	 * 
-	 * @throws Throwable Any throwable thrown in the bootstrap.
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
 	 */
 	public static void start(Delegate delegate, List<String> args) throws Throwable {
 		delegate.main(args);

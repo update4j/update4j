@@ -138,7 +138,7 @@ public class FileUtils {
 			String uri = URLEncoder.encode(path.toString().replace("\\", "/"), "UTF-8");
 
 			uri = uri.replace("%2F", "/") // We still need directory structure
-					.replace("+", "%20"); // "+" only means space in queries, not in paths
+							.replace("+", "%20"); // "+" only means space in queries, not in paths
 			return URI.create(uri);
 		} catch (UnsupportedEncodingException e) {
 			throw new AssertionError(e);
@@ -262,9 +262,9 @@ public class FileUtils {
 			commands.addAll(List.of("sh", "-c"));
 			commands.add("sleep " + secondsDelay + " ; rm " + filenames);
 		}
-		
+
 		ProcessBuilder pb = new ProcessBuilder(commands);
-		
+
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				pb.start();

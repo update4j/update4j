@@ -37,7 +37,7 @@ public class LaunchContext {
 	public ModuleLayer getModuleLayer() {
 		return layer;
 	}
-	
+
 	public ClassLoader getClassLoader() {
 		return classLoader;
 	}

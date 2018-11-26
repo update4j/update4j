@@ -52,8 +52,7 @@ public class PropertyManager {
 				Property ip = properties.get(i);
 				Property jp = properties.get(j);
 
-				if (ip.getKey()
-								.equals(jp.getKey()) && ip.getOs() == jp.getOs()) {
+				if (ip.getKey().equals(jp.getKey()) && ip.getOs() == jp.getOs()) {
 					throw new IllegalArgumentException("Duplicate property: " + ip.getKey());
 				}
 			}
@@ -61,8 +60,7 @@ public class PropertyManager {
 
 		for (int i = 1; i < sysProperties.size(); i++) {
 			for (int j = 0; j < i; j++) {
-				if (sysProperties.get(i)
-								.equals(sysProperties.get(j)))
+				if (sysProperties.get(i).equals(sysProperties.get(j)))
 					throw new IllegalArgumentException("Duplicate system property: " + sysProperties.get(i));
 			}
 		}
@@ -105,9 +103,7 @@ public class PropertyManager {
 	 * @return A list of properties with the given key.
 	 */
 	public List<Property> getUserProperties(String key) {
-		return properties.stream()
-						.filter(p -> key.equals(p.getKey()))
-						.collect(Collectors.toList());
+		return properties.stream().filter(p -> key.equals(p.getKey())).collect(Collectors.toList());
 	}
 
 	/**
@@ -243,14 +239,10 @@ public class PropertyManager {
 		List<Map.Entry<String, String>> resolved = resolvedProperties.entrySet()
 						.stream()
 						.filter(e -> !e.getValue().isEmpty())
-						.sorted((e1, e2) -> e2.getValue()
-										.length()
-										- e1.getValue()
-														.length())
+						.sorted((e1, e2) -> e2.getValue().length() - e1.getValue().length())
 						.peek(e -> {
 							if (isPath) {
-								e.setValue(e.getValue()
-												.replace("\\", "/"));
+								e.setValue(e.getValue().replace("\\", "/"));
 							}
 						})
 						.collect(Collectors.toList());
@@ -336,12 +328,10 @@ public class PropertyManager {
 			int noDepsSize = noDeps.size();
 			List<Map.Entry<String, String>> found = new ArrayList<>();
 
-			Iterator<Map.Entry<String, String>> iter = properties.entrySet()
-							.iterator();
+			Iterator<Map.Entry<String, String>> iter = properties.entrySet().iterator();
 			while (iter.hasNext()) {
 				Map.Entry<String, String> entry = iter.next();
-				if (!PLACEHOLDER.matcher(entry.getValue())
-								.find()) {
+				if (!PLACEHOLDER.matcher(entry.getValue()).find()) {
 					iter.remove();
 					found.add(entry);
 					noDeps.put(entry.getKey(), entry.getValue());
@@ -376,8 +366,7 @@ public class PropertyManager {
 
 			for (Map.Entry<String, String> entry : properties.entrySet()) {
 				for (Map.Entry<String, String> f : found) {
-					entry.setValue(entry.getValue()
-									.replace(wrap(f.getKey()), f.getValue()));
+					entry.setValue(entry.getValue().replace(wrap(f.getKey()), f.getValue()));
 				}
 			}
 		}
@@ -391,8 +380,7 @@ public class PropertyManager {
 	private static String trySystemProperty(String key, boolean systemInError) {
 		String value = System.getProperty(key, System.getenv(key));
 		if (value != null) {
-			if (PLACEHOLDER.matcher(value)
-							.find()) {
+			if (PLACEHOLDER.matcher(value).find()) {
 				throw new IllegalStateException("System properties must not contain placeholders.");
 			}
 
@@ -412,7 +400,6 @@ public class PropertyManager {
 	}
 
 	public static boolean containsPlaceholder(String str) {
-		return PLACEHOLDER.matcher(str)
-						.find();
+		return PLACEHOLDER.matcher(str).find();
 	}
 }

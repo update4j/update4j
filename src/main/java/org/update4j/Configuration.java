@@ -22,7 +22,6 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
@@ -31,7 +30,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.net.URLConnection;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -39,8 +37,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -913,11 +909,11 @@ public class Configuration {
 
 	private boolean updateImpl(Path tempDir, PublicKey key, UpdateHandler handler,
 					Consumer<? super UpdateHandler> handlerSetup) {
-		
-		if(key == null) {
+
+		if (key == null) {
 			Warning.signature();
 		}
-		
+
 		boolean updateTemp = tempDir != null;
 		boolean success;
 
@@ -998,7 +994,7 @@ public class Configuration {
 
 					URL url = file.getUri().toURL();
 					try (InputStream in = handler.connect(file, url);
-							OutputStream out = Files.newOutputStream(output)) {
+									OutputStream out = Files.newOutputStream(output)) {
 
 						// We should set download progress only AFTER the request has returned.
 						// The delay can be monitored by the difference between calls from startDownload to this.
@@ -1173,8 +1169,12 @@ public class Configuration {
 
 		try {
 			Files.move(download, newPath);
-			newMod = ModuleFinder.of(newPath).findAll().stream().map(ModuleReference::descriptor).findAny().orElse(
-							null);
+			newMod = ModuleFinder.of(newPath)
+							.findAll()
+							.stream()
+							.map(ModuleReference::descriptor)
+							.findAny()
+							.orElse(null);
 		} finally {
 			Files.move(newPath, download, StandardCopyOption.REPLACE_EXISTING);
 		}
@@ -1272,8 +1272,8 @@ public class Configuration {
 						.collect(Collectors.toList());
 
 		ModuleLayer parent = ModuleLayer.boot();
-		java.lang.module.Configuration cf = parent.configuration().resolveAndBind(ModuleFinder.of(), finder,
-						moduleNames);
+		java.lang.module.Configuration cf = parent.configuration()
+						.resolveAndBind(ModuleFinder.of(), finder, moduleNames);
 
 		ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
 		ClassLoader classpathLoader = new URLClassLoader("classpath", classpaths.toArray(new URL[classpaths.size()]),
@@ -1311,8 +1311,9 @@ public class Configuration {
 				}
 
 				for (String read : mod.getAddReads()) {
-					Module target = layer.findModule(read).orElseThrow(() -> new IllegalStateException(
-									"Module '" + read + "' is not known to the layer."));
+					Module target = layer.findModule(read)
+									.orElseThrow(() -> new IllegalStateException(
+													"Module '" + read + "' is not known to the layer."));
 
 					controller.addReads(source, target);
 				}
@@ -1419,12 +1420,14 @@ public class Configuration {
 	 * {@code updateTemp()} you must first call {@link Update#finalizeUpdate(Path)}.
 	 * 
 	 * 
-	 * @param oldConfig The old configuration.
-	 * @throws IllegalStateException If this method is called but the current
-	 *                               configuration is not up-to-date.
-	 * @throws IOException           If checking if current config is up-to-date,
-	 *                               checking file equality, or calculating checksum
-	 *                               failed.
+	 * @param oldConfig
+	 *            The old configuration.
+	 * @throws IllegalStateException
+	 *             If this method is called but the current configuration is not
+	 *             up-to-date.
+	 * @throws IOException
+	 *             If checking if current config is up-to-date, checking file
+	 *             equality, or calculating checksum failed.
 	 */
 	public void deleteOldFiles(Configuration oldConfig) throws IOException {
 		deleteOldFiles(oldConfig, true, 5);
@@ -1483,16 +1486,19 @@ public class Configuration {
 	 * {@code updateTemp()} you must first call {@link Update#finalizeUpdate(Path)}.
 	 * 
 	 * 
-	 * @param oldConfig     The old configuration.
-	 * @param matchChecksum Whether checksums should be checked and delete only if
-	 *                      matching.
-	 * @param secondsDelay  Second to delay deletion after JVM shut down. If less
-	 *                      the 1, it will be adjusted to 1.
-	 * @throws IllegalStateException If this method is called but the current
-	 *                               configuration is not up-to-date.
-	 * @throws IOException           If checking if current config is up-to-date,
-	 *                               checking file equality, or calculating checksum
-	 *                               failed.
+	 * @param oldConfig
+	 *            The old configuration.
+	 * @param matchChecksum
+	 *            Whether checksums should be checked and delete only if matching.
+	 * @param secondsDelay
+	 *            Second to delay deletion after JVM shut down. If less the 1, it
+	 *            will be adjusted to 1.
+	 * @throws IllegalStateException
+	 *             If this method is called but the current configuration is not
+	 *             up-to-date.
+	 * @throws IOException
+	 *             If checking if current config is up-to-date, checking file
+	 *             equality, or calculating checksum failed.
 	 */
 	public void deleteOldFiles(Configuration oldConfig, boolean matchChecksum, int secondsDelay) throws IOException {
 		if (requiresUpdate()) {
@@ -1542,11 +1548,13 @@ public class Configuration {
 	 * {@link #deleteOldFiles(Configuration, boolean, int)}.
 	 * 
 	 * 
-	 * @param oldConfig     The old configuration.
-	 * @param matchChecksum Whether checksums should be matching in order to consider it old.
+	 * @param oldConfig
+	 *            The old configuration.
+	 * @param matchChecksum
+	 *            Whether checksums should be matching in order to consider it old.
 	 * @return A list of old files.
-	 * @throws IOException If checking file equality, or calculating checksum
-	 *                     failed.
+	 * @throws IOException
+	 *             If checking file equality, or calculating checksum failed.
 	 */
 	public List<FileMetadata> getOldFiles(Configuration oldConfig, boolean matchChecksum) throws IOException {
 		List<FileMetadata> oldFiles = new ArrayList<>();
@@ -1562,14 +1570,13 @@ public class Configuration {
 				}
 			}
 
-			if(matchChecksum) {
-				if(file.requiresUpdate())
+			if (matchChecksum) {
+				if (file.requiresUpdate())
 					continue;
 			}
-			
+
 			oldFiles.add(file);
 		}
-
 
 		return oldFiles;
 	}
@@ -1666,8 +1673,9 @@ public class Configuration {
 		List<FileMetadata> files = new ArrayList<>();
 
 		for (FileMapper fm : configMapper.files) {
-			FileMetadata.Builder fileBuilder = FileMetadata.builder().baseUri(config.getBaseUri()).basePath(
-							config.getBasePath());
+			FileMetadata.Builder fileBuilder = FileMetadata.builder()
+							.baseUri(config.getBaseUri())
+							.basePath(config.getBasePath());
 
 			if (fm.uri != null) {
 				String s = config.resolvePlaceholders(fm.uri, true, fm.os != null && fm.os != OS.CURRENT);

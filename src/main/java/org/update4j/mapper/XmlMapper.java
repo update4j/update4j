@@ -21,7 +21,7 @@ public abstract class XmlMapper {
 
 	public abstract void parse(Node node);
 
-//	public abstract Node toNode(Document doc);
+	//	public abstract Node toNode(Document doc);
 
 	public abstract String toXml();
 
@@ -50,9 +50,7 @@ public abstract class XmlMapper {
 				builder.append("&lt;");
 			} else if (c == '>') {
 				builder.append("&gt;");
-			}
-
-			else if (c <= 0x1f || c >= 0x7f) {
+			} else if (c <= 0x1f || c >= 0x7f) {
 				builder.append("&#" + ((int) c) + ";");
 			} else {
 				builder.append(c);

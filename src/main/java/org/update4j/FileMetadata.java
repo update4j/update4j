@@ -263,8 +263,10 @@ public class FileMetadata {
 
 	public static Stream<Reference> streamDirectory(Path dir) {
 		try {
-			return Files.walk(dir).filter(p -> Files.isRegularFile(p)).map(FileMetadata::readFrom).peek(
-							fm -> fm.path(dir.relativize(fm.getSource())));
+			return Files.walk(dir)
+							.filter(p -> Files.isRegularFile(p))
+							.map(FileMetadata::readFrom)
+							.peek(fm -> fm.path(dir.relativize(fm.getSource())));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -638,10 +640,10 @@ public class FileMetadata {
 
 			return this;
 		}
-		
+
 		Builder signature(String signature) {
 			this.signature = signature;
-			
+
 			return this;
 		}
 

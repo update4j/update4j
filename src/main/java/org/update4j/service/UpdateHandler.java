@@ -26,20 +26,20 @@ import org.update4j.UpdateContext;
 public interface UpdateHandler extends Service {
 
 	void init(UpdateContext context) throws Throwable;
-	
+
 	void startCheckUpdates() throws Throwable;
-	
+
 	void startCheckUpdateFile(FileMetadata file) throws Throwable;
-	
+
 	void doneCheckUpdateFile(FileMetadata file, boolean requires) throws Throwable;
-	
+
 	// Based on bytes, not file count
 	void updateCheckUpdatesProgress(float frac) throws Throwable;
-	
+
 	void doneCheckUpdates() throws Throwable;
 
 	void startDownloads() throws Throwable;
-	
+
 	default InputStream connect(FileMetadata file, URL url) throws Throwable {
 
 		URLConnection connection = url.openConnection();
@@ -50,26 +50,26 @@ public interface UpdateHandler extends Service {
 		connection.setConnectTimeout(10 * 1000);
 		// Set a read timeout of 10 seconds
 		connection.setReadTimeout(10 * 1000);
-		
+
 		return connection.getInputStream();
-		
+
 	}
-	
+
 	void startDownloadFile(FileMetadata file) throws Throwable;
-	
+
 	void updateDownloadFileProgress(FileMetadata file, float frac) throws Throwable;
-	
+
 	void updateDownloadProgress(float frac) throws Throwable;
-	
+
 	void validatingFile(FileMetadata file, Path tempFile) throws Throwable;
-	
+
 	void doneDownloadFile(FileMetadata file, Path tempFile) throws Throwable;
-	
+
 	void doneDownloads() throws Throwable;
 
 	void failed(Throwable t);
 
 	void succeeded();
-	
+
 	void stop();
 }

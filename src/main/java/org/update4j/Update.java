@@ -22,7 +22,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -93,10 +92,10 @@ public class Update {
 		}
 
 		for (Map.Entry<Path, Path> e : files.entrySet()) {
-			if(e.getValue().getParent() != null) {
+			if (e.getValue().getParent() != null) {
 				Files.createDirectories(e.getValue().getParent());
 			}
-			
+
 			FileUtils.secureMoveFile(e.getKey(), e.getValue());
 		}
 

@@ -79,7 +79,6 @@ public class ArgUtils {
 		}
 	}
 
-
 	public static void validateNoValue(Map.Entry<String, String> e) {
 		if (e.getValue() != null) {
 			throw new IllegalArgumentException("Unknown command '" + e.getValue() + "'.");

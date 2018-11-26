@@ -146,9 +146,9 @@ public class Warning {
 							+ "\tthe configuration.\n");
 		}
 	}
-	
+
 	public static void signature() {
-		if(shouldWarn("signature")) {
+		if (shouldWarn("signature")) {
 			System.err.println("WARNING: Updating without signature validation is strongly discouraged.");
 		}
 	}
