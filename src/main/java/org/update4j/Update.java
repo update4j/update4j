@@ -93,6 +93,10 @@ public class Update {
 		}
 
 		for (Map.Entry<Path, Path> e : files.entrySet()) {
+			if(e.getValue().getParent() != null) {
+				Files.createDirectories(e.getValue().getParent());
+			}
+			
 			FileUtils.secureMoveFile(e.getKey(), e.getValue());
 		}
 
