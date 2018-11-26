@@ -162,16 +162,16 @@ public class FileMapper extends XmlMapper {
 		builder.append("        <file");
 
 		if (uri != null) {
-			builder.append(" uri=\"" + uri + "\"");
+			builder.append(" uri=\"" + escape(uri) + "\"");
 		}
 		if (path != null) {
-			builder.append(" path=\"" + path + "\"");
+			builder.append(" path=\"" + escape(path) + "\"");
 		}
 		if (size != null) {
 			builder.append(" size=\"" + size + "\"");
 		}
 		if (checksum != null) {
-			builder.append(" checksum=\"" + checksum + "\"");
+			builder.append(" checksum=\"" + escape(checksum) + "\"");
 		}
 		if (os != null) {
 			builder.append(" os=\"" + os.getShortName() + "\"");
@@ -183,13 +183,13 @@ public class FileMapper extends XmlMapper {
 			builder.append(" modulepath=\"true\"");
 		}
 		if (comment != null) {
-			builder.append(" comment=\"" + comment + "\"");
+			builder.append(" comment=\"" + escape(comment) + "\"");
 		}
 		if (ignoreBootConflict != null && ignoreBootConflict) {
 			builder.append(" ignoreBootConflict=\"true\"");
 		}
 		if (signature != null) {
-			builder.append(" signature=\"" + signature + "\"");
+			builder.append(" signature=\"" + escape(signature) + "\"");
 		}
 
 		if (!addExports.isEmpty() || !addOpens.isEmpty() || !addReads.isEmpty()) {
@@ -201,8 +201,8 @@ public class FileMapper extends XmlMapper {
 
 				for (AddPackage ap : addExports) {
 					builder.append("                <exports");
-					builder.append(" package=\"" + ap.getPackageName() + "\"");
-					builder.append(" target=\"" + ap.getTargetModule() + "\"/>\n");
+					builder.append(" package=\"" + escape(ap.getPackageName()) + "\"");
+					builder.append(" target=\"" + escape(ap.getTargetModule()) + "\"/>\n");
 				}
 
 				builder.append("            </addExports>\n");
@@ -213,8 +213,8 @@ public class FileMapper extends XmlMapper {
 
 				for (AddPackage ap : addOpens) {
 					builder.append("                <opens");
-					builder.append(" package=\"" + ap.getPackageName() + "\"");
-					builder.append(" target=\"" + ap.getTargetModule() + "\"/>\n");
+					builder.append(" package=\"" + escape(ap.getPackageName()) + "\"");
+					builder.append(" target=\"" + escape(ap.getTargetModule()) + "\"/>\n");
 				}
 
 				builder.append("            </addOpens>\n");
@@ -225,7 +225,7 @@ public class FileMapper extends XmlMapper {
 
 				for (String r : addReads) {
 					builder.append("                <reads");
-					builder.append(" module=\"" + r + "\"/>\n");
+					builder.append(" module=\"" + escape(r) + "\"/>\n");
 				}
 
 				builder.append("            </addReads>\n");

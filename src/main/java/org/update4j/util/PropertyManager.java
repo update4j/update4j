@@ -70,21 +70,6 @@ public class PropertyManager {
 		resolvedProperties = extractPropertiesForCurrentMachine(sysProperties, this.properties);
 		resolvedProperties = resolveDependencies(resolvedProperties);
 		unmodifiableResolvedProperties = Collections.unmodifiableMap(resolvedProperties);
-
-		for (String resolvedValue : resolvedProperties.values()) {
-
-			if (resolvedValue.contains("$")) {
-				throw new IllegalArgumentException("Property value contains illegal character '$': " + resolvedValue);
-			}
-
-			if (resolvedValue.contains("{")) {
-				throw new IllegalArgumentException("Property value contains illegal character '{': " + resolvedValue);
-			}
-
-			if (resolvedValue.contains("}")) {
-				throw new IllegalArgumentException("Property value contains illegal character '}': " + resolvedValue);
-			}
-		}
 	}
 
 	/**
@@ -257,6 +242,7 @@ public class PropertyManager {
 		// Get a list sorted by longest value
 		List<Map.Entry<String, String>> resolved = resolvedProperties.entrySet()
 						.stream()
+						.filter(e -> !e.getValue().isEmpty())
 						.sorted((e1, e2) -> e2.getValue()
 										.length()
 										- e1.getValue()

@@ -25,9 +25,6 @@ public class Property {
 		if (key.isEmpty())
 			throw new IllegalArgumentException("Key must not be empty.");
 
-		if (value.isEmpty())
-			throw new IllegalArgumentException("Value must not be empty.");
-
 		if (key.contains("$")) {
 			throw new IllegalArgumentException("Key contains illegal character '$': " + key);
 		}
@@ -38,14 +35,6 @@ public class Property {
 
 		if (key.contains("}")) {
 			throw new IllegalArgumentException("Key contains illegal character '}': " + key);
-		}
-
-		if (key.matches(".*\\p{Cntrl}.*")) {
-			throw new IllegalArgumentException("Key may not contain control characters: " + key);
-		}
-
-		if (value.matches(".*\\p{Cntrl}.*")) {
-			throw new IllegalArgumentException("Value may not contain control characters: " + value);
 		}
 
 		this.key = key;
