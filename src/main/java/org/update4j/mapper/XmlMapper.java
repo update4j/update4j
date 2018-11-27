@@ -38,7 +38,7 @@ public abstract class XmlMapper {
 		StringBuilder builder = new StringBuilder();
 
 		for (char c : orig.toCharArray()) {
-			if (c == '\0' || c == 0xfffe || c == 0xffff) {
+			if (c == 0x0 || c == 0xfffe || c == 0xffff || (c >= 0xd800 && c <= 0xdfff) || c > 0x0ffff) {
 				continue;
 			} else if (c == '\'') {
 				builder.append("&apos;");
@@ -50,7 +50,7 @@ public abstract class XmlMapper {
 				builder.append("&lt;");
 			} else if (c == '>') {
 				builder.append("&gt;");
-			} else if (c <= 0x1f || c >= 0x7f) {
+			} else if (c <= 0x1f) {
 				builder.append("&#" + ((int) c) + ";");
 			} else {
 				builder.append(c);
