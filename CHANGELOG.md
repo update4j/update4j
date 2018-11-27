@@ -1,4 +1,8 @@
 
+* **1.3.3**
+  * Properly escape special chars in output XML. Allow control chars in properties.
+  * Renamed `UpdateHandler::connect` to `UpdateHandler::openDownloadStream`
+  * Added 2 more `Configuration.Builder::signer` overloads.
 * **1.3.2** *— h/t [@ChristianCiach](https://github.com/ChristianCiach)*
   * Control how files are downloaded with `UpdateHandler::connect`.
   * Delete old files with `Configuration::deleteOldFiles`.
