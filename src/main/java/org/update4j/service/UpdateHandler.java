@@ -40,9 +40,9 @@ public interface UpdateHandler extends Service {
 
 	void startDownloads() throws Throwable;
 
-	default InputStream connect(FileMetadata file, URL url) throws Throwable {
+	default InputStream openDownloadStream(FileMetadata file) throws Throwable {
 
-		URLConnection connection = url.openConnection();
+		URLConnection connection = file.getUri().toURL().openConnection();
 
 		// Some downloads may fail with HTTP/403, this may solve it
 		connection.addRequestProperty("User-Agent", "Mozilla/5.0");

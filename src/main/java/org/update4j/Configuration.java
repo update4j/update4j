@@ -992,8 +992,7 @@ public class Configuration {
 					}
 					downloadedCollection.put(file, output);
 
-					URL url = file.getUri().toURL();
-					try (InputStream in = handler.connect(file, url);
+					try (InputStream in = handler.openDownloadStream(file);
 									OutputStream out = Files.newOutputStream(output)) {
 
 						// We should set download progress only AFTER the request has returned.
