@@ -15,11 +15,13 @@
  */
 package org.update4j.service;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.Writer;
+import org.update4j.Bootstrap;
+import org.update4j.Configuration;
+import org.update4j.SingleInstanceManager;
+import org.update4j.Update;
+import org.update4j.util.ArgUtils;
+
+import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -30,11 +32,6 @@ import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.util.List;
 import java.util.Map;
-import org.update4j.Bootstrap;
-import org.update4j.Configuration;
-import org.update4j.SingleInstanceManager;
-import org.update4j.Update;
-import org.update4j.util.ArgUtils;
 
 public class DefaultBootstrap implements Delegate {
 
@@ -43,6 +40,7 @@ public class DefaultBootstrap implements Delegate {
 	private String cert;
 
 	private boolean syncLocal;
+	private boolean deleteOldFiles;
 	private boolean launchFirst;
 	private boolean stopOnUpdateError;
 	private boolean singleInstance;
@@ -147,6 +145,12 @@ public class DefaultBootstrap implements Delegate {
 				cert = e.getValue();
 				continue;
 			}
+			if ("deleteOldFiles".equals(arg)) {
+				validateNotSet(deleteOldFiles, "deleteOldFiles");
+				ArgUtils.validateNoValue(e);
+				deleteOldFiles = true;
+				continue;
+			}
 			if ("delegate".equals(arg)) {
 				continue; // ignore;
 			}
@@ -195,12 +199,21 @@ public class DefaultBootstrap implements Delegate {
 			}
 		}
 
-		if (syncLocal && !failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
-			syncLocal(remoteConfig);
+		if (!failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
+			if (syncLocal) {
+				syncLocal(remoteConfig);
+			}
+			if (deleteOldFiles) {
+				deletOldFiles(remoteConfig, localConfig);
+			}
 		}
 
 		config.launch(args);
 
+	}
+
+	private void deletOldFiles(Configuration remoteConfig, Configuration localConfig) throws IOException {
+		remoteConfig.deleteOldFiles(localConfig);
 	}
 
 	private void launchFirst(List<String> args) throws Throwable {
@@ -249,6 +262,9 @@ public class DefaultBootstrap implements Delegate {
 
 		if (!failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
 			syncLocal(remoteConfig);
+			if (deleteOldFiles) {
+				deletOldFiles(remoteConfig, localConfig);
+			}
 		}
 
 	}
@@ -398,6 +414,8 @@ public class DefaultBootstrap implements Delegate {
 				+ "\t\tdownload the remote and update first if the local config requires an update\n"
 				+ "\t\t(e.g. files were deleted). Must have a local configuration.\n"
 				+ "\t\tIf not specified it will update before launch and hang the application until done.\n\n"
+				+ "\t--deleteOldFiles - Will delete old files locally.\n"
+				+ "\t\tThis deletes local files if remote config succeded to download.\n"
 				+ "\t--stopOnUpdateError - Will stop the launch if an error occurred while downloading an update.\n"
 				+ "\t\tThis does not include if remote failed to download and it used local as a fallback.\n"
 				+ "\t\tIf --launchFirst was used, this only applies if the local config requires an update\n"

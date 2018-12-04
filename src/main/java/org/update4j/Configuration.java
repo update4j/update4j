@@ -15,47 +15,6 @@
  */
 package org.update4j;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.lang.module.ModuleDescriptor;
-import java.lang.module.ModuleFinder;
-import java.lang.module.ModuleReference;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.FileSystemException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.update4j.mapper.ConfigMapper;
 import org.update4j.mapper.FileMapper;
 import org.update4j.service.Launcher;
@@ -65,6 +24,22 @@ import org.update4j.util.FileUtils;
 import org.update4j.util.PropertyManager;
 import org.update4j.util.StringUtils;
 import org.update4j.util.Warning;
+
+import java.io.*;
+import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.*;
+import java.security.*;
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class is the heart of the framework. It contains all the logic required
@@ -794,7 +769,7 @@ public class Configuration {
 	 * 
 	 * @param str
 	 *            The string to attempt to replace with placeholders.
-	 * @param isPath
+	 * @param matchType
 	 *            Whether the given string is a path like string.
 	 * @return The replaced string, or {@code null} if {@code null} was passed.
 	 */
@@ -1342,6 +1317,7 @@ public class Configuration {
 			try {
 				finalLauncher.run(ctx);
 			} catch (NoClassDefFoundError e) {
+				e.printStackTrace();
 				if (usingSpi) {
 					if (finalLauncher.getClass().getClassLoader() == ClassLoader.getSystemClassLoader()) {
 						Warning.access(finalLauncher);
