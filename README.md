@@ -25,7 +25,7 @@ Auto-updater and launcher for your distributed applications. Built with Java 9's
 The update4j framework is the first auto-update and launcher framework completely compatible with Java 9 and up. Easily host your application files anywhere in the cloud accessible via a URL (even Google Drive, Dropbox, Amazon S3, or Maven Central)
 and you can synchronize them with all your distributed applications.
 
-In update4j _you_ have ultimate control of every process, from startup - update - launch - shutdown; unlike other auto-update frameworks that yields over the control only once the business application was launched. In addition, every single piece of code is completely updatable; [Even the framework itself](https://github.com/update4j/update4j/wiki/Documentation#updating-update4j-itself), once a new version is released!
+In update4j _you_ have ultimate control of every process, from startup - update - launch - shutdown; unlike other auto-update frameworks that yields over the control only once the business application was launched. In addition, every single piece of code is completely updatable; [even the framework itself](https://github.com/update4j/update4j/wiki/Documentation#updating-update4j-itself), once a new version is released!
 
 ## Installation & Usage
 
@@ -59,17 +59,17 @@ $ java -cp * org.update4j.Bootstrap
 For more information refer to [Starting the Application](https://github.com/update4j/update4j/wiki/Documentation#starting-the-application) in the wiki.
 
 
-## What's New
-
-* **1.3.x**
-  * Control how files are downloaded with `UpdateHandler::connect`.
+## What's New in 1.3.x
+  * Properly escape special chars in output XML. Allow control chars in properties.
+  * Added 2 more `Configuration.Builder::signer` overloads.
+  * Control how files are downloaded with `UpdateHandler::openDownloadStream`.
   * Delete old files with `Configuration::deleteOldFiles`.
   * Rewrite of `DefaultBootstrap`.
   * You can now sign the configuration itself to ensure integrity of non-file elements, as paths and properties.
   * `FileMetadata.getSignature()` now returns a `String` instead of `byte[]` to avoid modification.
   * Java 11 compatibility: Removed JavaFX modules.
   * Fixed single instance bug on Linux.
-  * Connection/read timeouts at 10 seconds.
+  * Connection/read timeouts at 10 seconds in default download implementation.
   * Safer file overriding by properly handling file locks.
   * `ConfigMapper` and `FileMapper` lists are now `final`, to prevent accidental `NPE`.
   * `FileMetadata::streamDirectory` now automatically presets `path` attribute to actual filename _relative to_ the streaming directory, instead of absolute source path.

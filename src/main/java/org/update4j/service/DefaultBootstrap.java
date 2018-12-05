@@ -197,6 +197,12 @@ public class DefaultBootstrap implements Delegate {
 
 		if (syncLocal && !failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
 			syncLocal(remoteConfig);
+
+			try {
+				remoteConfig.deleteOldFiles(localConfig);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 		config.launch(args);
@@ -205,12 +211,28 @@ public class DefaultBootstrap implements Delegate {
 
 	private void launchFirst(List<String> args) throws Throwable {
 		Path tempDir = Paths.get("update");
-		if (Update.containsUpdate(tempDir)) {
-			Update.finalizeUpdate(tempDir);
-		}
+		// used for deleting old files
+		Path old = tempDir.resolve(local + ".old");
 
-		Configuration localConfig = null;
-		localConfig = getLocalConfig(false);
+		Configuration localConfig = getLocalConfig(false);
+
+		if (Update.containsUpdate(tempDir)) {
+			Configuration oldConfig = null;
+			if (Files.exists(old)) {
+				try {
+					try (Reader in = Files.newBufferedReader(old)) {
+						oldConfig = Configuration.read(in);
+					}
+					Files.deleteIfExists(old);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			boolean finalized = Update.finalizeUpdate(tempDir);
+			if (finalized && oldConfig != null && localConfig != null) {
+				localConfig.deleteOldFiles(oldConfig);
+			}
+		}
 
 		boolean localNotReady = localConfig == null || localConfig.requiresUpdate();
 
@@ -249,6 +271,11 @@ public class DefaultBootstrap implements Delegate {
 
 		if (!failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
 			syncLocal(remoteConfig);
+			try (Writer out = Files.newBufferedWriter(old)) {
+				localConfig.write(out);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 	}
