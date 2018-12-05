@@ -271,10 +271,15 @@ public class DefaultBootstrap implements Delegate {
 
 		if (!failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
 			syncLocal(remoteConfig);
-			try (Writer out = Files.newBufferedWriter(old)) {
-				localConfig.write(out);
-			} catch (IOException e) {
-				e.printStackTrace();
+
+			if (localNotReady && localConfig != null) {
+				remoteConfig.deleteOldFiles(localConfig);
+			} else if (Update.containsUpdate(tempDir)) {
+				try (Writer out = Files.newBufferedWriter(old)) {
+					localConfig.write(out);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 
