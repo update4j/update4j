@@ -2194,6 +2194,37 @@ public class Configuration {
 				throw new RuntimeException(e);
 			}
 		}
+		
+
+		/**
+		 * Convenience method to load the private key from a Java Keystore at the given
+		 * path string with the given keypair alias, using the keystore and alias passwords.
+		 * Once loaded, it will forward the private key to {@link #signer(PrivateKey)}.
+		 * 
+		 * <p>
+		 * This method is equivalent to calling:
+		 * 
+		 * <pre>
+		 * signer(Paths.get(path), keystorePass, alias, aliasPass);
+		 * </pre>
+		 * 
+		 * <p>
+		 * It wraps all checked exceptions in a {@code RuntimeException} to keep the
+		 * chaining clean.
+		 * 
+		 * @param path
+		 *            The location of the keystore.
+		 * @param keystorePass
+		 *            The password of the keystore.
+		 * @param alias
+		 *            The alias of the keypair.
+		 * @param aliasPass
+		 *            The alias password, or {@code null}.
+		 * @return The builder for chaining.
+		 */
+		public Builder signer(String path, char[] keystorePass, String alias, char[] aliasPass) {
+			return signer(Paths.get(path), keystorePass, alias, aliasPass);
+		}
 
 		/**
 		 * Convenience method to load the private key from the Java Keystore at the
