@@ -29,7 +29,7 @@ In update4j _you_ have ultimate control of every process, from startup - update 
 
 ## Installation & Usage
 
-Download from the [release](https://github.com/update4j/update4j/releases) page, or install using Maven:
+YOu can [download](https://repo1.maven.org/maven2/org/update4j/update4j/1.3.3/update4j-1.3.3.jar) or install using Maven:
 
 ```xml
 <dependency>
