@@ -22,6 +22,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -220,7 +221,7 @@ public class DefaultBootstrap implements Delegate {
 			Configuration oldConfig = null;
 			if (Files.exists(old)) {
 				try {
-					try (Reader in = Files.newBufferedReader(old)) {
+					try (Reader in = Files.newBufferedReader(old, StandardCharsets.UTF_8)) {
 						oldConfig = Configuration.read(in);
 					}
 					Files.deleteIfExists(old);
@@ -275,7 +276,7 @@ public class DefaultBootstrap implements Delegate {
 			if (localNotReady && localConfig != null) {
 				remoteConfig.deleteOldFiles(localConfig);
 			} else if (Update.containsUpdate(tempDir)) {
-				try (Writer out = Files.newBufferedWriter(old)) {
+				try (Writer out = Files.newBufferedWriter(old, StandardCharsets.UTF_8)) {
 					localConfig.write(out);
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -296,11 +297,11 @@ public class DefaultBootstrap implements Delegate {
 		// Set a read timeout of 10 seconds
 		connection.setReadTimeout(10 * 1000);
 
-		return new InputStreamReader(connection.getInputStream());
+		return new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8);
 	}
 
 	private Configuration getLocalConfig(boolean ignoreFileNotFound) {
-		try (Reader in = Files.newBufferedReader(Paths.get(local))) {
+		try (Reader in = Files.newBufferedReader(Paths.get(local), StandardCharsets.UTF_8)) {
 			if (pk == null) {
 				return Configuration.read(in);
 			} else {
@@ -341,7 +342,7 @@ public class DefaultBootstrap implements Delegate {
 			if (localPath.getParent() != null)
 				Files.createDirectories(localPath.getParent());
 
-			try (Writer out = Files.newBufferedWriter(localPath)) {
+			try (Writer out = Files.newBufferedWriter(localPath, StandardCharsets.UTF_8)) {
 				remoteConfig.write(out);
 			}
 		} catch (IOException e) {

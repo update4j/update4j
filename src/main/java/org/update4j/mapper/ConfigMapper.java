@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -231,11 +232,11 @@ public class ConfigMapper extends XmlMapper {
 		try {
 			Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
 			sign.initSign(key);
-			sign.update(getChildrenXml().getBytes("UTF-8"));
+			sign.update(getChildrenXml().getBytes(StandardCharsets.UTF_8));
 			return Base64.getEncoder().encodeToString(sign.sign());
 		} catch (InvalidKeyException | SignatureException e) {
 			throw new RuntimeException(e);
-		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+		} catch (NoSuchAlgorithmException e) {
 			throw new AssertionError(e);
 		}
 	}
@@ -248,13 +249,13 @@ public class ConfigMapper extends XmlMapper {
 		try {
 			Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
 			sign.initVerify(key);
-			sign.update(getChildrenXml().getBytes("UTF-8"));
+			sign.update(getChildrenXml().getBytes(StandardCharsets.UTF_8));
 
 			if (!sign.verify(Base64.getDecoder().decode(signature))) {
 				throw new SecurityException("Signature verification failed.");
 			}
 
-		} catch (InvalidKeyException | SignatureException | NoSuchAlgorithmException | UnsupportedEncodingException e) {
+		} catch (InvalidKeyException | SignatureException | NoSuchAlgorithmException e) {
 			throw new SecurityException(e);
 		}
 	}
