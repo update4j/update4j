@@ -221,7 +221,7 @@ public class DefaultBootstrap implements Delegate {
 			Configuration oldConfig = null;
 			if (Files.exists(old)) {
 				try {
-					try (Reader in = Files.newBufferedReader(old, StandardCharsets.UTF_8)) {
+					try (Reader in = Files.newBufferedReader(old)) {
 						oldConfig = Configuration.read(in);
 					}
 					Files.deleteIfExists(old);
@@ -276,7 +276,7 @@ public class DefaultBootstrap implements Delegate {
 			if (localNotReady && localConfig != null) {
 				remoteConfig.deleteOldFiles(localConfig);
 			} else if (Update.containsUpdate(tempDir)) {
-				try (Writer out = Files.newBufferedWriter(old, StandardCharsets.UTF_8)) {
+				try (Writer out = Files.newBufferedWriter(old)) {
 					localConfig.write(out);
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -301,7 +301,7 @@ public class DefaultBootstrap implements Delegate {
 	}
 
 	private Configuration getLocalConfig(boolean ignoreFileNotFound) {
-		try (Reader in = Files.newBufferedReader(Paths.get(local), StandardCharsets.UTF_8)) {
+		try (Reader in = Files.newBufferedReader(Paths.get(local))) {
 			if (pk == null) {
 				return Configuration.read(in);
 			} else {
@@ -342,7 +342,7 @@ public class DefaultBootstrap implements Delegate {
 			if (localPath.getParent() != null)
 				Files.createDirectories(localPath.getParent());
 
-			try (Writer out = Files.newBufferedWriter(localPath, StandardCharsets.UTF_8)) {
+			try (Writer out = Files.newBufferedWriter(localPath)) {
 				remoteConfig.write(out);
 			}
 		} catch (IOException e) {
