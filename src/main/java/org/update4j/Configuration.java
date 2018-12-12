@@ -1565,8 +1565,10 @@ public class Configuration {
 			}
 
 			for (FileMetadata newFile : getFiles()) {
-				if (Files.isSameFile(newFile.getPath(), file.getPath())) {
-					continue outer;
+				if (newFile.getOs() == null || newFile.getOs() == OS.CURRENT) {
+					if (Files.isSameFile(newFile.getPath(), file.getPath())) {
+						continue outer;
+					}
 				}
 			}
 

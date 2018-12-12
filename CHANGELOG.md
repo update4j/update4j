@@ -3,7 +3,7 @@
   * Properly set encoding to Unicode when reading remote config in `DefualtBootstrap`.
   * Bug fix when local config file was missing in `DefaultBootstrap::launchFirst`.
   * Changed how `--delegate` override argument in `Bootstrap` works.
-
+  * Fixed bug in `deleteOldFiles()` where it would try to compare files even if it belongs to different OS.
 * **1.3.3**
   * Properly escape special chars in output XML. Allow control chars in properties.
   * Renamed `UpdateHandler::connect` to `UpdateHandler::openDownloadStream`
