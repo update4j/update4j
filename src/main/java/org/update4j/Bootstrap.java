@@ -17,6 +17,9 @@ package org.update4j;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.update4j.service.Delegate;
 import org.update4j.service.Service;
 import org.update4j.util.ArgUtils;
@@ -62,39 +65,50 @@ public class Bootstrap {
 	 * By default it will try to locate the highest versioned provider of
 	 * {@link Delegate} (specified by {@link Service#version()}) currently present
 	 * in the classpath or modulepath. You may override this behavior by passing the
-	 * delegate class name using the {@code --delegate} option:
+	 * delegate class name using the {@code --delegate} flag as the first option:
 	 * 
 	 * <pre>
 	 * $ java --module-path . --module org.update4j --delegate com.example.MyDelegate
 	 * </pre>
 	 * 
-	 * The class name should be the <i>Canonical Class Name</i> i.e. the String
-	 * returned when calling {@link Class#getCanonicalName()}.
-	 * 
+	 * Both {@code --delegate} and class name that follows will be removed from the
+	 * argument list passed over to the delegate.
 	 * 
 	 * <p>
-	 * If the system cannot locate the passed class it will fall back to the
-	 * default, i.e. the highest version.
+	 * The class name should be the <i>Canonical Class Name</i> i.e. the String
+	 * returned when calling {@link Class#getCanonicalName()}. If the system cannot
+	 * locate the passed class it will fall back to the default, i.e. the highest
+	 * version.
 	 * 
 	 */
 	public static void main(String[] args) throws Throwable {
 		String override = null;
-
 		List<String> argsList = List.of(args);
-		List<String> bootArgs = ArgUtils.beforeSeparator(argsList);
-		Map<String, String> parsed = ArgUtils.parseArgs(bootArgs);
 
-		for (Map.Entry<String, String> e : parsed.entrySet()) {
+		if (args.length > 0) {
+			
+			String firstArg = args[0].trim();
+			if (firstArg.equals("--delegate")) {
+				if (args.length == 1) {
+					throw new IllegalArgumentException("Missing class name for delegate overriding.");
+				}
 
-			if ("delegate".equals(e.getKey())) {
-				ArgUtils.validateHasValue(e);
-				override = e.getValue();
+				override = args[1].trim();
+				argsList = argsList.subList(2, argsList.size());
+			} else if (firstArg.matches("--delegate(?:\\s*=\\s*|\\s+)")) {
+				Pattern pattern = Pattern.compile("--delegate(?:\\s*=\\s*|\\s+)(.+)");
+				Matcher match = pattern.matcher(firstArg);
 
-				break;
+				if (!match.find()) {
+					throw new IllegalArgumentException("Missing class name for delegate overriding.");
+				}
+
+				override = match.group(1);
+				argsList = argsList.subList(1, argsList.size());
 			}
 
 		}
-
+		
 		start(override, argsList);
 	}
 

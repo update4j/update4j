@@ -148,9 +148,6 @@ public class DefaultBootstrap implements Delegate {
 				cert = e.getValue();
 				continue;
 			}
-			if ("delegate".equals(arg)) {
-				continue; // ignore;
-			}
 
 			throw new IllegalArgumentException(
 							"Unknown option \"" + arg + "\". Separate business app arguments with '--'.");
