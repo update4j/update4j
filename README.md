@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.3.3-yellow.svg)](https://search.maven.org/search?q=org.update4j)    [![Gitter](https://badges.gitter.im/update4j/update4j.svg)](https://gitter.im/update4j/update4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 
-**Documentation available at the [wiki](https://github.com/update4j/update4j/wiki/Documentation), or explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/overview-summary.html)**
+**Documentation available at the [wiki](https://github.com/update4j/update4j/wiki/Documentation), explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/overview-summary.html), or [see it in action](https://github.com/update4j/update4j/wiki/Demo-Application)**
 
 Auto-updater and launcher for your distributed applications. Built with Java 9's module system in mind.
 
