@@ -1,3 +1,8 @@
+* **1.3.4**
+  * Added `osFromFilename()` method in `FileMetadata` builder.
+  * Properly set encoding to Unicode when reading remote config in `DefualtBootstrap`.
+  * Bug fix when local config file was missing in `DefaultBootstrap::launchFirst`.
+  * Changed how `--delegate` override argument in `Bootstrap` works.
 
 * **1.3.3**
   * Properly escape special chars in output XML. Allow control chars in properties.

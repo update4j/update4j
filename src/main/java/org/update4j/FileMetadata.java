@@ -337,6 +337,10 @@ public class FileMetadata {
 
 			return this;
 		}
+		
+		public Reference osFromFilename() {
+			return os(FileUtils.fromFilename(source.toString()));
+		}
 
 		public OS getOs() {
 			return os;
@@ -701,10 +705,6 @@ public class FileMetadata {
 
 			if (path != null && !path.isAbsolute() && path.startsWith("/")) {
 				path = Paths.get("/").relativize(path);
-			}
-
-			if (os == null && path != null) {
-				os(FileUtils.fromFilename(path.toString()));
 			}
 
 			if (baseUri != null && uri != null) {
