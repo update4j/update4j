@@ -337,9 +337,41 @@ public class FileMetadata {
 
 			return this;
 		}
-		
+
+		/**
+		 * Sets the os by parsing the filename. The os is detected if it matches this
+		 * pattern:
+		 * 
+		 * <pre>
+		 * filename-<b>os</b>.extension
+		 * </pre>
+		 * 
+		 * where {@code os} can be {@code win}, {@code mac} or {@code linux}.
+		 * 
+		 * <p>
+		 * Examples include:
+		 * 
+		 * <pre>
+		 * appicon-win.ico
+		 * appicon-mac.icns
+		 * appicon-linux.png
+		 * 
+		 * javafx-base-11.0.1-win.jar
+		 * javafx-base-11.0.1-mac.jar
+		 * javafx-base-11.0.1-linux.jar
+		 * </pre>
+		 * 
+		 * <p>
+		 * If a match is not found, the old value will not be changed.
+		 * 
+		 * @return The builder for chaining.
+		 */
 		public Reference osFromFilename() {
-			return os(FileUtils.fromFilename(source.toString()));
+			OS os = FileUtils.fromFilename(source.toString());
+			if (os != null)
+				os(os);
+
+			return this;
 		}
 
 		public OS getOs() {
