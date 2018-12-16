@@ -16,7 +16,6 @@
 package org.update4j.service;
 
 import java.io.InputStream;
-import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Path;
 
@@ -25,20 +24,27 @@ import org.update4j.UpdateContext;
 
 public interface UpdateHandler extends Service {
 
-	void init(UpdateContext context) throws Throwable;
+	default void init(UpdateContext context) throws Throwable {
+	}
 
-	void startCheckUpdates() throws Throwable;
+	default void startCheckUpdates() throws Throwable {
+	}
 
-	void startCheckUpdateFile(FileMetadata file) throws Throwable;
+	default void startCheckUpdateFile(FileMetadata file) throws Throwable {
+	}
 
-	void doneCheckUpdateFile(FileMetadata file, boolean requires) throws Throwable;
+	default void doneCheckUpdateFile(FileMetadata file, boolean requires) throws Throwable {
+	}
 
 	// Based on bytes, not file count
-	void updateCheckUpdatesProgress(float frac) throws Throwable;
+	default void updateCheckUpdatesProgress(float frac) throws Throwable {
+	}
 
-	void doneCheckUpdates() throws Throwable;
+	default void doneCheckUpdates() throws Throwable {
+	}
 
-	void startDownloads() throws Throwable;
+	default void startDownloads() throws Throwable {
+	}
 
 	default InputStream openDownloadStream(FileMetadata file) throws Throwable {
 
@@ -55,21 +61,30 @@ public interface UpdateHandler extends Service {
 
 	}
 
-	void startDownloadFile(FileMetadata file) throws Throwable;
+	default void startDownloadFile(FileMetadata file) throws Throwable {
+	}
 
-	void updateDownloadFileProgress(FileMetadata file, float frac) throws Throwable;
+	default void updateDownloadFileProgress(FileMetadata file, float frac) throws Throwable {
+	}
 
-	void updateDownloadProgress(float frac) throws Throwable;
+	default void updateDownloadProgress(float frac) throws Throwable {
+	}
 
-	void validatingFile(FileMetadata file, Path tempFile) throws Throwable;
+	default void validatingFile(FileMetadata file, Path tempFile) throws Throwable {
+	}
 
-	void doneDownloadFile(FileMetadata file, Path tempFile) throws Throwable;
+	default void doneDownloadFile(FileMetadata file, Path tempFile) throws Throwable {
+	}
 
-	void doneDownloads() throws Throwable;
+	default void doneDownloads() throws Throwable {
+	}
 
-	void failed(Throwable t);
+	default void failed(Throwable t) {
+	}
 
-	void succeeded();
+	default void succeeded() {
+	}
 
-	void stop();
+	default void stop() {
+	}
 }

@@ -307,12 +307,12 @@ import org.update4j.util.Warning;
  * {@link Update#finalizeUpdate(Path)}.
  * 
  * <p>
- * When update is called without explicitly passing an {@link UpdateHandler},
+ * When update is called without explicitly passing an {@link UpdateHandler}
+ * instance and {@link Configuration#getUpdateHandler()} returns {@code null},
  * the framework will try to locate one between the registered service providers
  * and will use the one with the highest {@code version()} number. If
- * {@link Configuration#getUpdateHandler()} returns a class name, it will ignore
- * the versioning and use that one, <em>it is completely optional to list the
- * update handler in the config</em>.
+ * {@link Configuration#getUpdateHandler()} returns a class name, it will load
+ * that class instead.
  * 
  * <p>
  * For more info how to register providers please refer to the <a
@@ -417,17 +417,17 @@ import org.update4j.util.Warning;
  * looking at registered providers.
  * 
  * <p>
- * When launch is called without explicitly passing a {@link Launcher}, the
- * framework will try to locate one between the registered service providers and
- * will use the one with the highest {@code version()} number. If
- * {@link Configuration#getLauncher()} returns a class name, it will ignore the
- * versioning and use that one, <em>it is completely optional to list the
- * launcher in the config</em>.
+ * When launch is called without explicitly passing a {@link Launcher} instance
+ * and {@link Configuration#getLauncher()} returns {@code null}, the framework
+ * will try to locate one between the registered service providers and will use
+ * the one with the highest {@code version()} number. If
+ * {@link Configuration#getLauncher()} returns a class name, it will load that
+ * class instead.
  * 
  * <p>
- * If a launcher instance was used and not loaded via the service providing
- * mechanism, it only has reflective access to the Business Application by
- * reflecting against {@link LaunchContext#getClassLoader()}.
+ * If an explicit launcher instance was passed, it only has reflective access to
+ * the Business Application by reflecting against
+ * {@link LaunchContext#getClassLoader()}.
  * 
  * 
  * <pre>
@@ -440,7 +440,7 @@ import org.update4j.util.Warning;
  * 
  * <p>
  * A call to launch will launch the application in a new thread (to give it
- * seperate context), but it will still not return until
+ * separate context), but it will still not return until
  * {@link Launcher#run(LaunchContext)} returned (not counting new threads in the
  * business app).
  * 
@@ -1855,7 +1855,7 @@ public class Configuration {
 			}
 
 			if (Files.notExists(path)) {
-				System.err.println("[WARNING] File '" + path.getFileName() + "' is missing; skipped.");
+				System.err.println("[WARNING] File '" + path + "' is missing; skipped.");
 
 				continue;
 			}
@@ -2196,12 +2196,12 @@ public class Configuration {
 				throw new RuntimeException(e);
 			}
 		}
-		
 
 		/**
 		 * Convenience method to load the private key from a Java Keystore at the given
-		 * path string with the given keypair alias, using the keystore and alias passwords.
-		 * Once loaded, it will forward the private key to {@link #signer(PrivateKey)}.
+		 * path string with the given keypair alias, using the keystore and alias
+		 * passwords. Once loaded, it will forward the private key to
+		 * {@link #signer(PrivateKey)}.
 		 * 
 		 * <p>
 		 * This method is equivalent to calling:
@@ -2405,12 +2405,28 @@ public class Configuration {
 			return properties;
 		}
 
+		/**
+		 * Hint the builder to replace the value of the given system property if a
+		 * proper match is found.
+		 * 
+		 * @param str
+		 *            The system property key.
+		 * @return The builder for chaining.
+		 */
 		public Builder resolveSystemProperty(String str) {
 			systemProperties.add(str);
 
 			return this;
 		}
 
+		/**
+		 * Hint the builder to replace the value of the given system properties if a
+		 * proper match is found.
+		 * 
+		 * @param p
+		 *            A collection of system property keys.
+		 * @return The builder for chaining.
+		 */
 		public Builder resolveSystemProperties(Collection<String> p) {
 			systemProperties.addAll(p);
 
@@ -2453,6 +2469,14 @@ public class Configuration {
 			return launcher;
 		}
 
+		/**
+		 * Attempt to replace strings with listed or system property placeholders
+		 * according to the given policy.
+		 * 
+		 * @param matcher
+		 *            The match type to be used when implying placeholders.
+		 * @return The builder for chaining.
+		 */
 		public Builder matchAndReplace(PlaceholderMatchType matcher) {
 			this.matcher = matcher;
 

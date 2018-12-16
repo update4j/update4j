@@ -16,13 +16,11 @@
 package org.update4j;
 
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.update4j.service.Delegate;
 import org.update4j.service.Service;
-import org.update4j.util.ArgUtils;
 
 /**
  * This class consists of convenience methods and the module's main method to
@@ -64,8 +62,8 @@ public class Bootstrap {
 	 * <p>
 	 * By default it will try to locate the highest versioned provider of
 	 * {@link Delegate} (specified by {@link Service#version()}) currently present
-	 * in the classpath or modulepath. You may override this behavior by passing the
-	 * delegate class name using the {@code --delegate} flag as the first option:
+	 * in the classpath or modulepath. You may use an explicit class by passing the
+	 * class name using the {@code --delegate} flag as the first option:
 	 * 
 	 * <pre>
 	 * $ java --module-path . --module org.update4j --delegate com.example.MyDelegate
@@ -77,39 +75,38 @@ public class Bootstrap {
 	 * <p>
 	 * The class name should be the <i>Canonical Class Name</i> i.e. the String
 	 * returned when calling {@link Class#getCanonicalName()}. If the system cannot
-	 * locate the passed class it will fall back to the default, i.e. the highest
-	 * version.
+	 * locate the passed class it fails.
 	 * 
 	 */
 	public static void main(String[] args) throws Throwable {
-		String override = null;
+		String classname = null;
 		List<String> argsList = List.of(args);
 
 		if (args.length > 0) {
-			
+
 			String firstArg = args[0].trim();
 			if (firstArg.equals("--delegate")) {
 				if (args.length == 1) {
-					throw new IllegalArgumentException("Missing class name for delegate overriding.");
+					throw new IllegalArgumentException("Missing class name for delegate option.");
 				}
 
-				override = args[1].trim();
+				classname = args[1].trim();
 				argsList = argsList.subList(2, argsList.size());
 			} else if (firstArg.matches("--delegate(?:\\s*=\\s*|\\s+)")) {
 				Pattern pattern = Pattern.compile("--delegate(?:\\s*=\\s*|\\s+)(.+)");
 				Matcher match = pattern.matcher(firstArg);
 
 				if (!match.find()) {
-					throw new IllegalArgumentException("Missing class name for delegate overriding.");
+					throw new IllegalArgumentException("Missing class name for delegate option.");
 				}
 
-				override = match.group(1);
+				classname = match.group(1);
 				argsList = argsList.subList(1, argsList.size());
 			}
 
 		}
-		
-		start(override, argsList);
+
+		start(classname, argsList);
 	}
 
 	/**
@@ -125,20 +122,13 @@ public class Bootstrap {
 	}
 
 	/**
-	 * Starts the bootstrap by locating the class between the list of advertised
-	 * providers of {@link Delegate} currently present in the classpath or
-	 * modulepath.
-	 * 
-	 * <p>
-	 * If the system cannot locate any registered provider with the given name, the
-	 * highest versioned provider (specified by {@link Service#version()}) will be
-	 * used instead.
+	 * Starts the bootstrap by locating the given class.
 	 * 
 	 * @throws Throwable
 	 *             Any throwable thrown in the bootstrap.
 	 */
-	public static void start(String override) throws Throwable {
-		start(override, List.of());
+	public static void start(String classname) throws Throwable {
+		start(classname, List.of());
 	}
 
 	/**
@@ -165,20 +155,14 @@ public class Bootstrap {
 	}
 
 	/**
-	 * Starts the bootstrap by locating the class between the list of advertised
-	 * providers of {@link Delegate} currently present in the classpath or
-	 * modulepath, with the given list as command-line arguments.
-	 * 
-	 * <p>
-	 * If the system cannot locate any registered provider with the given name, the
-	 * highest versioned provider (specified by {@link Service#version()}) will be
-	 * used instead.
+	 * Starts the bootstrap by locating the given class, with the given list as
+	 * command-line arguments.
 	 * 
 	 * @throws Throwable
 	 *             Any throwable thrown in the bootstrap.
 	 */
-	public static void start(String override, List<String> args) throws Throwable {
-		start(Service.loadService(Delegate.class, override), args);
+	public static void start(String classname, List<String> args) throws Throwable {
+		start(Service.loadService(Delegate.class, classname), args);
 	}
 
 	/**

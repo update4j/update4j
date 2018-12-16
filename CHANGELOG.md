@@ -1,14 +1,18 @@
-* **1.3.4**
+* *Upcoming release*
+  * Removed many confusing `getXxxProperty()` methods in `Configuration` class.
+  * You can now add properties to a config (before instance creation, as it is immutable) dynamically at runtime.
+  * Locate explicit service providers even if not properly registered as required by `ServiceLoader`.
+  * Made many service methods `default`.
   * Added `osFromFilename()` method in `FileMetadata` builder.
   * Properly set encoding to Unicode when reading remote config in `DefualtBootstrap`.
   * Bug fix when local config file was missing in `DefaultBootstrap::launchFirst`.
-  * Changed how `--delegate` override argument in `Bootstrap` works.
+  * Changed how `--delegate` argument in `Bootstrap` works.
   * Fixed bug in `deleteOldFiles()` where it would try to compare files even if it belongs to different OS.
 * **1.3.3**
   * Properly escape special chars in output XML. Allow control chars in properties.
   * Renamed `UpdateHandler::connect` to `UpdateHandler::openDownloadStream`
-  * Added 2 more `Configuration.Builder::signer` overloads.
-  * Default bootstrap now deletes old filesif `--syncLocal` was used.
+  * Added more `Configuration.Builder::signer` overloads.
+  * Default bootstrap now deletes old files if `--syncLocal` was used.
 * **1.3.2** *— h/t [@ChristianCiach](https://github.com/ChristianCiach)*
   * Control how files are downloaded with `UpdateHandler::connect`.
   * Delete old files with `Configuration::deleteOldFiles`.

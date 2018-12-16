@@ -35,13 +35,6 @@ public class DefaultUpdateHandler implements UpdateHandler {
 		this.context = context;
 	}
 
-	@Override
-	public void startCheckUpdates() throws Throwable {
-	}
-
-	@Override
-	public void startCheckUpdateFile(FileMetadata file) throws Throwable {
-	}
 
 	@Override
 	public void doneCheckUpdateFile(FileMetadata file, boolean requires) throws Throwable {
@@ -53,65 +46,38 @@ public class DefaultUpdateHandler implements UpdateHandler {
 		}
 	}
 
-	@Override
-	public void updateCheckUpdatesProgress(float frac) throws Throwable {
-	}
-
-	@Override
-	public void doneCheckUpdates() throws Throwable {
-	}
-
-	@Override
-	public void startDownloads() throws Throwable {
-	}
 
 	@Override
 	public void startDownloadFile(FileMetadata file) throws Throwable {
-		//		System.out.print("Downloading: " + compactName(context.getConfiguration().getBasePath(), file.getPath())
-		//		+ " <" + file.getUri() + "> ");
+		//		System.out.print("Downloading: " + compactName(context.getConfiguration().getBasePath(), file.getPath()) + " <"
+		//						+ file.getUri() + "> ");
 		System.out.println("Downloading: " + compactName(context.getConfiguration().getBasePath(), file.getPath())
 						+ " <" + file.getUri() + ">");
 	}
 
 	//	private String percent;
-
-	@Override
-	public void updateDownloadFileProgress(FileMetadata file, float frac) throws InterruptedException {
-		//		if (frac == 0) {
-		//			System.out.print("(");
-		//		}
-		//		
-		//		String percent = ((int) (frac * 100)) + "%)   ";
-		//		percent = percent.substring(0, 5);
-		//
-		//		if (!percent.equals(this.percent)) {
-		//			this.percent = percent;
-		//			if (frac != 0)
-		//				System.out.print("\b\b\b\b\b");
-		//			System.out.print(percent);
-		//		}
-		//
-		//		if (frac == 1) {
-		//			System.out.println();
-		//		}
-
-	}
-
-	@Override
-	public void updateDownloadProgress(float frac) {
-	}
-
-	@Override
-	public void validatingFile(FileMetadata file, Path tempFile) throws Throwable {
-	}
-
-	@Override
-	public void doneDownloadFile(FileMetadata file, Path tempFile) throws Throwable {
-	}
-
-	@Override
-	public void doneDownloads() throws Throwable {
-	}
+	//
+	//	@Override
+	//	public void updateDownloadFileProgress(FileMetadata file, float frac) throws InterruptedException {
+	//		if (frac == 0) {
+	//			System.out.print("(");
+	//		}
+	//
+	//		String percent = ((int) (frac * 100)) + "%)   ";
+	//		percent = percent.substring(0, 5);
+	//
+	//		if (!percent.equals(this.percent)) {
+	//			this.percent = percent;
+	//			if (frac != 0)
+	//				System.out.print("\b\b\b\b\b");
+	//			System.out.print(percent);
+	//		}
+	//
+	//		if (frac == 1) {
+	//			System.out.println();
+	//		}
+	//
+	//	}
 
 	@Override
 	public void failed(Throwable t) {
@@ -119,15 +85,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
 
 		t.printStackTrace();
 	}
-
-	@Override
-	public void succeeded() {
-	}
-
-	@Override
-	public void stop() {
-	}
-
+	
 	private static String compactName(Path base, Path name) {
 		Path relative = FileUtils.relativize(base, name);
 
