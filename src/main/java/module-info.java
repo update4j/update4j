@@ -31,11 +31,8 @@ module org.update4j {
 	 * Public API
 	 */
 	exports org.update4j;
+	exports org.update4j.inject;
 	exports org.update4j.service;
-
-	/*
-	 * For use especially by automated clients.
-	 */
 	exports org.update4j.mapper;
 
 	/*

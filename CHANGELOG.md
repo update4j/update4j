@@ -1,5 +1,7 @@
 * *Upcoming release*
+  * Added dependency injection framework to pass instances from the bootstrap in `UpdateHandler` and `Launcher`.
   * Removed many confusing `getXxxProperty()` methods in `Configuration` class.
+  * Added `toXmlMapper()` in `Configuration.builder()`.
   * You can now add properties to a config (before instance creation, as it is immutable) dynamically at runtime.
   * Locate explicit service providers even if not properly registered as required by `ServiceLoader`.
   * Made many service methods `default`.

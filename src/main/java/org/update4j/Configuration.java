@@ -56,12 +56,15 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.update4j.inject.Injector;
+import org.update4j.inject.UnsatisfiedInjectionException;
 import org.update4j.mapper.ConfigMapper;
 import org.update4j.mapper.FileMapper;
 import org.update4j.service.Launcher;
 import org.update4j.service.Service;
 import org.update4j.service.UpdateHandler;
 import org.update4j.util.FileUtils;
+import org.update4j.util.InjectUtils;
 import org.update4j.util.PropertyManager;
 import org.update4j.util.StringUtils;
 import org.update4j.util.Warning;
@@ -221,7 +224,9 @@ import org.update4j.util.Warning;
  * <p>
  * You can access the XML DOM with the {@link ConfigMapper} class and load a
  * config using {@link Configuration#parse(ConfigMapper)} to obtain a new
- * configuration.
+ * configuration. You can also write a mapper without parsing &mdash;
+ * essentially skipping all validations &mdash; by the
+ * {@link ConfigMapper#write(Writer)}.
  * 
  * <pre>
  * ConfigMapper mapper = new ConfigMapper();
@@ -234,6 +239,15 @@ import org.update4j.util.Warning;
  * mapper.files.add(file);
  * 
  * Configuration config = Configuration.parse(mapper);
+ * </pre>
+ * 
+ * <p>
+ * Or convert a builder to a mapper &mdash; which essentially skips all
+ * validations, which are done when build is complete &mdash; using the
+ * {@link Builder#toXmlMapper()} method:
+ * 
+ * <pre>
+ * ConfigMapper mapper = Configuration.builder().baseUri("anInvalidUri %?& ${none.existent.property}").toXmlMapper();
  * </pre>
  * 
  * <p>
@@ -329,6 +343,9 @@ import org.update4j.util.Warning;
  * // updates with given update handler
  * config.update(new MyUpdateHandler());
  * 
+ * // update and inject fields into the handler
+ * config.update(myInjector);
+ * 
  * // update with registered handler and fish out the instance *before* the
  * // update process starts
  * config.update(handler -> processHandler(handler));
@@ -413,16 +430,15 @@ import org.update4j.util.Warning;
  * <p>
  * Launching loads files onto the dynamic classpath or modulepath (or does not
  * load it if not marked with either), depending on their configuration and
- * launches it by using either a passed {@link Launcher} or locate one by
- * looking at registered providers.
+ * launches it by using either a passed {@link Launcher}, or by loading a
+ * launcher provider.
  * 
  * <p>
  * When launch is called without explicitly passing a {@link Launcher} instance
- * and {@link Configuration#getLauncher()} returns {@code null}, the framework
- * will try to locate one between the registered service providers and will use
- * the one with the highest {@code version()} number. If
- * {@link Configuration#getLauncher()} returns a class name, it will load that
- * class instead.
+ * and {@link #getLauncher()} returns {@code null}, the framework will try to
+ * locate one between the registered service providers and will use the one with
+ * the highest {@code version()} number. If {@link #getLauncher()} returns a
+ * class name, it will load that class instead.
  * 
  * <p>
  * If an explicit launcher instance was passed, it only has reflective access to
@@ -433,6 +449,10 @@ import org.update4j.util.Warning;
  * <pre>
  * // launch with registered launcher or DefaultLauncher if non were found
  * config.launch();
+ * 
+ * // launch and inject fields into the launcher
+ * // assume the caller implements Injector
+ * config.launch(this);
  * 
  * // launch with passed launcher, *only reflective access*
  * config.launch(new MyLauncher());
@@ -868,24 +888,44 @@ public class Configuration {
 		return update((PublicKey) null, handler);
 	}
 
+	public boolean update(Injector injector) {
+		return update(null, injector);
+	}
+
 	public boolean update(Consumer<? super UpdateHandler> handlerSetup) {
 		return update((PublicKey) null, handlerSetup);
+	}
+
+	public boolean update(Injector injector, Consumer<? super UpdateHandler> handlerSetup) {
+		return update(null, injector, handlerSetup);
 	}
 
 	public boolean update(PublicKey key) {
 		return update(key, (UpdateHandler) null);
 	}
 
+	public boolean update(PublicKey key, Injector injector) {
+		return update(key, injector, (Consumer<? super UpdateHandler>) null);
+	}
+
 	public boolean update(PublicKey key, UpdateHandler handler) {
-		return updateImpl(null, key, handler, null);
+		return updateImpl(null, key, null, handler, null);
 	}
 
 	public boolean update(PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateImpl(null, key, null, handlerSetup);
+		return update(key, null, handlerSetup);
+	}
+
+	public boolean update(PublicKey key, Injector injector, Consumer<? super UpdateHandler> handlerSetup) {
+		return updateImpl(null, key, injector, null, handlerSetup);
 	}
 
 	public boolean updateTemp(Path tempDir) {
 		return updateTemp(tempDir, (PublicKey) null);
+	}
+
+	public boolean updateTemp(Path tempDir, Injector injector) {
+		return updateTemp(tempDir, (PublicKey) null, injector);
 	}
 
 	public boolean updateTemp(Path tempDir, UpdateHandler handler) {
@@ -896,19 +936,32 @@ public class Configuration {
 		return updateTemp(tempDir, (PublicKey) null, handlerSetup);
 	}
 
+	public boolean updateTemp(Path tempDir, Injector injector, Consumer<? super UpdateHandler> handlerSetup) {
+		return updateTemp(tempDir, (PublicKey) null, injector, handlerSetup);
+	}
+
 	public boolean updateTemp(Path tempDir, PublicKey key) {
 		return updateTemp(tempDir, key, (UpdateHandler) null);
 	}
 
+	public boolean updateTemp(Path tempDir, PublicKey key, Injector injector) {
+		return updateTemp(tempDir, key, injector, (Consumer<? super UpdateHandler>) null);
+	}
+
 	public boolean updateTemp(Path tempDir, PublicKey key, UpdateHandler handler) {
-		return updateImpl(Objects.requireNonNull(tempDir), key, handler, null);
+		return updateImpl(Objects.requireNonNull(tempDir), key, null, handler, null);
 	}
 
 	public boolean updateTemp(Path tempDir, PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateImpl(Objects.requireNonNull(tempDir), key, null, handlerSetup);
+		return updateTemp(Objects.requireNonNull(tempDir), key, null, handlerSetup);
 	}
 
-	private boolean updateImpl(Path tempDir, PublicKey key, UpdateHandler handler,
+	public boolean updateTemp(Path tempDir, PublicKey key, Injector injector,
+					Consumer<? super UpdateHandler> handlerSetup) {
+		return updateImpl(Objects.requireNonNull(tempDir), key, injector, null, handlerSetup);
+	}
+
+	private boolean updateImpl(Path tempDir, PublicKey key, Injector injector, UpdateHandler handler,
 					Consumer<? super UpdateHandler> handlerSetup) {
 
 		if (key == null) {
@@ -921,6 +974,14 @@ public class Configuration {
 		// if no explicit handler were passed
 		if (handler == null) {
 			handler = Service.loadService(UpdateHandler.class, updateHandler);
+
+			if (injector != null) {
+				try {
+					InjectUtils.inject(injector, handler);
+				} catch (IllegalAccessException | UnsatisfiedInjectionException e) {
+					throw new RuntimeException(e);
+				}
+			}
 
 			if (handlerSetup != null) {
 				handlerSetup.accept(handler);
@@ -1216,27 +1277,45 @@ public class Configuration {
 		launch(null, (Launcher) null);
 	}
 
-	public void launch(Consumer<? super Launcher> launcherSetup) {
-		launch(null, launcherSetup);
+	public void launch(Injector injector) {
+		launch(injector, null);
 	}
 
-	public void launch(List<String> args) {
-		launch(args, (Launcher) null);
+	public void launch(Consumer<? super Launcher> launcherSetup) {
+		launch((Injector) null, launcherSetup);
 	}
 
 	public void launch(Launcher launcher) {
 		launch(null, launcher);
 	}
 
+	public void launch(Injector injector, Consumer<? super Launcher> launcherSetup) {
+		launch(null, injector, launcherSetup);
+	}
+
+	public void launch(List<String> args) {
+		launch(args, (Launcher) null);
+	}
+
+	public void launch(List<String> args, Injector injector) {
+		launch(args, injector, null);
+	}
+
 	public void launch(List<String> args, Consumer<? super Launcher> launcherSetup) {
-		launchImpl(args, null, launcherSetup);
+		launch(args, null, launcherSetup);
 	}
 
 	public void launch(List<String> args, Launcher launcher) {
-		launchImpl(args, launcher, null);
+		launchImpl(args, null, launcher, null);
 	}
 
-	private void launchImpl(List<String> args, Launcher launcher, Consumer<? super Launcher> launcherSetup) {
+	public void launch(List<String> args, Injector injector, Consumer<? super Launcher> launcherSetup) {
+		launchImpl(args, null, null, launcherSetup);
+	}
+
+	private void launchImpl(List<String> args, Injector injector, Launcher launcher,
+					Consumer<? super Launcher> launcherSetup) {
+
 		args = args == null ? List.of() : Collections.unmodifiableList(args);
 
 		List<FileMetadata> modules = getFiles().stream()
@@ -1330,6 +1409,14 @@ public class Configuration {
 		boolean usingSpi = launcher == null;
 		if (usingSpi) {
 			launcher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
+
+			if (injector != null) {
+				try {
+					InjectUtils.inject(injector, launcher);
+				} catch (IllegalAccessException | UnsatisfiedInjectionException e) {
+					throw new RuntimeException(e);
+				}
+			}
 
 			if (launcherSetup != null) {
 				launcherSetup.accept(launcher);
@@ -2487,7 +2574,7 @@ public class Configuration {
 			return matcher;
 		}
 
-		public Configuration build() {
+		public ConfigMapper toXmlMapper() {
 			PlaceholderMatchType matcher = this.matcher;
 			if (matcher == null) {
 				matcher = PlaceholderMatchType.WHOLE_WORD;
@@ -2523,8 +2610,11 @@ public class Configuration {
 				mapper.signature = mapper.sign(getSigner());
 			}
 
-			return Configuration.parseImpl(mapper, pm);
+			return mapper;
+		}
 
+		public Configuration build() {
+			return Configuration.parseImpl(toXmlMapper());
 		}
 
 	}
