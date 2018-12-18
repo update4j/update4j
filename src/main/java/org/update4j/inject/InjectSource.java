@@ -18,19 +18,21 @@ package org.update4j.inject;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
  * A field marked with this annotation will be used as an injection source for
- * {@link UpdateHandler} or {@link Launcher} fields that contain the
- * {@link InjectTarget} annotation.
+ * service provider or injector fields that contain the {@link InjectTarget}
+ * annotation.
  * 
  * @author Mordechai Meisels
  *
  */
 @Retention(RUNTIME)
 @Target(FIELD)
+@Documented
 public @interface InjectSource {
 
 	/**

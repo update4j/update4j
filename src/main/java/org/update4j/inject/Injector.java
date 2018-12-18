@@ -15,14 +15,44 @@
  */
 package org.update4j.inject;
 
+import org.update4j.service.Service;
+
 /**
- * A class implementing this type can be scanned for dependency injection for an
- * {@link UpdateHandler} or {@link Launcher} service provider by looking for
- * fields containing the {@link InjectSource} annotation.
+ * A class implementing this type can be scanned to send and receive fields to and
+ * from a service provider.
+ * A field annotated with {@link InjectSource} will send its value to
+ * a matching field annotated with {@link InjectTarget}.
+ * 
+ * <p>
+ * An inject target field that has not set {@code required} to {@code false}
+ * must find a matching inject source, otherwise an
+ * {@link UnsatisfiedInjectionException} will be thrown. An inject source that
+ * doesn't have a matching target will not fail.
+ * 
+ * <p>
+ * A target is matched with a source by matching the field names. You may also
+ * explicitly set the target field name with {@code target} in
+ * {@link InjectSource}. It will never look in the class hierarchy, only the
+ * object type class itself. It is illegal for 2 fields to map to the same
+ * target.
+ * 
+ * <p>
+ * Fields containing both {@link InjectSource} and {@link InjectTarget} at once
+ * is valid, and can be used to swap values between the injector and service
+ * provider.
+ * 
+ * <p>
+ * Injection is always done immediately after the service provider constructor
+ * returned. When injection completes, the {@link #injectComplete(Service)}
+ * method is called.
+ * 
  * 
  * @author Mordechai Meisels
  *
  */
 public interface Injector {
+
+	default void injectComplete(Service provider) {
+	}
 
 }

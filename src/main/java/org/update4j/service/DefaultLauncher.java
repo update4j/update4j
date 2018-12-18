@@ -17,13 +17,19 @@ package org.update4j.service;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
+
 import org.update4j.Configuration;
 import org.update4j.LaunchContext;
+import org.update4j.inject.InjectTarget;
 import org.update4j.util.StringUtils;
 
 public class DefaultLauncher implements Launcher {
 
 	public static final String MAIN_CLASS_PROPERTY_KEY = "default.launcher.main.class";
+
+	@InjectTarget(required = false)
+	private List<String> args;
 
 	@Override
 	public long version() {
@@ -46,6 +52,8 @@ public class DefaultLauncher implements Launcher {
 							"Main class at key '" + MAIN_CLASS_PROPERTY_KEY + "' is not a valid Java class name.");
 		}
 
+		String[] argsArray = args == null ? new String[0] : args.toArray(new String[args.size()]);
+
 		// we are fully aware, so no need to warn
 		// if NoClassDefFoundError arises for any other reason
 		System.setProperty("suppress.warning.access", "true");
@@ -54,10 +62,10 @@ public class DefaultLauncher implements Launcher {
 			Class<?> clazz = Class.forName(mainClass, true, context.getClassLoader());
 			Method method = clazz.getMethod("main", String[].class);
 
-			method.invoke(null, new Object[] { context.getArgs().toArray(new String[0]) });
+			method.invoke(null, new Object[] { argsArray });
 
-		} catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-						| NoSuchMethodException | SecurityException e) {
+		} catch (ClassNotFoundException | IllegalAccessException | InvocationTargetException
+						| NoSuchMethodException e) {
 			throw new RuntimeException(e);
 		}
 	}

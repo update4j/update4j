@@ -18,33 +18,36 @@ package org.update4j.inject;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import org.update4j.Configuration;
 
 /**
- * A field in {@link UpdateHandler} or {@link Launcher} with this annotation
- * will be injected by looking at the {@link Injector} passed in
+ * A field in a service provider with this annotation will be injected by
+ * looking at the {@link Injector} passed in
  * {@link Configuration#update(Injector)} or
- * {@link Configuration#launch(Injector)} respectively.
+ * {@link Configuration#launch(Injector)}. If an injector was not passed, the
+ * fields will remain {@code null} without any errors thrown.
  * 
  * <p>
- * If an injector was not passed, the fields will remain {@code null} without
- * any errors thrown.
+ * Fields in the injector annotated with this annotation will receive field
+ * values from the service provider in the same manner as above.
  * 
  * @author Mordechai Meisels
  *
  */
 @Retention(RUNTIME)
 @Target(FIELD)
+@Documented
 public @interface InjectTarget {
 
 	/**
-	 * Set whether it should fail if the field has no match in the injector.
+	 * Set whether it should fail if the field has no match.
 	 * 
 	 * <p>
-	 * If an injector was not passed, the fields will remain {@code null} without
-	 * any errors thrown.
+	 * If an injector was not passed, the fields in a service provider will remain
+	 * {@code null} without any errors thrown.
 	 * 
 	 * @return Whether it should fail if a match could not be found.
 	 */

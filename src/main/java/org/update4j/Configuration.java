@@ -343,14 +343,8 @@ import org.update4j.util.Warning;
  * // updates with given update handler
  * config.update(new MyUpdateHandler());
  * 
- * // update and inject fields into the handler
+ * // update and inject fields to and from the handler
  * config.update(myInjector);
- * 
- * // update with registered handler and fish out the instance *before* the
- * // update process starts
- * config.update(handler -> processHandler(handler));
- * // or just
- * config.update(this::processHandler);
  * 
  * // update and validate against the public key
  * config.update(myPubKey);
@@ -450,7 +444,7 @@ import org.update4j.util.Warning;
  * // launch with registered launcher or DefaultLauncher if non were found
  * config.launch();
  * 
- * // launch and inject fields into the launcher
+ * // launch and inject fields to and from the launcher
  * // assume the caller implements Injector
  * config.launch(this);
  * 
@@ -892,32 +886,16 @@ public class Configuration {
 		return update(null, injector);
 	}
 
-	public boolean update(Consumer<? super UpdateHandler> handlerSetup) {
-		return update((PublicKey) null, handlerSetup);
-	}
-
-	public boolean update(Injector injector, Consumer<? super UpdateHandler> handlerSetup) {
-		return update(null, injector, handlerSetup);
-	}
-
 	public boolean update(PublicKey key) {
 		return update(key, (UpdateHandler) null);
 	}
 
 	public boolean update(PublicKey key, Injector injector) {
-		return update(key, injector, (Consumer<? super UpdateHandler>) null);
+		return update(key, injector);
 	}
 
 	public boolean update(PublicKey key, UpdateHandler handler) {
-		return updateImpl(null, key, null, handler, null);
-	}
-
-	public boolean update(PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
-		return update(key, null, handlerSetup);
-	}
-
-	public boolean update(PublicKey key, Injector injector, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateImpl(null, key, injector, null, handlerSetup);
+		return updateImpl(null, key, null, handler);
 	}
 
 	public boolean updateTemp(Path tempDir) {
@@ -932,37 +910,19 @@ public class Configuration {
 		return updateTemp(tempDir, (PublicKey) null, handler);
 	}
 
-	public boolean updateTemp(Path tempDir, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateTemp(tempDir, (PublicKey) null, handlerSetup);
-	}
-
-	public boolean updateTemp(Path tempDir, Injector injector, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateTemp(tempDir, (PublicKey) null, injector, handlerSetup);
-	}
-
 	public boolean updateTemp(Path tempDir, PublicKey key) {
 		return updateTemp(tempDir, key, (UpdateHandler) null);
 	}
 
 	public boolean updateTemp(Path tempDir, PublicKey key, Injector injector) {
-		return updateTemp(tempDir, key, injector, (Consumer<? super UpdateHandler>) null);
+		return updateImpl(Objects.requireNonNull(tempDir), key, injector, null);
 	}
 
 	public boolean updateTemp(Path tempDir, PublicKey key, UpdateHandler handler) {
-		return updateImpl(Objects.requireNonNull(tempDir), key, null, handler, null);
+		return updateImpl(Objects.requireNonNull(tempDir), key, null, handler);
 	}
 
-	public boolean updateTemp(Path tempDir, PublicKey key, Consumer<? super UpdateHandler> handlerSetup) {
-		return updateTemp(Objects.requireNonNull(tempDir), key, null, handlerSetup);
-	}
-
-	public boolean updateTemp(Path tempDir, PublicKey key, Injector injector,
-					Consumer<? super UpdateHandler> handlerSetup) {
-		return updateImpl(Objects.requireNonNull(tempDir), key, injector, null, handlerSetup);
-	}
-
-	private boolean updateImpl(Path tempDir, PublicKey key, Injector injector, UpdateHandler handler,
-					Consumer<? super UpdateHandler> handlerSetup) {
+	private boolean updateImpl(Path tempDir, PublicKey key, Injector injector, UpdateHandler handler) {
 
 		if (key == null) {
 			Warning.signature();
@@ -981,10 +941,8 @@ public class Configuration {
 				} catch (IllegalAccessException | UnsatisfiedInjectionException e) {
 					throw new RuntimeException(e);
 				}
-			}
 
-			if (handlerSetup != null) {
-				handlerSetup.accept(handler);
+				injector.injectComplete(handler);
 			}
 		}
 
@@ -1274,50 +1232,18 @@ public class Configuration {
 	}
 
 	public void launch() {
-		launch(null, (Launcher) null);
+		launch((Launcher) null);
 	}
 
 	public void launch(Injector injector) {
-		launch(injector, null);
-	}
-
-	public void launch(Consumer<? super Launcher> launcherSetup) {
-		launch((Injector) null, launcherSetup);
+		launchImpl(injector, null);
 	}
 
 	public void launch(Launcher launcher) {
-		launch(null, launcher);
+		launchImpl(null, launcher);
 	}
 
-	public void launch(Injector injector, Consumer<? super Launcher> launcherSetup) {
-		launch(null, injector, launcherSetup);
-	}
-
-	public void launch(List<String> args) {
-		launch(args, (Launcher) null);
-	}
-
-	public void launch(List<String> args, Injector injector) {
-		launch(args, injector, null);
-	}
-
-	public void launch(List<String> args, Consumer<? super Launcher> launcherSetup) {
-		launch(args, null, launcherSetup);
-	}
-
-	public void launch(List<String> args, Launcher launcher) {
-		launchImpl(args, null, launcher, null);
-	}
-
-	public void launch(List<String> args, Injector injector, Consumer<? super Launcher> launcherSetup) {
-		launchImpl(args, null, null, launcherSetup);
-	}
-
-	private void launchImpl(List<String> args, Injector injector, Launcher launcher,
-					Consumer<? super Launcher> launcherSetup) {
-
-		args = args == null ? List.of() : Collections.unmodifiableList(args);
-
+	private void launchImpl(Injector injector, Launcher launcher) {
 		List<FileMetadata> modules = getFiles().stream()
 						.filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
 						.filter(FileMetadata::isModulepath)
@@ -1404,7 +1330,7 @@ public class Configuration {
 			contextClassLoader = layer.findLoader(moduleNames.get(0));
 		}
 
-		LaunchContext ctx = new LaunchContext(layer, contextClassLoader, this, args);
+		LaunchContext ctx = new LaunchContext(layer, contextClassLoader, this);
 
 		boolean usingSpi = launcher == null;
 		if (usingSpi) {
@@ -1416,11 +1342,9 @@ public class Configuration {
 				} catch (IllegalAccessException | UnsatisfiedInjectionException e) {
 					throw new RuntimeException(e);
 				}
+				injector.injectComplete(launcher);
 			}
 
-			if (launcherSetup != null) {
-				launcherSetup.accept(launcher);
-			}
 		}
 
 		Launcher finalLauncher = launcher;

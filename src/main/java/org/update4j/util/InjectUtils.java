@@ -16,15 +16,11 @@
 package org.update4j.util;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 
 import org.update4j.inject.InjectSource;
 import org.update4j.inject.InjectTarget;
-import org.update4j.inject.Injector;
 import org.update4j.inject.UnsatisfiedInjectionException;
 
 public class InjectUtils {
@@ -32,54 +28,55 @@ public class InjectUtils {
 	private InjectUtils() {
 	}
 
-	public static void inject(Injector injector, Object obj) throws UnsatisfiedInjectionException, IllegalAccessException {
-		Field[] fields = injector.getClass().getDeclaredFields();
+	public static void inject(Object obj1, Object obj2) throws UnsatisfiedInjectionException, IllegalAccessException {
+		Map<String, Object> sources1 = getSourceObjects(obj1);
+		Map<String, Object> sources2 = getSourceObjects(obj2);
 		
-		List<Field> sources = new ArrayList<>();
-		Map<String, Field> targetNamesToSource = new HashMap<>();
-		for(Field f : fields) {
+		injectValues(obj2, sources1);
+		injectValues(obj1, sources2);
+		
+	}
+
+	private static Map<String, Object> getSourceObjects(Object obj) throws IllegalAccessException {
+		Map<String, Object> map = new HashMap<>();
+
+		for (Field f : obj.getClass().getDeclaredFields()) {
 			InjectSource annotation = f.getAnnotation(InjectSource.class);
-			
-			if(annotation != null) {
-				sources.add(f);
-				
-				if(annotation.target().isEmpty()) {
-					targetNamesToSource.put(f.getName(), f);
+
+			if (annotation != null) {
+				String key = annotation.target();
+				key = key.isEmpty() ? f.getName() : key;
+
+				f.setAccessible(true);
+				Object value = f.get(obj);
+
+				Object old = map.put(key, value);
+
+				if (old != null) {
+					throw new IllegalArgumentException("Two fields with '" + key + "' target.");
+				}
+			}
+		}
+
+		return map;
+	}
+
+	private static void injectValues(Object obj, Map<String, Object> map)
+					throws UnsatisfiedInjectionException, IllegalAccessException {
+		for (Field f : obj.getClass().getDeclaredFields()) {
+			InjectTarget annotation = f.getAnnotation(InjectTarget.class);
+
+			if (annotation != null) {
+				Object value = map.get(f.getName());
+				if (value == null) {
+					if (annotation.required()) {
+						throw new UnsatisfiedInjectionException(f);
+					}
 				} else {
-					targetNamesToSource.put(annotation.target(), f);
+					f.setAccessible(true);
+					f.set(obj, value);
 				}
 			}
 		}
-		
-		fields = obj.getClass().getDeclaredFields();
-		
-		List<Field> targets = new ArrayList<>();
-		for(Field f : fields) {
-			if(f.getAnnotation(InjectTarget.class) != null) {
-				targets.add(f);
-			}
-		}
-		
-		ListIterator<Field> iter = targets.listIterator();
-		while(iter.hasNext()) {
-			Field targetField = iter.next();
-			
-			Field sourceField = targetNamesToSource.get(targetField.getName());
-			if(sourceField == null) {
-				
-				if(targetField.getAnnotation(InjectTarget.class).required()) {
-					throw new UnsatisfiedInjectionException(targetField);
-				}
-				
-				continue;
-			}
-			
-			sourceField.setAccessible(true);
-			targetField.setAccessible(true);
-			
-			Object value = sourceField.get(injector);
-			targetField.set(obj, value);
-		}
-		
 	}
 }

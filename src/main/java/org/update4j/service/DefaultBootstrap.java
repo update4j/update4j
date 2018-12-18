@@ -35,6 +35,8 @@ import org.update4j.Bootstrap;
 import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
 import org.update4j.Update;
+import org.update4j.inject.InjectSource;
+import org.update4j.inject.Injector;
 import org.update4j.util.ArgUtils;
 
 public class DefaultBootstrap implements Delegate {
@@ -49,6 +51,7 @@ public class DefaultBootstrap implements Delegate {
 	private boolean singleInstance;
 
 	private PublicKey pk = null;
+	private Injector argInjector;
 
 	@Override
 	public long version() {
@@ -93,10 +96,15 @@ public class DefaultBootstrap implements Delegate {
 
 		List<String> businessArgs = ArgUtils.afterSeparator(args);
 
+		argInjector = new Injector() {
+			@InjectSource
+			List<String> args = businessArgs;
+		};
+
 		if (launchFirst) {
-			launchFirst(businessArgs);
+			launchFirst();
 		} else {
-			updateFirst(businessArgs);
+			updateFirst();
 		}
 	}
 
@@ -111,46 +119,36 @@ public class DefaultBootstrap implements Delegate {
 				ArgUtils.validateNoValue(e);
 				syncLocal = true;
 				continue;
-			}
-			if ("launchFirst".equals(arg)) {
+			} else if ("launchFirst".equals(arg)) {
 				validateNotSet(launchFirst, "launchFirst");
 				ArgUtils.validateNoValue(e);
 				launchFirst = true;
-				continue;
-			}
-			if ("stopOnUpdateError".equals(arg)) {
+			} else if ("stopOnUpdateError".equals(arg)) {
 				validateNotSet(stopOnUpdateError, "stopOnUpdateError");
 				ArgUtils.validateNoValue(e);
 				stopOnUpdateError = true;
-				continue;
-			}
-			if ("singleInstance".equals(arg)) {
+			} else if ("singleInstance".equals(arg)) {
 				validateNotSet(singleInstance, "singleInstance");
 				ArgUtils.validateNoValue(e);
 				singleInstance = true;
-				continue;
-			}
-			if ("remote".equals(arg)) {
+			} else if ("remote".equals(arg)) {
 				validateNotSet(remote, "remote");
 				ArgUtils.validateHasValue(e);
 				remote = e.getValue();
-				continue;
-			}
-			if ("local".equals(arg)) {
+			} else if ("local".equals(arg)) {
 				validateNotSet(local, "local");
 				ArgUtils.validateHasValue(e);
 				local = e.getValue();
-				continue;
-			}
-			if ("cert".equals(arg)) {
+			} else if ("cert".equals(arg)) {
 				validateNotSet(cert, "cert");
 				ArgUtils.validateHasValue(e);
 				cert = e.getValue();
-				continue;
+			} else if ("delegate".equals(arg)) {
+				throw new IllegalArgumentException("--delegate must be passed as first argument.");
+			} else {
+				throw new IllegalArgumentException(
+								"Unknown option \"" + arg + "\". Separate business app arguments with '--'.");
 			}
-
-			throw new IllegalArgumentException(
-							"Unknown option \"" + arg + "\". Separate business app arguments with '--'.");
 		}
 	}
 
@@ -164,7 +162,7 @@ public class DefaultBootstrap implements Delegate {
 			throw new IllegalArgumentException("Duplicate '--" + command + "' command.");
 	}
 
-	private void updateFirst(List<String> args) throws Throwable {
+	private void updateFirst() throws Throwable {
 		Configuration remoteConfig = null;
 		Configuration localConfig = null;
 
@@ -196,7 +194,7 @@ public class DefaultBootstrap implements Delegate {
 		if (syncLocal && !failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
 			syncLocal(remoteConfig);
 
-			if(localConfig != null) {
+			if (localConfig != null) {
 				try {
 					remoteConfig.deleteOldFiles(localConfig);
 				} catch (IOException e) {
@@ -205,11 +203,11 @@ public class DefaultBootstrap implements Delegate {
 			}
 		}
 
-		config.launch(args);
+		config.launch(argInjector);
 
 	}
 
-	private void launchFirst(List<String> args) throws Throwable {
+	private void launchFirst() throws Throwable {
 		Path tempDir = Paths.get("update");
 		// used for deleting old files
 		Path old = tempDir.resolve(local + ".old");
@@ -238,7 +236,7 @@ public class DefaultBootstrap implements Delegate {
 
 		if (!localNotReady) {
 			Configuration finalConfig = localConfig;
-			Thread localApp = new Thread(() -> finalConfig.launch(args));
+			Thread localApp = new Thread(() -> finalConfig.launch(argInjector));
 			localApp.run();
 		}
 
@@ -261,7 +259,7 @@ public class DefaultBootstrap implements Delegate {
 					return;
 				}
 
-				config.launch(args);
+				config.launch(argInjector);
 			}
 		} else if (remoteConfig != null) {
 			if (remoteConfig.requiresUpdate()) {

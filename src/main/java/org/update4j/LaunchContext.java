@@ -15,8 +15,6 @@
  */
 package org.update4j;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 
 public class LaunchContext {
@@ -24,14 +22,11 @@ public class LaunchContext {
 	private ModuleLayer layer;
 	private ClassLoader classLoader;
 	private Configuration config;
-	private List<String> args;
 
-	LaunchContext(ModuleLayer layer, ClassLoader classLoader, Configuration config, List<String> args) {
+	LaunchContext(ModuleLayer layer, ClassLoader classLoader, Configuration config) {
 		this.layer = Objects.requireNonNull(layer);
 		this.classLoader = Objects.requireNonNull(classLoader);
 		this.config = Objects.requireNonNull(config);
-
-		this.args = args == null ? List.of() : Collections.unmodifiableList(args);
 	}
 
 	public ModuleLayer getModuleLayer() {
@@ -44,10 +39,6 @@ public class LaunchContext {
 
 	public Configuration getConfiguration() {
 		return config;
-	}
-
-	public List<String> getArgs() {
-		return args;
 	}
 
 }
