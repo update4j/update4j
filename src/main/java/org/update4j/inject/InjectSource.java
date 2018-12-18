@@ -24,8 +24,7 @@ import java.lang.annotation.Target;
 
 /**
  * A field marked with this annotation will be used as an injection source for
- * service provider or injector fields that contain the {@link InjectTarget}
- * annotation.
+ * an injectable's fields that contain the {@link InjectTarget} annotation.
  * 
  * @author Mordechai Meisels
  *

@@ -21,9 +21,10 @@ import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
 import java.util.stream.Collectors;
 
+import org.update4j.inject.Injectable;
 import org.update4j.util.StringUtils;
 
-public interface Service {
+public interface Service extends Injectable {
 
 	default long version() {
 		return 0L;

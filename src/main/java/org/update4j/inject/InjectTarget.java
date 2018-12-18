@@ -21,18 +21,14 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import org.update4j.Configuration;
 
 /**
- * A field in a service provider with this annotation will be injected by
- * looking at the {@link Injector} passed in
- * {@link Configuration#update(Injector)} or
- * {@link Configuration#launch(Injector)}. If an injector was not passed, the
- * fields will remain {@code null} without any errors thrown.
+ * A field in an {@link Injectable} with this annotation will receive instances
+ * of fields annotated with {@link InjectSource} when
+ * {@link Injectable#injectUnidirectional(Injectable, Injectable)} or
+ * {@link Injectable#injectBidirectional(Injectable, Injectable)} were invoked,
+ * if it successfully matches.
  * 
- * <p>
- * Fields in the injector annotated with this annotation will receive field
- * values from the service provider in the same manner as above.
  * 
  * @author Mordechai Meisels
  *

@@ -26,6 +26,7 @@ import java.io.Writer;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -52,11 +53,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.update4j.inject.Injector;
+import org.update4j.inject.Injectable;
 import org.update4j.inject.UnsatisfiedInjectionException;
 import org.update4j.mapper.ConfigMapper;
 import org.update4j.mapper.FileMapper;
@@ -64,7 +64,6 @@ import org.update4j.service.Launcher;
 import org.update4j.service.Service;
 import org.update4j.service.UpdateHandler;
 import org.update4j.util.FileUtils;
-import org.update4j.util.InjectUtils;
 import org.update4j.util.PropertyManager;
 import org.update4j.util.StringUtils;
 import org.update4j.util.Warning;
@@ -445,7 +444,7 @@ import org.update4j.util.Warning;
  * config.launch();
  * 
  * // launch and inject fields to and from the launcher
- * // assume the caller implements Injector
+ * // assume the caller implements Injectable
  * config.launch(this);
  * 
  * // launch with passed launcher, *only reflective access*
@@ -882,16 +881,16 @@ public class Configuration {
 		return update((PublicKey) null, handler);
 	}
 
-	public boolean update(Injector injector) {
-		return update(null, injector);
+	public boolean update(Injectable injectable) {
+		return update(null, injectable);
 	}
 
 	public boolean update(PublicKey key) {
 		return update(key, (UpdateHandler) null);
 	}
 
-	public boolean update(PublicKey key, Injector injector) {
-		return update(key, injector);
+	public boolean update(PublicKey key, Injectable injectable) {
+		return update(key, injectable);
 	}
 
 	public boolean update(PublicKey key, UpdateHandler handler) {
@@ -902,8 +901,8 @@ public class Configuration {
 		return updateTemp(tempDir, (PublicKey) null);
 	}
 
-	public boolean updateTemp(Path tempDir, Injector injector) {
-		return updateTemp(tempDir, (PublicKey) null, injector);
+	public boolean updateTemp(Path tempDir, Injectable injectable) {
+		return updateTemp(tempDir, (PublicKey) null, injectable);
 	}
 
 	public boolean updateTemp(Path tempDir, UpdateHandler handler) {
@@ -914,15 +913,15 @@ public class Configuration {
 		return updateTemp(tempDir, key, (UpdateHandler) null);
 	}
 
-	public boolean updateTemp(Path tempDir, PublicKey key, Injector injector) {
-		return updateImpl(Objects.requireNonNull(tempDir), key, injector, null);
+	public boolean updateTemp(Path tempDir, PublicKey key, Injectable injectable) {
+		return updateImpl(Objects.requireNonNull(tempDir), key, injectable, null);
 	}
 
 	public boolean updateTemp(Path tempDir, PublicKey key, UpdateHandler handler) {
 		return updateImpl(Objects.requireNonNull(tempDir), key, null, handler);
 	}
 
-	private boolean updateImpl(Path tempDir, PublicKey key, Injector injector, UpdateHandler handler) {
+	private boolean updateImpl(Path tempDir, PublicKey key, Injectable injectable, UpdateHandler handler) {
 
 		if (key == null) {
 			Warning.signature();
@@ -935,14 +934,12 @@ public class Configuration {
 		if (handler == null) {
 			handler = Service.loadService(UpdateHandler.class, updateHandler);
 
-			if (injector != null) {
+			if (injectable != null) {
 				try {
-					InjectUtils.inject(injector, handler);
-				} catch (IllegalAccessException | UnsatisfiedInjectionException e) {
+					Injectable.injectBidirectional(injectable, handler);
+				} catch (IllegalAccessException | InvocationTargetException | UnsatisfiedInjectionException e) {
 					throw new RuntimeException(e);
 				}
-
-				injector.injectComplete(handler);
 			}
 		}
 
@@ -1235,15 +1232,15 @@ public class Configuration {
 		launch((Launcher) null);
 	}
 
-	public void launch(Injector injector) {
-		launchImpl(injector, null);
+	public void launch(Injectable injectable) {
+		launchImpl(injectable, null);
 	}
 
 	public void launch(Launcher launcher) {
 		launchImpl(null, launcher);
 	}
 
-	private void launchImpl(Injector injector, Launcher launcher) {
+	private void launchImpl(Injectable injectable, Launcher launcher) {
 		List<FileMetadata> modules = getFiles().stream()
 						.filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
 						.filter(FileMetadata::isModulepath)
@@ -1336,13 +1333,12 @@ public class Configuration {
 		if (usingSpi) {
 			launcher = Service.loadService(layer, contextClassLoader, Launcher.class, this.launcher);
 
-			if (injector != null) {
+			if (injectable != null) {
 				try {
-					InjectUtils.inject(injector, launcher);
-				} catch (IllegalAccessException | UnsatisfiedInjectionException e) {
+					Injectable.injectBidirectional(injectable, launcher);
+				} catch (IllegalAccessException | InvocationTargetException | UnsatisfiedInjectionException e) {
 					throw new RuntimeException(e);
 				}
-				injector.injectComplete(launcher);
 			}
 
 		}

@@ -36,7 +36,6 @@ import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
 import org.update4j.Update;
 import org.update4j.inject.InjectSource;
-import org.update4j.inject.Injector;
 import org.update4j.util.ArgUtils;
 
 public class DefaultBootstrap implements Delegate {
@@ -51,7 +50,9 @@ public class DefaultBootstrap implements Delegate {
 	private boolean singleInstance;
 
 	private PublicKey pk = null;
-	private Injector argInjector;
+
+	@InjectSource(target = "args")
+	private List<String> businessArgs;
 
 	@Override
 	public long version() {
@@ -94,12 +95,7 @@ public class DefaultBootstrap implements Delegate {
 			}
 		}
 
-		List<String> businessArgs = ArgUtils.afterSeparator(args);
-
-		argInjector = new Injector() {
-			@InjectSource
-			List<String> args = businessArgs;
-		};
+		businessArgs = ArgUtils.afterSeparator(args);
 
 		if (launchFirst) {
 			launchFirst();
@@ -203,7 +199,7 @@ public class DefaultBootstrap implements Delegate {
 			}
 		}
 
-		config.launch(argInjector);
+		config.launch(this);
 
 	}
 
@@ -236,7 +232,7 @@ public class DefaultBootstrap implements Delegate {
 
 		if (!localNotReady) {
 			Configuration finalConfig = localConfig;
-			Thread localApp = new Thread(() -> finalConfig.launch(argInjector));
+			Thread localApp = new Thread(() -> finalConfig.launch(this));
 			localApp.run();
 		}
 
@@ -259,7 +255,7 @@ public class DefaultBootstrap implements Delegate {
 					return;
 				}
 
-				config.launch(argInjector);
+				config.launch(this);
 			}
 		} else if (remoteConfig != null) {
 			if (remoteConfig.requiresUpdate()) {

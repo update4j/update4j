@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.update4j.inject.Injectable;
 import org.update4j.service.Delegate;
 import org.update4j.service.Service;
 
@@ -122,23 +123,77 @@ public class Bootstrap {
 	}
 
 	/**
+	 * Starts the bootstrap by locating the highest versioned provider of
+	 * {@link Delegate} (specified by {@link Service#version()}) currently present
+	 * in the classpath or modulepath, with the provided injectable to exchange
+	 * fields.
+	 * 
+	 * @param injectable
+	 *            An injectable to exchange fields with.
+	 * 
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
+	 */
+	public static void start(Injectable injectable) throws Throwable {
+		start(null, null, injectable);
+	}
+
+	/**
 	 * Starts the bootstrap by locating the given class.
+	 * 
+	 * @param classname
+	 *            The class name of the delegate to load.
 	 * 
 	 * @throws Throwable
 	 *             Any throwable thrown in the bootstrap.
 	 */
 	public static void start(String classname) throws Throwable {
-		start(classname, List.of());
+		start(classname, null, null);
+	}
+
+	/**
+	 * Starts the bootstrap by locating the given class, with the given list as
+	 * command-line arguments.
+	 * 
+	 * @param classname
+	 *            The class name of the delegate to load.
+	 * @param args
+	 *            The list of arguments to pass to the delegate.
+	 * 
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
+	 */
+	public static void start(String classname, List<String> args) throws Throwable {
+		start(classname, args, null);
+	}
+
+	/**
+	 * Starts the bootstrap by locating the given class, with the provided
+	 * injectable to exchange fields.
+	 * 
+	 * @param classname
+	 *            The class name of the delegate to load.
+	 * @param injectable
+	 *            An injectable to exchange fields with.
+	 * 
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
+	 */
+	public static void start(String classname, Injectable injectable) throws Throwable {
+		start(classname, null, injectable);
 	}
 
 	/**
 	 * Starts the bootstrap running the given {@link Delegate}.
 	 * 
+	 * @param delegate
+	 *            The delegate to run.
+	 * 
 	 * @throws Throwable
 	 *             Any throwable thrown in the bootstrap.
 	 */
 	public static void start(Delegate delegate) throws Throwable {
-		start(delegate, List.of());
+		start(delegate, null);
 	}
 
 	/**
@@ -147,32 +202,72 @@ public class Bootstrap {
 	 * in the classpath or modulepath, with the given list as command-line
 	 * arguments.
 	 * 
-	 * @throws Throwable
-	 *             Any throwable thrown in the bootstrap.
-	 */
-	public static void start(List<String> args) throws Throwable {
-		start((String) null, args);
-	}
-
-	/**
-	 * Starts the bootstrap by locating the given class, with the given list as
-	 * command-line arguments.
+	 * @param args
+	 *            The list of arguments to pass to the delegate.
 	 * 
 	 * @throws Throwable
 	 *             Any throwable thrown in the bootstrap.
 	 */
-	public static void start(String classname, List<String> args) throws Throwable {
-		start(Service.loadService(Delegate.class, classname), args);
+	public static void start(List<String> args) throws Throwable {
+		start(args, null);
+	}
+
+	/**
+	 * Starts the bootstrap by locating the highest versioned provider of
+	 * {@link Delegate} (specified by {@link Service#version()}) currently present
+	 * in the classpath or modulepath, with the given list as command-line
+	 * arguments, with the provided injectable to exchange fields.
+	 * 
+	 * @param args
+	 *            The list of arguments to pass to the delegate.
+	 * @param injectable
+	 *            An injectable to exchange fields with.
+	 * 
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
+	 */
+	public static void start(List<String> args, Injectable injectable) throws Throwable {
+		start(null, args, injectable);
+	}
+
+	/**
+	 * Starts the bootstrap by locating the given class, with the given list as
+	 * command-line arguments, with the provided injectable to exchange fields.
+	 * 
+	 * @param classname
+	 *            The class name of the delegate to load.
+	 * @param args
+	 *            The list of arguments to pass to the delegate.
+	 * @param injectable
+	 *            An injectable to exchange fields with.
+	 * 
+	 * @throws Throwable
+	 *             Any throwable thrown in the bootstrap.
+	 */
+	public static void start(String classname, List<String> args, Injectable injectable) throws Throwable {
+		Delegate delegate = Service.loadService(Delegate.class, classname);
+
+		if (injectable != null) {
+			Injectable.injectBidirectional(injectable, delegate);
+		}
+
+		start(delegate, args);
 	}
 
 	/**
 	 * Starts the bootstrap running the given {@link Delegate}, with the given list
 	 * as command-line arguments.
 	 * 
+	 * @param delegate
+	 *            The delegate to run.
+	 * @param args
+	 *            The list of arguments to pass to the delegate.
+	 * 
 	 * @throws Throwable
 	 *             Any throwable thrown in the bootstrap.
 	 */
 	public static void start(Delegate delegate, List<String> args) throws Throwable {
+		args = args == null ? List.of() : args;
 		delegate.main(args);
 	}
 }
