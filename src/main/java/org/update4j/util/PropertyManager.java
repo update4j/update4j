@@ -41,11 +41,11 @@ public class PropertyManager {
 	private Map<String, String> resolvedProperties;
 	private Map<String, String> unmodifiableResolvedProperties;
 
-	public PropertyManager(List<Property> properties, List<String> systemProperties) {
+	public PropertyManager(List<Property> properties, Map<String, String> moreProperties,
+					List<String> systemProperties) {
+
 		this.properties = properties == null ? new ArrayList<>() : properties;
 		this.unmodifiableProperties = Collections.unmodifiableList(this.properties);
-
-		List<String> sysProperties = systemProperties == null ? new ArrayList<>() : systemProperties;
 
 		for (int i = 1; i < this.properties.size(); i++) {
 			for (int j = 0; j < i; j++) {
@@ -58,14 +58,20 @@ public class PropertyManager {
 			}
 		}
 
-		for (int i = 1; i < sysProperties.size(); i++) {
-			for (int j = 0; j < i; j++) {
-				if (sysProperties.get(i).equals(sysProperties.get(j)))
-					throw new IllegalArgumentException("Duplicate system property: " + sysProperties.get(i));
+		if (systemProperties != null) {
+			for (int i = 1; i < systemProperties.size(); i++) {
+				for (int j = 0; j < i; j++) {
+					if (systemProperties.get(i).equals(systemProperties.get(j)))
+						throw new IllegalArgumentException("Duplicate system property: " + systemProperties.get(i));
+				}
 			}
 		}
 
-		resolvedProperties = extractPropertiesForCurrentMachine(sysProperties, this.properties);
+		resolvedProperties = extractPropertiesForCurrentMachine(this.properties, systemProperties);
+
+		if (moreProperties != null)
+			resolvedProperties.putAll(moreProperties);
+
 		resolvedProperties = resolveDependencies(resolvedProperties);
 		unmodifiableResolvedProperties = Collections.unmodifiableMap(resolvedProperties);
 	}
@@ -79,58 +85,32 @@ public class PropertyManager {
 	 * 
 	 * @return The {@link Property} instances listed in the configuration file.
 	 */
-	public List<Property> getUserProperties() {
+	public List<Property> getProperties() {
 		return unmodifiableProperties;
 	}
 
-	public Property getUserProperty(String key) {
-		return properties.stream() // First try to locate os specific properties
-						.filter(p -> key.equals(p.getKey()) && p.getOs() == OS.CURRENT)
-						.findAny()
-						.orElseGet(() -> properties.stream()
-										.filter(p -> key.equals(p.getKey()))
-										.findAny()
-										.orElse(null));
-	}
-
 	/**
-	 * Returns a list of properties with the corresponding key, or empty if non are
-	 * found. There might be more than one property with the given key, if they are
-	 * platform specific.
+	 * Returns a list of properties listed in the configuration file that have the
+	 * provided key. It might be more than one, if they have different operating
+	 * systems. The list will never contain 2 properties with the same value
+	 * returned by {@link Property#getOs()}.
 	 * 
-	 * @param key
-	 *            The key of the property.
-	 * @return A list of properties with the given key.
-	 */
-	public List<Property> getUserProperties(String key) {
-		return properties.stream().filter(p -> key.equals(p.getKey())).collect(Collectors.toList());
-	}
-
-	/**
-	 * Returns the value of the property with the corresponding key, or {@code null}
-	 * if missing. This method will ignore properties marked for foreign operating
-	 * systems.
+	 * <p>
+	 * The list might be empty, but never {@code null}.
 	 * 
-	 * @param key
-	 *            The key of the property.
-	 * @return The value of the property with the given key.
+	 * 
+	 * @return The {@link Property} instances listed in the configuration file that
+	 *         contain the provided key.
 	 */
-	public String getUserPropertyForCurrentOs(String key) {
-		return properties.stream() // First try to locate os specific properties
-						.filter(p -> key.equals(p.getKey()) && p.getOs() == OS.CURRENT)
-						.map(Property::getValue)
-						.findAny()
-						.orElseGet(() -> properties.stream()
-										.filter(p -> key.equals(p.getKey()) && p.getOs() == null)
-										.map(Property::getValue)
-										.findAny()
-										.orElse(null));
+	public List<Property> getProperties(String key) {
+		return getProperties().stream().filter(p -> p.getKey().equals(key)).collect(Collectors.toList());
 	}
 
 	/**
 	 * Returns an unmodifiable map of keys and values after resolving the
-	 * placeholders. This will not include properties marked for foreign operating
-	 * systems.
+	 * placeholders. It includes everything from dynamic properties to system
+	 * properties or environment variables. This will not include properties marked
+	 * for foreign operating systems.
 	 * 
 	 * @return A map of the keys and real values of the properties, after resolving
 	 *         the placeholders.
@@ -141,7 +121,8 @@ public class PropertyManager {
 
 	/**
 	 * Returns the real value of the property with the given key, after resolving
-	 * the placeholders.
+	 * the placeholders. It includes everything from dynamic properties to system
+	 * properties or environment variables.
 	 * 
 	 * @param key
 	 *            The key of the property.
@@ -150,7 +131,7 @@ public class PropertyManager {
 	public String getResolvedProperty(String key) {
 		return resolvedProperties.get(key);
 	}
-
+	
 	/**
 	 * Returns a string where all placeholders are replaced with the real values.
 	 * 
@@ -190,8 +171,9 @@ public class PropertyManager {
 			String value = resolvedProperties.get(key);
 
 			if (value == null) {
-				Property p = getUserProperty(key);
-				if (p != null && p.getOs() != null && p.getOs() != OS.CURRENT && ignoreForeignProperty) {
+				Property prop = getProperties(key).stream().findAny().orElse(null);
+
+				if (prop != null && prop.getOs() != null && prop.getOs() != OS.CURRENT && ignoreForeignProperty) {
 					continue;
 				}
 
@@ -286,8 +268,8 @@ public class PropertyManager {
 		throw new UnsupportedOperationException("Unknown " + PlaceholderMatchType.class.getSimpleName());
 	}
 
-	private static Map<String, String> extractPropertiesForCurrentMachine(Collection<String> systemProperties,
-					Collection<? extends Property> userProperties) {
+	private static Map<String, String> extractPropertiesForCurrentMachine(Collection<? extends Property> properties,
+					Collection<String> systemProperties) {
 
 		Map<String, String> resolved = new HashMap<>();
 
@@ -297,8 +279,8 @@ public class PropertyManager {
 			}
 		}
 
-		if (userProperties != null) {
-			for (Property prop : userProperties) {
+		if (properties != null) {
+			for (Property prop : properties) {
 				// First resolve non os-specific, so the latter can override
 				if (prop.getOs() != null)
 					continue;
@@ -306,7 +288,7 @@ public class PropertyManager {
 				resolved.put(prop.getKey(), prop.getValue());
 			}
 
-			for (Property prop : userProperties) {
+			for (Property prop : properties) {
 				// Overrides any non os-specific property
 				if (prop.getOs() != OS.CURRENT)
 					continue;

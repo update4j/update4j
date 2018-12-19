@@ -2,7 +2,6 @@
   * Added dependency injection framework to communicate between the bootstrap and service provider.
   * Consequently, removed provider consumers at update and launch, and passing args at launch.
   * Removed many confusing `getXxxProperty()` methods in `Configuration` class.
-  * Added `toXmlMapper()` in `Configuration.builder()`.
   * You can now add properties to a config dynamically at runtime.
   * Locate explicit service providers even if not properly registered as required by `ServiceLoader`.
   * Made many service methods `default`.

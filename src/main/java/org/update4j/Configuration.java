@@ -241,15 +241,6 @@ import org.update4j.util.Warning;
  * </pre>
  * 
  * <p>
- * Or convert a builder to a mapper &mdash; which essentially skips all
- * validations, which are done when build is complete &mdash; using the
- * {@link Builder#toXmlMapper()} method:
- * 
- * <pre>
- * ConfigMapper mapper = Configuration.builder().baseUri("anInvalidUri %?& ${none.existent.property}").toXmlMapper();
- * </pre>
- * 
- * <p>
  * Or access the underlying mapper of an existing config (it creates a defensive
  * copy, so cache them once):
  * 
@@ -617,86 +608,50 @@ public class Configuration {
 	 * <p>
 	 * This is read from the {@code <properties>} element.
 	 * 
-	 * @return The {@link Property} instances listed in the configuration file,
-	 *         never {@code null}.
+	 * @return The {@link Property} instances listed in the configuration file.
 	 */
-	public List<Property> getUserProperties() {
-		return propertyManager.getUserProperties();
+	public List<Property> getProperties() {
+		return propertyManager.getProperties();
 	}
 
 	/**
-	 * Returns the {@link Property} with the corresponding key, or {@code null} if
-	 * missing. If there are more than one property with the given key (if they are
-	 * platform specific), only the one corresponding to this system will be
-	 * returned. It will still return a foreign property if no property resolves for
-	 * the current system; {@link #getUserPropertyForCurrentOs(String)} would return
-	 * {@code null} in this case.
-	 * 
-	 * @param key
-	 *            The key of the property.
-	 * @return The {@link Property} with the given key, or {@code null} if missing.
-	 */
-	public Property getUserProperty(String key) {
-		return propertyManager.getUserProperty(key);
-	}
-
-	/**
-	 * Returns a list of properties with the corresponding key, or empty if non are
-	 * found. There might be more than one property with the given key, if they are
-	 * platform specific.
-	 * 
-	 * @param key
-	 *            The key of the property.
-	 * @return A list of properties with the given key, never {@code null}
-	 */
-	public List<Property> getUserProperties(String key) {
-		return propertyManager.getUserProperties(key);
-	}
-
-	/**
-	 * Returns the value of the property with the corresponding key, or {@code null}
-	 * if missing. This method will ignore properties marked for foreign operating
-	 * systems.
-	 * 
-	 * @param key
-	 *            The key of the property.
-	 * @return The value of the property with the given key.
-	 */
-	public String getUserPropertyForCurrentOs(String key) {
-		return propertyManager.getUserPropertyForCurrentOs(key);
-	}
-
-	/**
-	 * Returns an unmodifiable map of keys and values with their <em>real</em>
-	 * values after resolving the placeholders. This will not include properties
-	 * marked for foreign operating systems. This will also include system
-	 * properties that were referenced anywhere in the XML or after a call to
-	 * {@link Configuration#resolvePlaceholders(String)} referred to a system
-	 * property.
+	 * Returns a list of properties listed in the configuration file that have the
+	 * provided key. It might be more than one, if they have different operating
+	 * systems. The list will never contain 2 properties with the same value
+	 * returned by {@link Property#getOs()}.
 	 * 
 	 * <p>
+	 * The list might be empty, but never {@code null}.
 	 * 
-	 * @apiNote Although everything in this class is immutable, this is the only
-	 *          thing that can change after construction by calling
-	 *          {@link Configuration#resolvePlaceholders(String)} and the passed
-	 *          string has a reference to a system property.
+	 * 
+	 * @return The {@link Property} instances listed in the configuration file that
+	 *         contain the provided key.
+	 */
+	public List<Property> getProperties(String key) {
+		return propertyManager.getProperties(key);
+	}
+
+	/**
+	 * Returns an unmodifiable map of keys and values after resolving the
+	 * placeholders. It includes everything from dynamic properties to system
+	 * properties or environment variables. This will not include properties marked
+	 * for foreign operating systems.
 	 * 
 	 * @return A map of the keys and real values of the properties, after resolving
-	 *         the placeholders, never {@code null}.
+	 *         the placeholders.
 	 */
 	public Map<String, String> getResolvedProperties() {
 		return propertyManager.getResolvedProperties();
 	}
 
 	/**
-	 * Returns the <em>real</em> value of the property with the given key, after
-	 * resolving the placeholders. This is usually the method you will call to read
-	 * some property from a configuration.
+	 * Returns the real value of the property with the given key, after resolving
+	 * the placeholders. It includes everything from dynamic properties to system
+	 * properties or environment variables.
 	 * 
 	 * @param key
 	 *            The key of the property.
-	 * @return The real value of the property after resolving the placeholders, or
-	 *         {@code null} if missing.
+	 * @return The real value of the property after resolving the placeholders.
 	 */
 	public String getResolvedProperty(String key) {
 		return propertyManager.getResolvedProperty(key);
@@ -1600,17 +1555,33 @@ public class Configuration {
 	 *             Any exception that arises while reading.
 	 */
 	public static Configuration read(Reader reader) throws IOException {
-		ConfigMapper configMapper = ConfigMapper.read(reader);
-
-		return parseImpl(configMapper);
+		return read(reader, (Map<String, String>) null);
 	}
 
 	/**
-	 * Reads and parses a configuration XML then verifies the configuration
+	 * Reads and parses a configuration XML, and add the provided properties.
+	 * 
+	 * @param reader
+	 *            The {@code Reader} for reading the XML.
+	 * @param moreProperties
+	 *            More properties to the config.
+	 * @return A {@code Configuration} as parsed from the given XML.
+	 * @throws IOException
+	 *             Any exception that arises while reading.
+	 */
+	public static Configuration read(Reader reader, Map<String, String> moreProperties) throws IOException {
+		return doRead(reader, moreProperties);
+	}
+
+	/**
+	 * Reads and parses a configuration XML, then verifies the configuration
 	 * signature against the public key.
 	 * 
 	 * @param reader
-	 *            The {@code Reader} for reading the XML. @return A {@code
+	 *            The {@code Reader} for reading the XML.
+	 * @param moreProperties
+	 *            More properties to the config.
+	 * @return A {@code
 	 * Configuration} as parsed from the given XML.
 	 * @throws IOException
 	 *             Any exception that arises while reading.
@@ -1619,12 +1590,39 @@ public class Configuration {
 	 *             verification failed.
 	 */
 	public static Configuration read(Reader reader, PublicKey key) throws IOException {
-		ConfigMapper configMapper = ConfigMapper.read(reader);
+		return read(reader, key, null);
+	}
 
-		Configuration config = parseImpl(configMapper);
+	/**
+	 * Reads and parses a configuration XML and add more properties, then verifies
+	 * the configuration signature against the public key.
+	 * 
+	 * @param reader
+	 *            The {@code Reader} for reading the XML.
+	 * @param key
+	 *            The public key to verify the config's signature against.
+	 * @param moreProperties
+	 *            More properties to the config.
+	 * @return A {@code
+	 * Configuration} as parsed from the given XML.
+	 * @throws IOException
+	 *             Any exception that arises while reading.
+	 * @throws SecurityException
+	 *             If the configuration does not have a signature, or if
+	 *             verification failed.
+	 */
+	public static Configuration read(Reader reader, PublicKey key, Map<String, String> moreProperties)
+					throws IOException {
+		Configuration config = doRead(reader, moreProperties);
 		config.verifyConfiguration(key);
 
 		return config;
+	}
+
+	private static Configuration doRead(Reader reader, Map<String, String> moreProperties) throws IOException {
+		ConfigMapper configMapper = ConfigMapper.read(reader);
+
+		return parseNoCopy(configMapper, moreProperties);
 	}
 
 	/**
@@ -1636,17 +1634,33 @@ public class Configuration {
 	 */
 
 	public static Configuration parse(ConfigMapper mapper) {
-		return parseImpl(new ConfigMapper(mapper));
+		return parse(mapper, null);
 	}
 
-	private static Configuration parseImpl(ConfigMapper configMapper) {
-		PropertyManager propManager = new PropertyManager(configMapper.properties, null);
-		return parseImpl(configMapper, propManager);
+	/**
+	 * Parses a configuration from the given XML mapper, and add the provided
+	 * properties.
+	 * 
+	 * @param mapper
+	 *            The mapper to parse.
+	 * @param moreProperties
+	 *            More properties to the config.
+	 * @return A {@code Configuration} as parsed from the mapper.
+	 */
+
+	public static Configuration parse(ConfigMapper mapper, Map<String, String> moreProperties) {
+		return parseNoCopy(new ConfigMapper(mapper), moreProperties);
 	}
 
-	private static Configuration parseImpl(ConfigMapper configMapper, PropertyManager propManager) {
+	private static Configuration parseNoCopy(ConfigMapper mapper, Map<String, String> moreProperties) {
+		PropertyManager manager = new PropertyManager(mapper.properties, moreProperties, null);
+
+		return parseNoCopy(mapper, manager);
+	}
+
+	private static Configuration parseNoCopy(ConfigMapper configMapper, PropertyManager propertyManager) {
 		Configuration config = new Configuration();
-		config.propertyManager = propManager;
+		config.propertyManager = propertyManager;
 
 		if (configMapper.timestamp != null)
 			config.timestamp = Instant.parse(configMapper.timestamp);
@@ -1896,7 +1910,7 @@ public class Configuration {
 			newMapper.signature = newMapper.sign(signer);
 		}
 
-		return parseImpl(newMapper);
+		return parseNoCopy(newMapper, propertyManager);
 	}
 
 	/**
@@ -2494,14 +2508,18 @@ public class Configuration {
 			return matcher;
 		}
 
-		public ConfigMapper toXmlMapper() {
+		public Configuration build() {
+			return build(null);
+		}
+
+		public Configuration build(Map<String, String> moreProperties) {
 			PlaceholderMatchType matcher = this.matcher;
 			if (matcher == null) {
 				matcher = PlaceholderMatchType.WHOLE_WORD;
 			}
 
 			ConfigMapper mapper = new ConfigMapper();
-			PropertyManager pm = new PropertyManager(properties, systemProperties);
+			PropertyManager pm = new PropertyManager(properties, moreProperties, systemProperties);
 
 			mapper.timestamp = Instant.now().toString();
 
@@ -2530,11 +2548,7 @@ public class Configuration {
 				mapper.signature = mapper.sign(getSigner());
 			}
 
-			return mapper;
-		}
-
-		public Configuration build() {
-			return Configuration.parseImpl(toXmlMapper());
+			return Configuration.parseNoCopy(mapper, pm);
 		}
 
 	}
