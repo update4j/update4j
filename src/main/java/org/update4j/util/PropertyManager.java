@@ -41,7 +41,7 @@ public class PropertyManager {
 	private Map<String, String> resolvedProperties;
 	private Map<String, String> unmodifiableResolvedProperties;
 
-	public PropertyManager(List<Property> properties, Map<String, String> moreProperties,
+	public PropertyManager(List<Property> properties, Map<String, String> dynamicProperties,
 					List<String> systemProperties) {
 
 		this.properties = properties == null ? new ArrayList<>() : properties;
@@ -69,8 +69,8 @@ public class PropertyManager {
 
 		resolvedProperties = extractPropertiesForCurrentMachine(this.properties, systemProperties);
 
-		if (moreProperties != null)
-			resolvedProperties.putAll(moreProperties);
+		if (dynamicProperties != null)
+			resolvedProperties.putAll(dynamicProperties);
 
 		resolvedProperties = resolveDependencies(resolvedProperties);
 		unmodifiableResolvedProperties = Collections.unmodifiableMap(resolvedProperties);

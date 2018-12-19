@@ -1563,14 +1563,15 @@ public class Configuration {
 	 * 
 	 * @param reader
 	 *            The {@code Reader} for reading the XML.
-	 * @param moreProperties
-	 *            More properties to the config.
+	 * @param dynamicProperties
+	 *            Unlisted properties to override listed properties or to map
+	 *            unmapped placeholders.
 	 * @return A {@code Configuration} as parsed from the given XML.
 	 * @throws IOException
 	 *             Any exception that arises while reading.
 	 */
-	public static Configuration read(Reader reader, Map<String, String> moreProperties) throws IOException {
-		return doRead(reader, moreProperties);
+	public static Configuration read(Reader reader, Map<String, String> dynamicProperties) throws IOException {
+		return doRead(reader, dynamicProperties);
 	}
 
 	/**
@@ -1579,8 +1580,9 @@ public class Configuration {
 	 * 
 	 * @param reader
 	 *            The {@code Reader} for reading the XML.
-	 * @param moreProperties
-	 *            More properties to the config.
+	 * @param dynamicProperties
+	 *            Unlisted properties to override listed properties or to map
+	 *            unmapped placeholders.
 	 * @return A {@code
 	 * Configuration} as parsed from the given XML.
 	 * @throws IOException
@@ -1601,8 +1603,9 @@ public class Configuration {
 	 *            The {@code Reader} for reading the XML.
 	 * @param key
 	 *            The public key to verify the config's signature against.
-	 * @param moreProperties
-	 *            More properties to the config.
+	 * @param dynamicProperties
+	 *            Unlisted properties to override listed properties or to map
+	 *            unmapped placeholders.
 	 * @return A {@code
 	 * Configuration} as parsed from the given XML.
 	 * @throws IOException
@@ -1611,18 +1614,18 @@ public class Configuration {
 	 *             If the configuration does not have a signature, or if
 	 *             verification failed.
 	 */
-	public static Configuration read(Reader reader, PublicKey key, Map<String, String> moreProperties)
+	public static Configuration read(Reader reader, PublicKey key, Map<String, String> dynamicProperties)
 					throws IOException {
-		Configuration config = doRead(reader, moreProperties);
+		Configuration config = doRead(reader, dynamicProperties);
 		config.verifyConfiguration(key);
 
 		return config;
 	}
 
-	private static Configuration doRead(Reader reader, Map<String, String> moreProperties) throws IOException {
+	private static Configuration doRead(Reader reader, Map<String, String> dynamicProperties) throws IOException {
 		ConfigMapper configMapper = ConfigMapper.read(reader);
 
-		return parseNoCopy(configMapper, moreProperties);
+		return parseNoCopy(configMapper, dynamicProperties);
 	}
 
 	/**
@@ -1643,17 +1646,18 @@ public class Configuration {
 	 * 
 	 * @param mapper
 	 *            The mapper to parse.
-	 * @param moreProperties
-	 *            More properties to the config.
+	 * @param dynamicProperties
+	 *            Unlisted properties to override listed properties or to map
+	 *            unmapped placeholders.
 	 * @return A {@code Configuration} as parsed from the mapper.
 	 */
 
-	public static Configuration parse(ConfigMapper mapper, Map<String, String> moreProperties) {
-		return parseNoCopy(new ConfigMapper(mapper), moreProperties);
+	public static Configuration parse(ConfigMapper mapper, Map<String, String> dynamicProperties) {
+		return parseNoCopy(new ConfigMapper(mapper), dynamicProperties);
 	}
 
-	private static Configuration parseNoCopy(ConfigMapper mapper, Map<String, String> moreProperties) {
-		PropertyManager manager = new PropertyManager(mapper.properties, moreProperties, null);
+	private static Configuration parseNoCopy(ConfigMapper mapper, Map<String, String> dynamicProperties) {
+		PropertyManager manager = new PropertyManager(mapper.properties, dynamicProperties, null);
 
 		return parseNoCopy(mapper, manager);
 	}
@@ -2512,14 +2516,14 @@ public class Configuration {
 			return build(null);
 		}
 
-		public Configuration build(Map<String, String> moreProperties) {
+		public Configuration build(Map<String, String> dynamicProperties) {
 			PlaceholderMatchType matcher = this.matcher;
 			if (matcher == null) {
 				matcher = PlaceholderMatchType.WHOLE_WORD;
 			}
 
 			ConfigMapper mapper = new ConfigMapper();
-			PropertyManager pm = new PropertyManager(properties, moreProperties, systemProperties);
+			PropertyManager pm = new PropertyManager(properties, dynamicProperties, systemProperties);
 
 			mapper.timestamp = Instant.now().toString();
 
