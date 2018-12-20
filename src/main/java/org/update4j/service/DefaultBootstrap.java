@@ -114,7 +114,6 @@ public class DefaultBootstrap implements Delegate {
 				validateNotSet(syncLocal, "syncLocal");
 				ArgUtils.validateNoValue(e);
 				syncLocal = true;
-				continue;
 			} else if ("launchFirst".equals(arg)) {
 				validateNotSet(launchFirst, "launchFirst");
 				ArgUtils.validateNoValue(e);
@@ -167,7 +166,7 @@ public class DefaultBootstrap implements Delegate {
 		}
 
 		if (local != null) {
-			localConfig = getLocalConfig(remote != null && syncLocal);
+			localConfig = getLocalConfig(remoteConfig != null && syncLocal);
 		}
 
 		if (remoteConfig == null && localConfig == null) {
