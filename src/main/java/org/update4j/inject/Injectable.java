@@ -85,15 +85,16 @@ public interface Injectable {
 			if (annotation != null) {
 				String key = annotation.target();
 				key = key.isEmpty() ? f.getName() : key;
+				
+				if (map.containsKey(key)) {
+					throw new IllegalArgumentException("Two fields with '" + key + "' target.");
+				}
+				
 
 				f.setAccessible(true);
 				Object value = f.get(obj);
+				map.put(key, value);
 
-				Object old = map.put(key, value);
-
-				if (old != null) {
-					throw new IllegalArgumentException("Two fields with '" + key + "' target.");
-				}
 			}
 		}
 
@@ -106,12 +107,13 @@ public interface Injectable {
 			InjectTarget annotation = f.getAnnotation(InjectTarget.class);
 
 			if (annotation != null) {
-				Object value = map.get(f.getName());
-				if (value == null) {
+				if (!map.containsKey(f.getName())) {
 					if (annotation.required()) {
 						throw new UnsatisfiedInjectionException(f);
 					}
 				} else {
+					Object value = map.get(f.getName());
+					
 					f.setAccessible(true);
 					f.set(obj, value);
 				}
