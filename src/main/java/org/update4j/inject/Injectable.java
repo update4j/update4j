@@ -41,7 +41,7 @@ import java.util.Map;
  * 
  * <p>
  * Fields containing both {@code InjectSource} and {@code InjectTarget} at once
- * is valid, and can be used to swap values.
+ * is valid, and can be used to swap values between the 2 injectables,
  * 
  * <p>
  * You can annotate a method with {@link PostInject} to register a callback once

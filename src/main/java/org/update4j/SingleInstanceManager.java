@@ -26,6 +26,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,19 +37,140 @@ import java.util.stream.Collectors;
 
 import org.update4j.util.FileUtils;
 
+/**
+ * A convenience class to force only a single instance of the code proceeding
+ * {@link #execute()} until JVM shutdown. It also allows for newer instances to
+ * send a list of strings to the original single instance.
+ * 
+ * @author Mordechai Meisels
+ *
+ */
 public class SingleInstanceManager {
 
 	private SingleInstanceManager() {
 	}
 
+	/**
+	 * A call to this method will ensure that everything after that call will not be
+	 * run by more than one instance of this application. The first will pass, but
+	 * all others will shut down.
+	 * 
+	 * <p>
+	 * The lock files (special files that this method uses to know that there is a
+	 * running instance) will be placed in the current directory. It is highly
+	 * discouraged to use the current directory, as one may start the application
+	 * from a different directory and circumvent the single instance mechanism. Use
+	 * {@link #execute(Path)} instead, for applications that the user may move
+	 * around.
+	 * 
+	 * <p>
+	 * You must never call this more than once in the whole application.
+	 * 
+	 * @throws OverlappingFileLockException
+	 *             If this method is called more than once on the same JVM.
+	 */
 	public static void execute() {
-		execute(null, null);
+		execute(null);
 	}
 
+	/**
+	 * A call to this method will ensure that everything after that call will not be
+	 * run by more than one instance of this application. The first will pass, but
+	 * all others will shut down.
+	 * 
+	 * <p>
+	 * You can specify the location where to place the lock files (special files
+	 * that this method uses to know that there is a running instance). It is highly
+	 * discouraged to use the current directory, as one may start the application
+	 * from a different directory and circumvent the single instance mechanism.
+	 * 
+	 * <p>
+	 * You must never call this more than once in the whole application.
+	 * 
+	 * @param lockFileDir
+	 *            The location where to place the lock files. If {@code null}, it
+	 *            will use the current directory.
+	 * 
+	 * @throws OverlappingFileLockException
+	 *             If this method is called more than once on the same JVM.
+	 */
+	public static void execute(Path lockFileDir) {
+		execute(null, null, lockFileDir);
+	}
+
+	/**
+	 * A call to this method will ensure that everything after that call will not be
+	 * run by more than one instance of this application. The first will pass, but
+	 * all others will shut down.
+	 * 
+	 * <p>
+	 * The first instance will receive the {@code args} list of strings of the new
+	 * instance in the {@code onNewInstance} consumer (called in special instance
+	 * message dispatching thread) whenever a new instance is created and
+	 * successfully shut down.
+	 * 
+	 * <p>
+	 * The lock files (special files that this method uses to know that there is a
+	 * running instance) will be placed in the current directory. It is highly
+	 * discouraged to use the current directory, as one may start the application
+	 * from a different directory and circumvent the single instance mechanism. Use
+	 * {@link #execute(List, Consumer, Path)} instead, for applications that the
+	 * user may move around.
+	 * 
+	 * <p>
+	 * You must never call this more than once in the whole application.
+	 * 
+	 * 
+	 * @param args
+	 *            The list of strings to pass to the single instance, if this is a
+	 *            subsequent instance. {@code null} will be passed as an empty list.
+	 * 
+	 * @param onNewInstance
+	 *            The receiver consumer of the passed list of strings, if this is
+	 *            the initial instance. May be {@code null}.
+	 * 
+	 * @throws OverlappingFileLockException
+	 *             If this method is called more than once on the same JVM.
+	 */
 	public static void execute(List<String> args, Consumer<? super List<String>> onNewInstance) {
 		execute(args, onNewInstance, null);
 	}
 
+	/**
+	 * A call to this method will ensure that everything after that call will not be
+	 * run by more than one instance of this application. The first will pass, but
+	 * all others will shut down.
+	 * 
+	 * <p>
+	 * The first instance will receive the {@code args} list of strings of the new
+	 * instance in the {@code onNewInstance} consumer (called in special instance
+	 * message dispatching thread) whenever a new instance is created and
+	 * successfully shut down.
+	 * 
+	 * <p>
+	 * You can specify the location where to place the lock files (special files
+	 * that this method uses to know that there is a running instance). It is highly
+	 * discouraged to use the current directory, as one may start the application
+	 * from a different directory and circumvent the single instance mechanism.
+	 * 
+	 * <p>
+	 * You must never call this more than once in the whole application.
+	 * 
+	 * 
+	 * @param args
+	 *            The list of strings to pass to the single instance, if this is a
+	 *            subsequent instance. {@code null} will be passed as an empty list.
+	 * 
+	 * @param onNewInstance
+	 *            The receiver consumer of the passed list of strings, if this is
+	 *            the initial instance. May be {@code null}.
+	 * @param lockFileDir
+	 *            The location where to place the lock files. If {@code null}, it
+	 *            will use the current directory.
+	 * 
+	 * @throws OverlappingFileLockException
+	 *             If this method is called more than once on the same JVM.
+	 */
 	public static void execute(List<String> args, Consumer<? super List<String>> onNewInstance, Path lockFileDir) {
 
 		if (args == null) {
@@ -110,7 +232,7 @@ public class SingleInstanceManager {
 							e.printStackTrace();
 						}
 					}
-				});
+				}, "Instance Message Dispatcher");
 
 				listen.setDaemon(true);
 				listen.start();

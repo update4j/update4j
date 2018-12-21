@@ -15,12 +15,36 @@
  */
 package org.update4j;
 
+import java.util.Objects;
+
+/**
+ * This class is a simple POJO that represents a property in the configuration
+ * file.
+ * 
+ * @author Mordechai Meisels
+ *
+ */
 public class Property {
 
 	private String key;
 	private String value;
 	private OS os;
 
+	/**
+	 * Constructs a new property with the provided key, value, and operating system
+	 * values.
+	 * 
+	 * <p>
+	 * The key and value must not be {@code null} and the key must not contain the
+	 * any of the characters <code>$</code>, <code>{</code> or <code>}</code>.
+	 * 
+	 * @param key
+	 *            The property key.
+	 * @param value
+	 *            The property value.
+	 * @param os
+	 *            The operating system of this property.
+	 */
 	public Property(String key, String value, OS os) {
 		if (key.isEmpty())
 			throw new IllegalArgumentException("Key must not be empty.");
@@ -38,22 +62,49 @@ public class Property {
 		}
 
 		this.key = key;
-		this.value = value;
+		this.value = Objects.requireNonNull(value);
 		this.os = os;
 	}
 
+	/**
+	 * Constructs a new property with the provided key and value.
+	 * 
+	 * <p>
+	 * The key and value must not be {@code null} and the key must not contain the
+	 * any of the characters <code>$</code>, <code>{</code> or <code>}</code>.
+	 * 
+	 * @param key
+	 *            The property key.
+	 * @param value
+	 *            The property value.
+	 */
 	public Property(String key, String value) {
 		this(key, value, null);
 	}
 
+	/**
+	 * Returns the property key, never {@code null}.
+	 * 
+	 * @return The property key.
+	 */
 	public String getKey() {
 		return key;
 	}
 
+	/**
+	 * Returns the property value, never {@code null}.
+	 * 
+	 * @return The property value.
+	 */
 	public String getValue() {
 		return value;
 	}
 
+	/**
+	 * Returns the property operating system.
+	 * 
+	 * @return The property operating system.
+	 */
 	public OS getOs() {
 		return os;
 	}

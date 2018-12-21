@@ -15,6 +15,33 @@
  */
 package org.update4j;
 
+/**
+ * The policy that should be used when
+ * {@link Configuration#implyPlaceholders(String, PlaceholderMatchType)} is
+ * called.
+ * 
+ * @author Mordechai Meisles
+ *
+ */
 public enum PlaceholderMatchType {
-	EVERY_OCCURRENCE, WHOLE_WORD, FULL_MATCH, NONE;
+	/**
+	 * Will break words with placeholders if it finds a match.
+	 */
+	EVERY_OCCURRENCE,
+
+	/**
+	 * Will only replace with placeholders if the it doesn't break a word (using
+	 * rexeg {@code \b} word boundary)
+	 */
+	WHOLE_WORD,
+
+	/**
+	 * Will only replace if the complete string matches with one placeholder.
+	 */
+	FULL_MATCH,
+
+	/**
+	 * Won't change the string.
+	 */
+	NONE;
 }
