@@ -472,9 +472,8 @@ public class Configuration {
 	/**
 	 * Returns the timestamp this configuration was last updated using the
 	 * {@link Configuration.Builder} API or {@code sync()}. This is read from the
-	 * {@code timestamp} attribute in the root element. If the attribute is missing
-	 * it will return the time this instance was created.
-	 * 
+	 * {@code timestamp} attribute in the <em>root</em> element. If the attribute is
+	 * missing this will return {@code null}.
 	 * <p>
 	 * It does not have any effect on the behavior of anything else; it is rather
 	 * just for reference purposes (i.e. "Last Updated: 2 Weeks Ago"), or for
@@ -1668,8 +1667,6 @@ public class Configuration {
 
 		if (configMapper.timestamp != null)
 			config.timestamp = Instant.parse(configMapper.timestamp);
-		else
-			config.timestamp = Instant.now();
 
 		config.signature = configMapper.signature;
 
@@ -1987,8 +1984,13 @@ public class Configuration {
 		}
 
 		Configuration otherConfig = (Configuration) other;
-		if (!this.getTimestamp().equals(otherConfig.getTimestamp())) {
-			return false;
+		if (getTimestamp() == null) {
+			if (otherConfig.getTimestamp() != null)
+				return false;
+		} else {
+			if (!getTimestamp().equals(otherConfig.getTimestamp())) {
+				return false;
+			}
 		}
 
 		return toString().equals(other.toString());
