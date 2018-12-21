@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -374,11 +375,11 @@ import org.update4j.util.Warning;
  * 
  * <h3>Boot Modulepath Conflicts</h3>
  * <p>
- * Every jar file gets checked if it were a valid file in boot modulepath; as if
- * it's a valid zip file, duplicate module name, split package, valid automatic
- * module name etc., no matter if the file was actually intended to be present
- * in the boot modulepath. This was put in place to prevent accidentally making
- * the file visible to the boot modulepath and completely breaking the
+ * Every jar file gets checked if it were a valid file in boot modulepath; such
+ * as if it's a valid zip file, duplicate module name, split package, valid
+ * automatic module name etc., no matter if the file was actually intended to be
+ * present in the boot modulepath. This was put in place to prevent accidentally
+ * making the file visible to the boot modulepath and completely breaking the
  * application, as the JVM would resist to startup, thus not allowing this to be
  * fixed remotely.
  * 
@@ -400,7 +401,7 @@ import org.update4j.util.Warning;
  * paths or properties. Changes that are not significant to the framework, as
  * whitespaces or element/attribute order do not matter. Changing element order
  * in lists (i.e. properties or files) do change the ordering in the
- * end-resulting list, and is part of the signature. The {@code instant} field
+ * end-resulting list, and is part of the signature. The {@code timestamp} field
  * is never part of the signature. To verify the config itself, read it with the
  * {@link #read(Reader, PublicKey)} overload, or invoke
  * {@link #verifyConfiguration(PublicKey)}.
@@ -495,10 +496,11 @@ public class Configuration {
 	 * the end-resulting list, and is part of the signature.
 	 * 
 	 * <p>
-	 * The {@code instant} field is never part of the signature.
+	 * The {@code timestamp} field is never part of the signature.
 	 * 
 	 * <p>
-	 * This field is read from the {@code signature} in the <em>root</em> node.
+	 * This field is read from the {@code signature} in the <em>root</em> node. If
+	 * the attribute is missing this will return {@code null}.
 	 * 
 	 * @return The signature for this configuration.
 	 */
@@ -546,7 +548,11 @@ public class Configuration {
 	 * <p>
 	 * <b>Note:</b> This is completely optional. If this is missing the framework
 	 * will automatically load the highest version currently present in the
-	 * classpath or modulepath. Please refer to <a
+	 * classpath or modulepath. It also relieves you from having to advertise them
+	 * as required by the {@link ServiceLoader} class. Still, for modules you would
+	 * want to add the {@code provides} directive, since this would add the module
+	 * in the module graph and make the class visible to this framework.<br>
+	 * Please refer to <a
 	 * href=https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers>
 	 * Dealing with Providers</a> for more info.
 	 * 
@@ -570,7 +576,11 @@ public class Configuration {
 	 * <p>
 	 * <b>Note:</b> This is completely optional. If this is missing the framework
 	 * will automatically load the highest version currently present in the
-	 * classpath or modulepath. Please refer to <a
+	 * classpath or modulepath. It also relieves you from having to advertise them
+	 * as required by the {@link ServiceLoader} class. Still, for modules you would
+	 * want to add the {@code provides} directive, since this would add the module
+	 * in the module graph and make the class visible to this framework.<br>
+	 * Please refer to <a
 	 * href=https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers>
 	 * Dealing with Providers</a> for more info.
 	 * 
@@ -2060,6 +2070,7 @@ public class Configuration {
 
 		private List<Property> properties;
 		private List<String> systemProperties;
+		private Map<String, String> dynamicProperties;
 
 		private PrivateKey signer;
 		private PlaceholderMatchType matcher;
@@ -2068,6 +2079,7 @@ public class Configuration {
 			files = new ArrayList<>();
 			properties = new ArrayList<>();
 			systemProperties = new ArrayList<>();
+			dynamicProperties = new HashMap<>();
 
 			resolveSystemProperty("user.home");
 			resolveSystemProperty("user.dir");
@@ -2425,11 +2437,83 @@ public class Configuration {
 
 		/**
 		 * Returns all properties listed via {@code property()} or {@code properties()}.
+		 * Changes affects the actual list.
 		 * 
 		 * @return All properties listed via {@code property()} or {@code properties()}.
 		 */
 		public List<Property> getProperties() {
 			return properties;
+		}
+
+		/**
+		 * Register a <em>dynamic</em> property to the builder. A dynamic property
+		 * doesn't get listed in the config, but will replace unmapped placeholders when
+		 * the config is built. The {@link Configuration#read(Reader, Map)} and
+		 * {@link Configuration#parse(ConfigMapper, Map)} can be used on the client side
+		 * to map those properties.
+		 * 
+		 * <p>
+		 * A dynamic property has higher precedence of a listed property, thus can be
+		 * used to override the value of listed properties.
+		 * 
+		 * <p>
+		 * The value may contain a placeholder.
+		 * 
+		 * <p>
+		 * This method can be called repeatedly, it will add them all to a single map.
+		 * The key or value must not be {@code null}.
+		 * 
+		 * 
+		 * @param key
+		 *            The key of the dynamic property.
+		 * @param value
+		 *            The value of the dynamic property.
+		 * @return The builder for chaining.
+		 */
+		public Builder dynamicProperty(String key, String value) {
+			dynamicProperties.put(key, value);
+
+			return this;
+		}
+
+		/**
+		 * Register a map of <em>dynamic</em> properties to the builder. A dynamic
+		 * property doesn't get listed in the config, but will replace unmapped
+		 * placeholders when the config is built. The
+		 * {@link Configuration#read(Reader, Map)} and
+		 * {@link Configuration#parse(ConfigMapper, Map)} can be used on the client side
+		 * to map those properties.
+		 * 
+		 * <p>
+		 * A dynamic property has higher precedence of a listed property, thus can be
+		 * used to override the value of listed properties.
+		 * 
+		 * <p>
+		 * The values may contain a placeholder.
+		 * 
+		 * <p>
+		 * This method can be called repeatedly, it will add them all to a single map.
+		 * The key or value must not be {@code null}.
+		 * 
+		 * 
+		 * @param dynamics
+		 *            A map of dynamic properties.
+		 * @return The builder for chaining.
+		 */
+		public Builder dynamicProperties(Map<String, String> dynamics) {
+			dynamicProperties.putAll(dynamics);
+
+			return this;
+		}
+
+		/**
+		 * Returns the map that collects the dynamic properties. Changes will affect the
+		 * actual map.
+		 * 
+		 * @return The map of collected dynamic properties.
+		 */
+		public Map<String, String> getDynamicProperties() {
+			return dynamicProperties;
 		}
 
 		/**
@@ -2460,45 +2544,133 @@ public class Configuration {
 			return this;
 		}
 
+		/**
+		 * Returns the listed system property keys to hint the builder to look for a
+		 * string that could be matched with the system property's value.
+		 * 
+		 * <p>
+		 * This starts by containing the keys {@code user.home} and {@code user.dir},
+		 * you could remove them here to prevent from replacing those strings. Changes
+		 * will affect the actual list.
+		 * 
+		 * @return The list of system property keys to resolve for matching.
+		 */
 		public List<String> getSystemPropertiesToResolve() {
 			return systemProperties;
 		}
 
+		/**
+		 * List the given class as the update handler when
+		 * {@link Configuration#update()} is called over this config.
+		 * 
+		 * <p>
+		 * When explicitly listing a class in the config, it will not load the highest
+		 * version of the update handler. It also relieves you from having to advertise
+		 * them as required by the {@link ServiceLoader} class. Still, for modules you
+		 * would want to add the {@code provides} directive, since this would add the
+		 * module in the module graph and make the class visible to this framework.
+		 * 
+		 * @param clazz
+		 *            The update handler class name.
+		 * 
+		 * @return The builder for chaining.
+		 */
 		public Builder updateHandler(Class<? extends UpdateHandler> clazz) {
-			this.updateHandler = clazz.getCanonicalName();
-
-			return this;
+			return updateHandler(clazz.getCanonicalName());
 		}
 
+		/**
+		 * List the given class as the update handler when
+		 * {@link Configuration#update()} is called over this config.
+		 * 
+		 * <p>
+		 * When explicitly listing a class in the config, it will not load the highest
+		 * version of the update handler. It also relieves you from having to advertise
+		 * them as required by the {@link ServiceLoader} class. Still, for modules you
+		 * would want to add the {@code provides} directive, since this would add the
+		 * module in the module graph and make the class visible to this framework.
+		 * 
+		 * <p>
+		 * This value may contain placeholders.
+		 * 
+		 * @param clazz
+		 *            The update handler class name.
+		 * 
+		 * @return The builder for chaining.
+		 */
 		public Builder updateHandler(String className) {
 			this.updateHandler = className;
 
 			return this;
 		}
 
+		/**
+		 * Returns the class name passed in {@link #updateHandler(String)}.
+		 * 
+		 * @return The class name passed in {@link #updateHandler(String)}.
+		 */
 		public String getUpdateHandler() {
 			return updateHandler;
 		}
 
+		/**
+		 * List the given class as the launcher when {@link Configuration#launch()} is
+		 * called over this config.
+		 * 
+		 * <p>
+		 * When explicitly listing a class in the config, it will not load the highest
+		 * version of the launcher. It also relieves you from having to advertise them
+		 * as required by the {@link ServiceLoader} class. Still, for modules you would
+		 * want to add the {@code provides} directive, since this would add the module
+		 * in the module graph and make the class visible to this framework.
+		 * 
+		 * @param clazz
+		 *            The update handler class name.
+		 * 
+		 * @return The builder for chaining.
+		 */
 		public Builder launcher(Class<? extends Launcher> clazz) {
-			this.launcher = clazz.getCanonicalName();
-
-			return this;
+			return launcher(clazz.getCanonicalName());
 		}
 
+		/**
+		 * List the given class as the launcher when {@link Configuration#launch()} is
+		 * called over this config.
+		 * 
+		 * <p>
+		 * When explicitly listing a class in the config, it will not load the highest
+		 * version of the launcher. It also relieves you from having to advertise them
+		 * as required by the {@link ServiceLoader} class. Still, for modules you would
+		 * want to add the {@code provides} directive, since this would add the module
+		 * in the module graph and make the class visible to this framework.
+		 * 
+		 * <p>
+		 * This value may contain placeholders.
+		 * 
+		 * @param clazz
+		 *            The update handler class name.
+		 * 
+		 * @return The builder for chaining.
+		 */
 		public Builder launcher(String className) {
 			this.launcher = className;
 
 			return this;
 		}
 
+		/**
+		 * Returns the class name passed in {@link #updateHandler(String)}.
+		 * 
+		 * @return The class name passed in {@link #updateHandler(String)}.
+		 */
 		public String getLauncher() {
 			return launcher;
 		}
 
 		/**
 		 * Attempt to replace strings with listed or system property placeholders
-		 * according to the given policy.
+		 * according to the given policy. {@code null} is set the
+		 * {@link PlaceholderMatchType#WHOLE_WORD} when building.
 		 * 
 		 * @param matcher
 		 *            The match type to be used when implying placeholders.
@@ -2510,18 +2682,30 @@ public class Configuration {
 			return this;
 		}
 
+		/**
+		 * Returns the policy passed in {@link #matchAndReplace(PlaceholderMatchType)}.
+		 * It will never return {@code null} but instead
+		 * {@link PlaceholderMatchType#WHOLE_WORD}.
+		 * 
+		 * @return The match policy.
+		 */
 		public PlaceholderMatchType getMatchType() {
-			return matcher;
+			return matcher == null ? PlaceholderMatchType.WHOLE_WORD : matcher;
 		}
 
+		/**
+		 * Collects all information passed to the builder, replaces matches with
+		 * placeholder according to the {@link #getMatchType()} policy and validates all
+		 * values.
+		 * 
+		 * @return A built Configuration according to the passed information.
+		 */
 		public Configuration build() {
-			return build(null);
-		}
+			PlaceholderMatchType matcher = getMatchType();
 
-		public Configuration build(Map<String, String> dynamicProperties) {
-			PlaceholderMatchType matcher = this.matcher;
-			if (matcher == null) {
-				matcher = PlaceholderMatchType.WHOLE_WORD;
+			for (Map.Entry<String, String> e : dynamicProperties.entrySet()) {
+				Objects.requireNonNull(e.getKey());
+				Objects.requireNonNull(e.getValue());
 			}
 
 			ConfigMapper mapper = new ConfigMapper();
