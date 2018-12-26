@@ -2029,8 +2029,8 @@ public class Configuration {
 	 * read the file metadata and create a new configuration. With the exceptions of
 	 * {@link FileMetadata#readFrom(String)} and
 	 * {@link FileMetadata#streamDirectory(String)} all string methods may take
-	 * placeholder values that may refer to listed properties, system properties or
-	 * system environment variables.
+	 * placeholder values that may refer to dynamic properties, listed properties,
+	 * system properties or system environment variables.
 	 * 
 	 * <p>
 	 * To refer to a property {@code my.prop} with the value {@code Hello}:
@@ -2126,7 +2126,8 @@ public class Configuration {
 		 * @return The builder for chaining.
 		 */
 		public Builder baseUri(URI uri) {
-			return this.baseUri(uri.toString());
+			return baseUri(uri == null ? null : uri.toString());
+
 		}
 
 		/**
@@ -2179,7 +2180,8 @@ public class Configuration {
 		 * @return The builder for chaining.
 		 */
 		public Builder basePath(Path path) {
-			return basePath(path.toString());
+			return basePath(path == null ? null : path.toString());
+
 		}
 
 		/**
@@ -2453,7 +2455,7 @@ public class Configuration {
 		 * to map those properties.
 		 * 
 		 * <p>
-		 * A dynamic property has higher precedence of a listed property, thus can be
+		 * A dynamic property has higher precedence than a listed property, thus can be
 		 * used to override the value of listed properties.
 		 * 
 		 * <p>
@@ -2485,7 +2487,7 @@ public class Configuration {
 		 * to map those properties.
 		 * 
 		 * <p>
-		 * A dynamic property has higher precedence of a listed property, thus can be
+		 * A dynamic property has higher precedence than a listed property, thus can be
 		 * used to override the value of listed properties.
 		 * 
 		 * <p>

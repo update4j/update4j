@@ -36,7 +36,15 @@ public interface UpdateHandler extends Service {
 	default void doneCheckUpdateFile(FileMetadata file, boolean requires) throws Throwable {
 	}
 
-	// Based on bytes, not file count
+	/**
+	 * Updates the 'check update' task progress.
+	 * 
+	 * <p>
+	 * The value is based on bytes of all files in the config, not file count.
+	 * 
+	 * @param frac
+	 * @throws Throwable
+	 */
 	default void updateCheckUpdatesProgress(float frac) throws Throwable {
 	}
 

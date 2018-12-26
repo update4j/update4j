@@ -27,10 +27,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.update4j.mapper.ConfigMapper;
 import org.update4j.mapper.FileMapper;
+import org.update4j.service.UpdateHandler;
 import org.update4j.util.FileUtils;
 import org.update4j.util.PropertyManager;
 
@@ -126,7 +128,7 @@ public class FileMetadata {
 
 	/**
 	 * Returns the download URI for this file. This might be directly expressed in
-	 * the {@code uri} attribute as an absolute uri, or relative to the base uri, or
+	 * the {@code uri} attribute as an absolute uri, relative to the base uri, or
 	 * &mdash; if missing &mdash; inferred from the {@code path} attribute.
 	 * 
 	 * <p>
@@ -151,7 +153,7 @@ public class FileMetadata {
 
 	/**
 	 * Returns the local path for this file. This might be directly expressed in the
-	 * {@code path} attribute as an absolute path, or relative to the base path, or
+	 * {@code path} attribute as an absolute path, relative to the base path, or
 	 * &mdash; if missing &mdash; inferred from the {@code uri} attribute.
 	 * 
 	 * <p>
@@ -213,38 +215,154 @@ public class FileMetadata {
 		return size;
 	}
 
+	/**
+	 * Returns if this file is marked to be loaded on the dynamic classpath. Files
+	 * in the bootstrap and non-jar files should generally be marked {@code false}.
+	 * 
+	 * <p>
+	 * This field is only used for launching.
+	 * 
+	 * @return If this file is marked to be loaded on the dynamic classpath.
+	 */
 	public boolean isClasspath() {
 		return classpath;
 	}
 
+	/**
+	 * Returns if this file is marked to be loaded on the dynamic modulepath. Files
+	 * in the bootstrap should generally be marked {@code false}. Non-jar files must
+	 * not mark this {@code true} or the JVM will fail.
+	 * 
+	 * <p>
+	 * This field is only used for launching.
+	 * 
+	 * @return If this file is marked to be loaded on the dynamic classpath.
+	 */
 	public boolean isModulepath() {
 		return modulepath;
 	}
 
+	/**
+	 * Returns a string from the {@code comment} attribute, or {@code null} if
+	 * missing.
+	 * 
+	 * <p>
+	 * This has no effect on the framework and can be used for just anything. For
+	 * instance: you might mark this file with {@code requiresRestart} to notify the
+	 * update handler to restart the application if this file was part of the
+	 * update. Or you might put an authentication key which might then be used in
+	 * the download by overriding
+	 * {@link UpdateHandler#openDownloadStream(FileMetadata)}.
+	 * 
+	 * 
+	 * @return A string from the {@code comment} attribute, or {@code null} if
+	 *         missing.
+	 */
 	public String getComment() {
 		return comment;
 	}
 
+	/**
+	 * Returns whether this file was marked to ignore a boot conflict check.
+	 * 
+	 * <p>
+	 * The boot conflict check is a safety measure put in place to prevent breaking
+	 * your remote applications, and then being impossible to fix remotely just by
+	 * pushing a new release.<br>
+	 * If you push a file that then gets loaded onto the <em>boot modulepath</em>
+	 * (by placing it in a location that is searched by the modulepath) and that
+	 * file ends up being a invalid module (as split package, duplicate module name
+	 * or just not a zip file), the JVM will complain and resist to start up. Since
+	 * we can't start the application anymore, there is no way to fix this other
+	 * than reinstalling the application.
+	 * 
+	 * <p>
+	 * This file check is done for each and every file with the (@code .jar} file
+	 * extension, even if the file was explicitly marked with the {@code modulepath}
+	 * (meaning it is only loaded on the <em>dynamic</em> modulepath).
+	 * 
+	 * <p>
+	 * In cases where the file is not visible to the boot modulepath (by carefully
+	 * placing it in the right directory) and you want to circumvent this check you
+	 * can mark this {@code true}.
+	 * 
+	 * <p>
+	 * This field is only used for updating.
+	 * 
+	 * @return If this file is marked to ignore a boot conflict check.
+	 */
 	public boolean isIgnoreBootConflict() {
 		return ignoreBootConflict;
 	}
 
+	/**
+	 * Returns the Base64 encoded file signature.
+	 * 
+	 * <p>
+	 * This field is only used for updating.
+	 * 
+	 * @return The Base64 encoded file signature.
+	 */
 	public String getSignature() {
 		return signature;
 	}
 
+	/**
+	 * Returns an unmodifiable list of packages that should be exported to a module
+	 * despite not being defined so in the {@code module-info.class} file.
+	 * 
+	 * <p>
+	 * This is ignored if {@link #isModulepath()} returns {@code false}.
+	 * 
+	 * <p>
+	 * This field is only used for launching.
+	 * 
+	 * @return A list of packages to be exported to other modules.
+	 */
 	public List<AddPackage> getAddExports() {
 		return addExports;
 	}
 
+	/**
+	 * Returns an unmodifiable list of packages that should be opened to a module
+	 * despite not being defined so in the {@code module-info.class} file.
+	 * 
+	 * <p>
+	 * This is ignored if {@link #isModulepath()} returns {@code false}.
+	 * 
+	 * <p>
+	 * This field is only used for launching.
+	 * 
+	 * @return A list of packages to be opened to other modules.
+	 */
 	public List<AddPackage> getAddOpens() {
 		return addOpens;
 	}
 
+	/**
+	 * Returns an unmodifiable list modules this module should read despite not
+	 * being defined so in the {@code module-info.class} file.
+	 * 
+	 * <p>
+	 * This is ignored if {@link #isModulepath()} returns {@code false}.
+	 * 
+	 * <p>
+	 * This field is only used for launching.
+	 * 
+	 * @return A list of modules this module should read.
+	 */
 	public List<String> getAddReads() {
 		return addReads;
 	}
 
+	/**
+	 * Checks if this file is out of date and requires an update.
+	 * 
+	 * @return If this file requires an update.
+	 * 
+	 * @throws IOException
+	 *             If any exception arises while reading the file content.
+	 */
 	public boolean requiresUpdate() throws IOException {
 		if (getOs() != null && getOs() != OS.CURRENT)
 			return false;
@@ -253,14 +371,64 @@ public class FileMetadata {
 						|| FileUtils.getChecksum(getPath()) != getChecksum();
 	}
 
+	/**
+	 * Construct a {@link Reference} of the file at the provided location and can be
+	 * used in the Builder API.
+	 * 
+	 * <p>
+	 * This should point to a real file on the filesystem and cannot contain
+	 * placeholders.
+	 * 
+	 * @param source
+	 *            The path of the real file to which to refer in the builder.
+	 * 
+	 * @return A {@code Reference} to a file to be used in the Builder API.
+	 */
 	public static Reference readFrom(Path source) {
 		return new Reference(source);
 	}
 
+	/**
+	 * Construct a {@link Reference} of the file at the provided location and can be
+	 * used in the Builder API.
+	 * 
+	 * <p>
+	 * This should point to a real file on the filesystem and cannot contain
+	 * placeholders.
+	 * 
+	 * @param source
+	 *            The path of the real file to which to refer in the builder.
+	 * 
+	 * @return A {@code Reference} to a file to be used in the Builder API.
+	 */
 	public static Reference readFrom(String source) {
 		return readFrom(Paths.get(source));
 	}
 
+	/**
+	 * Construct a stream of file {@link Reference}s from the provided directory.
+	 * You can then customize individual files by using
+	 * {@link Stream#peek(Consumer)}. It will only contain files and symlinks, not
+	 * directories.
+	 * 
+	 * <p>
+	 * For convenience, this method also presets the {@code path()} to the file's
+	 * source path <em>relative to</em> to streamed directory. So for the directory
+	 * structure {@code /home/a/b/c.jar}, streaming {@code /home/a} would set the
+	 * path to {@code b/c.jar}. <br>
+	 * If you wish to infer the path from the URI (as described in
+	 * {@link FileMetadata.Reference#path(String)}) you must nullify it by calling
+	 * {@code path((String)null)}.
+	 * 
+	 * <p>
+	 * This should point to a real directory on the filesystem and cannot contain
+	 * placeholders.
+	 * 
+	 * @param source
+	 *            The path of the real directory to stream.
+	 * 
+	 * @return A {@code Stream<Reference>} of files to be used in the Builder API.
+	 */
 	public static Stream<Reference> streamDirectory(Path dir) {
 		try {
 			return Files.walk(dir)
@@ -272,10 +440,43 @@ public class FileMetadata {
 		}
 	}
 
+	/**
+	 * Construct a stream of file {@link Reference}s from the provided directory.
+	 * You can then customize individual files by using
+	 * {@link Stream#peek(Consumer)}. It will only contain files and symlinks, not
+	 * directories.
+	 * 
+	 * <p>
+	 * For convenience, this method also presets the {@code path()} to the file's
+	 * source path <em>relative to</em> to streamed directory. So for the directory
+	 * structure {@code /home/a/b/c.jar}, streaming {@code /home/a} would set the
+	 * path to {@code b/c.jar}. <br>
+	 * If you wish to infer the path from the URI (as described in
+	 * {@link FileMetadata.Reference#path(String)}) you must nullify it by calling
+	 * {@code path((String)null)}.
+	 * 
+	 * <p>
+	 * This should point to a real directory on the filesystem and cannot contain
+	 * placeholders.
+	 * 
+	 * @param source
+	 *            The path of the real directory to stream.
+	 * 
+	 * @return A {@code Stream<Reference>} of files to be used in the Builder API.
+	 */
 	public static Stream<Reference> streamDirectory(String dir) {
 		return streamDirectory(Paths.get(dir));
 	}
 
+	/**
+	 * A reference to a file can be used by the Builder API to read its metadata.
+	 * You can construct a reference by using either
+	 * {@link FileMetadata#readFrom(Path)} or
+	 * {@link FileMetadata#streamDirectory(Path)}.
+	 * 
+	 * @author Mordechai Meisels
+	 *
+	 */
 	public static class Reference {
 		private Path source;
 		private String path;
@@ -300,38 +501,114 @@ public class FileMetadata {
 			addReads = new ArrayList<>();
 		}
 
+		/**
+		 * Returns the real file location that this instance refers to.
+		 * 
+		 * @return The real file location that this instance refers to.
+		 */
 		public Path getSource() {
 			return source;
 		}
 
+		/**
+		 * Set the download URI for this file. This might be an absolute uri, relative
+		 * to the base uri, or &mdash; if missing &mdash; inferred from the
+		 * {@code path}.
+		 * 
+		 * <p>
+		 * When inferring from the path it will use the complete path structure if
+		 * &mdash; and only if &mdash; the path is relative to the base path. Otherwise
+		 * it will only use the last part (i.e. the "filename").
+		 * 
+		 * @return This instance for chaining.
+		 */
 		public Reference uri(URI uri) {
 			return uri(uri == null ? null : uri.toString());
 		}
 
+		/**
+		 * Set the download URI for this file. This might be an absolute uri, relative
+		 * to the base uri, or &mdash; if missing &mdash; inferred from the
+		 * {@code path}.
+		 * 
+		 * <p>
+		 * When inferring from the path it will use the complete path structure if
+		 * &mdash; and only if &mdash; the path is relative to the base path. Otherwise
+		 * it will only use the last part (i.e. the "filename").
+		 * 
+		 * <p>
+		 * This field may contain placeholders.
+		 * 
+		 * @return This instance for chaining.
+		 */
 		public Reference uri(String uri) {
 			this.uri = uri;
 
 			return this;
 		}
 
+		/**
+		 * Returns the URI passed in {@link #uri(String)} or {@code null} if non.
+		 * 
+		 * @return The URI passed in {@link #uri(String)} or {@code null}.
+		 */
 		public String getUri() {
 			return uri;
 		}
 
+		/**
+		 * Sets the local path for this file. This might be an absolute path, relative
+		 * to the base path, or &mdash; if missing &mdash; inferred from the {@code uri}
+		 * attribute, if both are missing, the source returned by {@link #getSource()}.
+		 * 
+		 * <p>
+		 * When inferring from the uri it will use the complete path structure if
+		 * &mdash; and only if &mdash; the uri is relative to the base uri. Otherwise it
+		 * will only use the last part (i.e. the "filename").
+		 * 
+		 * 
+		 * @return This instance for chaining.
+		 */
 		public Reference path(Path path) {
 			return path(path == null ? null : path.toString());
 		}
 
+		/**
+		 * Sets the local path for this file. This might be an absolute path, relative
+		 * to the base path, or &mdash; if missing &mdash; inferred from the {@code uri}
+		 * attribute, if both are missing, the source returned by {@link #getSource()}.
+		 * 
+		 * <p>
+		 * When inferring from the uri it will use the complete path structure if
+		 * &mdash; and only if &mdash; the uri is relative to the base uri. Otherwise it
+		 * will only use the last part (i.e. the "filename").
+		 * 
+		 * 
+		 * @return This instance for chaining.
+		 */
 		public Reference path(String path) {
 			this.path = path;
 
 			return this;
 		}
 
-		public String getPath() {
+		/**
+		 * Returns the path passed in {@link #path(String)} or {@code null} if non.
+		 * 
+		 * @return The path passed in {@link #path(String)} or {@code null}.
+		 */
+		String getPath() {
 			return path;
 		}
 
+		/**
+		 * Sets the os of this file to exclude it from other operating systems when
+		 * updating and launching.
+		 * 
+		 * @param os
+		 *            The operating system to associate this file with.
+		 * @return This instance for chaining.
+		 */
 		public Reference os(OS os) {
 			this.os = os;
 
@@ -364,7 +641,7 @@ public class FileMetadata {
 		 * <p>
 		 * If a match is not found, the old value will not be changed.
 		 * 
-		 * @return The builder for chaining.
+		 * @return This instance for chaining.
 		 */
 		public Reference osFromFilename() {
 			OS os = FileUtils.fromFilename(source.toString());
@@ -374,6 +651,11 @@ public class FileMetadata {
 			return this;
 		}
 
+		/**
+		 * Returns the os passed in {@link #os(OS)} or {@code null} if non.
+		 * 
+		 * @return The os passed in {@link #os(OS)} or {@code null}.
+		 */
 		public OS getOs() {
 			return os;
 		}
