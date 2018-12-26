@@ -17,6 +17,12 @@ package org.update4j;
 
 import java.util.Objects;
 
+/**
+ * A class that contain details of the launch.
+ * 
+ * @author Mordechai Meisels
+ *
+ */
 public class LaunchContext {
 
 	private ModuleLayer layer;
@@ -29,14 +35,38 @@ public class LaunchContext {
 		this.config = Objects.requireNonNull(config);
 	}
 
+	/**
+	 * Returns the {@link ModuleLayer} where modules in the config that were marked
+	 * with @{code modulepath} are dynamically loaded.
+	 * 
+	 * @return The dynamic module layer.
+	 */
 	public ModuleLayer getModuleLayer() {
 		return layer;
 	}
 
+	/**
+	 * Returns the class loader that classes in the dynamic classpath or modulepath
+	 * are loaded with. Use this to access dynamic classes in the bootstrap:
+	 * 
+	 * <pre>
+	 * Class&lt;?&gt; clazz = Class.forName("MyBusinessClass", true, ctx.getClassLoader());
+	 * </pre>
+	 * 
+	 * Once the class was loaded, the class itself has access to the dynamic
+	 * classpath in natural Java.
+	 * 
+	 * @return The dynamic class loader.
+	 */
 	public ClassLoader getClassLoader() {
 		return classLoader;
 	}
 
+	/**
+	 * Returns the configuration used for this launch.
+	 * 
+	 * @return The configuration used for this launch.
+	 */
 	public Configuration getConfiguration() {
 		return config;
 	}

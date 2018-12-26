@@ -28,14 +28,46 @@ import java.util.Map;
 import org.update4j.util.FileUtils;
 import org.update4j.util.Warning;
 
+/**
+ * This class contains method to complete an update when
+ * {@link Configuration#updateTemp(Path)} was used.
+ * 
+ * @author Mordechai Meisels
+ *
+ */
 public class Update {
 
 	public static final Path UPDATE_DATA = Paths.get(".update");
 
+	/**
+	 * Returns whether the given directory has an update ready for finalization.
+	 * 
+	 * <p>
+	 * This method does not guarantee that files were not tempered or that the
+	 * update can actually be finalized in general.
+	 * 
+	 * @param tempDir
+	 *            The location to check for a temporary update.
+	 * @return Whether the directory contains an update.
+	 */
 	public static boolean containsUpdate(Path tempDir) {
 		return Files.isRegularFile(tempDir.resolve(UPDATE_DATA));
 	}
 
+	/**
+	 * Finalizes an update that resides in the provided directory. This is typically
+	 * called in the beginning of a bootstrap to complete updates from a previous
+	 * run.
+	 * 
+	 * 
+	 * @param tempDir
+	 *            The location to look for the update.
+	 * @return Whether it actually contained an update instead of an empty file.
+	 * 
+	 * @throws IOException
+	 *             If the update was tempered or any file system operation during
+	 *             finalization failed.
+	 */
 	@SuppressWarnings("unchecked")
 	public static boolean finalizeUpdate(Path tempDir) throws IOException {
 		if (!containsUpdate(tempDir)) {

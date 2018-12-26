@@ -17,20 +17,25 @@ package org.update4j.inject;
 
 import java.lang.reflect.Field;
 
+/**
+ * A checked exception that is thrown if an inject target is required (by not
+ * setting {@code @InjectTarget(required = false)} and a corresponding inject
+ * source was not found.
+ * 
+ * @author Mordechai Meisels
+ *
+ */
 public class UnsatisfiedInjectionException extends Exception {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
-	
+
 	private Field targetField;
-	
+
 	public UnsatisfiedInjectionException(Field target) {
 		super(target.getDeclaringClass().getSimpleName() + "#" + target.getName());
 		targetField = target;
 	}
-	
+
 	public Field getTargetField() {
 		return targetField;
 	}

@@ -761,7 +761,7 @@ public class Configuration {
 	 * <li>{@code EVERY_OCCURENCE} &mdash; Will break words with placeholders if it
 	 * finds a match.</li>
 	 * <li>{@code WHOLE_WORD} &mdash; Will only replace with placeholders if the it
-	 * doesn't break a word (using rexeg {@code \b} word boundary).</li>
+	 * doesn't break a word (using regex {@code \b} word boundary).</li>
 	 * <li>{@code FULL_MATCH} &mdash; Will only replace if the complete string
 	 * matches with one placeholder.</li>
 	 * </ul>
@@ -802,7 +802,7 @@ public class Configuration {
 	 * <li>{@code EVERY_OCCURENCE} &mdash; Will break words with placeholders if it
 	 * finds a match.</li>
 	 * <li>{@code WHOLE_WORD} &mdash; Will only replace with placeholders if the it
-	 * doesn't break a word (using rexeg {@code \b} word boundary).</li>
+	 * doesn't break a word (using regex {@code \b} word boundary).</li>
 	 * <li>{@code FULL_MATCH} &mdash; Will only replace if the complete string
 	 * matches with one placeholder.</li>
 	 * </ul>

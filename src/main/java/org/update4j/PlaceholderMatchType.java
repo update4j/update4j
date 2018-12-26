@@ -31,7 +31,7 @@ public enum PlaceholderMatchType {
 
 	/**
 	 * Will only replace with placeholders if the it doesn't break a word (using
-	 * rexeg {@code \b} word boundary)
+	 * regex {@code \b} word boundary)
 	 */
 	WHOLE_WORD,
 
