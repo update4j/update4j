@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.update4j.mapper.ConfigMapper;
@@ -408,8 +409,9 @@ public class FileMetadata {
 	/**
 	 * Construct a stream of file {@link Reference}s from the provided directory.
 	 * You can then customize individual files by using
-	 * {@link Stream#peek(Consumer)}. It will only contain files and symlinks, not
-	 * directories.
+	 * {@link Stream#peek(Consumer)}, or filter out files with
+	 * {@link Stream#filter(Predicate)}. It will only contain files and symlinks,
+	 * not directories.
 	 * 
 	 * <p>
 	 * For convenience, this method also presets the {@code path()} to the file's
@@ -443,8 +445,9 @@ public class FileMetadata {
 	/**
 	 * Construct a stream of file {@link Reference}s from the provided directory.
 	 * You can then customize individual files by using
-	 * {@link Stream#peek(Consumer)}. It will only contain files and symlinks, not
-	 * directories.
+	 * {@link Stream#peek(Consumer)}, or filter out files with
+	 * {@link Stream#filter(Predicate)}. It will only contain files and symlinks,
+	 * not directories.
 	 * 
 	 * <p>
 	 * For convenience, this method also presets the {@code path()} to the file's

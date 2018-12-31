@@ -17,6 +17,8 @@ package org.update4j;
 
 import java.util.Objects;
 
+import org.update4j.service.Launcher;
+
 /**
  * A class that contain details of the launch.
  * 
@@ -55,6 +57,30 @@ public class LaunchContext {
 	 * 
 	 * Once the class was loaded, the class itself has access to the dynamic
 	 * classpath in natural Java.
+	 * 
+	 * <p>
+	 * This is also necessary for frameworks that loads classes reflectively in
+	 * their own thread other than the main "launch" thread (JavaFX
+	 * {@code FXMLLoader} or Spring to name a few). Since these frameworks are not
+	 * aware of the dynamically augmented classes and they use a different thread,
+	 * {@link Thread#getContextClassLoader()} does not return this instance. You
+	 * might want explicitly set it to the thread that does the loading:
+	 * 
+	 * <pre>
+	 * Thread.currentThread().setContextClassLoader(ctx.getClassLoader());
+	 * </pre>
+	 * 
+	 * <p>
+	 * Or use the frameworks' methods that take an explicit class loader, as in
+	 * {@code FXMLLoader}:
+	 * 
+	 * <pre>
+	 * FXMLLoader loader = new FXMLLoader(myLocation);
+	 * loader.setClassLoader(ctx.getClassLoader());
+	 * </pre>
+	 * 
+	 * <b>Note:</b> The thread that calls {@link Launcher#run(LaunchContext)}
+	 * already has this set as the context class loader.
 	 * 
 	 * @return The dynamic class loader.
 	 */
