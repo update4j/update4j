@@ -1,9 +1,9 @@
 # [![update4j-logo][3]][3]
 
-[![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.3.3-yellow.svg)](https://search.maven.org/search?q=org.update4j)    [![Gitter](https://badges.gitter.im/update4j/update4j.svg)](https://gitter.im/update4j/update4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.4.0-yellow.svg)](https://search.maven.org/search?q=org.update4j)    [![Gitter](https://badges.gitter.im/update4j/update4j.svg)](https://gitter.im/update4j/update4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 
-**Documentation available at the [wiki](https://github.com/update4j/update4j/wiki/Documentation), explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/overview-summary.html), or [see it in action](https://github.com/update4j/update4j/wiki/Demo-Application)**
+**Read the [documentation](https://github.com/update4j/update4j/wiki/Documentation), explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/index.html), or [see it in action](https://github.com/update4j/update4j/wiki/Demo-Application)**
 
 Auto-updater and launcher for your distributed applications. Built with Java 9's module system in mind.
 
@@ -29,13 +29,13 @@ In update4j _you_ have ultimate control of every process, from startup - update 
 
 ## Installation & Usage
 
-You can [download](https://repo1.maven.org/maven2/org/update4j/update4j/1.3.3/update4j-1.3.3.jar) or install using Maven:
+You can [download](https://repo1.maven.org/maven2/org/update4j/update4j/1.4.0/update4j-1.4.0.jar) or install using Maven:
 
 ```xml
 <dependency>
     <groupId>org.update4j</groupId>
     <artifactId>update4j</artifactId>
-    <version>1.3.3</version>
+    <version>1.4.0</version>
 </dependency>
 ```
 
@@ -44,7 +44,7 @@ You can use it as a regular dependency, or you may run it as a runnable JAR file
 To run it in the modulepath, use either of:
 
 ```shell
-$ java -p update4j-1.3.3.jar -m org.update4j
+$ java -p update4j-1.4.0.jar -m org.update4j
 $ java -p . -m org.update4j
 
 ```
@@ -52,27 +52,22 @@ $ java -p . -m org.update4j
 To run it in the classpath, use either of:
 
 ```shell
-$ java -jar update4j-1.3.3.jar
+$ java -jar update4j-1.4.0.jar
 $ java -cp * org.update4j.Bootstrap
 ```
 
 For more information refer to [Starting the Application](https://github.com/update4j/update4j/wiki/Documentation#starting-the-application) in the wiki.
 
 
-## What's New in 1.3.x
-  * Properly escape special chars in output XML. Allow control chars in properties.
-  * Added 2 more `Configuration.Builder::signer` overloads.
-  * Control how files are downloaded with `UpdateHandler::openDownloadStream`.
-  * Delete old files with `Configuration::deleteOldFiles`.
-  * Rewrite of `DefaultBootstrap`.
-  * You can now sign the configuration itself to ensure integrity of non-file elements, as paths and properties.
-  * `FileMetadata.getSignature()` now returns a `String` instead of `byte[]` to avoid modification.
-  * Java 11 compatibility: Removed JavaFX modules.
-  * Fixed single instance bug on Linux.
-  * Connection/read timeouts at 10 seconds in default download implementation.
-  * Safer file overriding by properly handling file locks.
-  * `ConfigMapper` and `FileMapper` lists are now `final`, to prevent accidental `NPE`.
-  * `FileMetadata::streamDirectory` now automatically presets `path` attribute to actual filename _relative to_ the streaming directory, instead of absolute source path.
+## What's New in 1.4.x &mdash; [Migration Guide](https://github.com/update4j/update4j/wiki/Migration-to-1.4.x)
+  * Added dependency injection framework to communicate between the bootstrap and service provider.
+  * Consequently, removed provider consumers at update and launch, and passing args at launch.
+  * Removed many confusing `getXxxProperty()` methods in `Configuration` class.
+  * You can now add properties to a config dynamically at runtime.
+  * Locate explicit service providers even if not properly registered as required by `ServiceLoader`.
+  * Made many service methods `default`.
+  * Added `osFromFilename()` method in `FileMetadata` builder.
+  * Changed how `--delegate` argument in `Bootstrap` works.
 
 
 ## Attribution
