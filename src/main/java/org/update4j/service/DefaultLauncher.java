@@ -36,6 +36,14 @@ public class DefaultLauncher implements Launcher {
 		return Long.MIN_VALUE;
 	}
 
+	public DefaultLauncher() {
+
+	}
+
+	public DefaultLauncher(List<String> args) {
+		this.args = args;
+	}
+
 	@Override
 	public void run(LaunchContext context) {
 		Configuration config = context.getConfiguration();
@@ -60,9 +68,22 @@ public class DefaultLauncher implements Launcher {
 
 		try {
 			Class<?> clazz = Class.forName(mainClass, true, context.getClassLoader());
-			Method method = clazz.getMethod("main", String[].class);
 
-			method.invoke(null, new Object[] { argsArray });
+			// first check for JavaFx start method
+			Class<?> javafx = null;
+			try {
+				javafx = Class.forName("javafx.application.Application", true, context.getClassLoader());
+			} catch (ClassNotFoundException e) {
+				// no JavaFx present, skip.
+			}
+
+			if (javafx != null && javafx.isAssignableFrom(clazz)) {
+				Method launch = javafx.getMethod("launch", Class.class, String[].class);
+				launch.invoke(null, clazz, argsArray);
+			} else {
+				Method main = clazz.getMethod("main", String[].class);
+				main.invoke(null, new Object[] { argsArray });
+			}
 
 		} catch (ClassNotFoundException | IllegalAccessException | InvocationTargetException
 						| NoSuchMethodException e) {
