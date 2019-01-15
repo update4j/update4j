@@ -1,3 +1,6 @@
+* *Upcoming Release*
+  * `DefaultLauncher` is now aware of JavaFX and will start `javafx.application.Application` even if missing a main method in class defined in `default.launcher.main.class`.
+  * Reduced system dependencies to `java.xml` (breaking change in some cases).
 * **1.4.0**
   * Added dependency injection framework to communicate between the bootstrap and service provider.
   * Consequently, removed provider consumers at update and launch, and passing args at launch.

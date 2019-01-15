@@ -354,7 +354,7 @@ public class DefaultBootstrap implements Delegate {
 				+ "\tBuilder API. You can sync an existing configuration when files are changed\n"
 				+ "\tusing one of the Configuration.sync() methods.\n\n"
 				+ "\tFor more details how to create a configuration please refer to the Javadoc:\n"
-				+ "\thttp://docs.update4j.org/javadoc/update4j/org/update4j/Configuration.html\n\n"
+				+ "\thttp://docs.update4j.org/javadoc/update4j/org.update4j/org/update4j/Configuration.html\n\n"
 				+ "\tWhile the default bootstrap works perfectly for a majority of cases, you might\n"
 				+ "\tfurther customize the update and launch life-cycle to the last detail by\n"
 				+ "\timplementing a custom bootstrap and update/launch your business application\n"
@@ -397,16 +397,27 @@ public class DefaultBootstrap implements Delegate {
 	}
 
 	private static void usage() {
-
+		
 		System.err.println("To start in modulepath:\n\n"
 				+ "\tjava -p update4j-" + Bootstrap.VERSION
 				+ ".jar -m org.update4j [commands...] [-- business-args...]\n"
-				+ "\tjava -p . -m org.update4j [commands...] [-- business-args...]\n\n"
+				+ "\tjava -p . -m org.update4j [commands...] [-- business-args...]\n\n\n"
+				+ "\tWhen starting in the modulepath, be aware that as a fundamental restriction\n"
+				+ "\tof the modulepath only the boot (JVM native) modulepath can resolve *system*\n"
+				+ "\tmodules into the module graph. Therefore when the business application depends\n"
+				+ "\ton a system module that is not required by the bootstrap application\n"
+				+ "\tyou should still add a 'requires' directive in the bootstrap module in order\n"
+				+ "\tto make it end up in the module graph.\n\n"
+				+ "\tAlternatively, use the '--add-modules' flag to manually resolve those required\n"
+				+ "\tsystem modules.\n"
+				+ "\tIf you use the default bootstrap (and you don't have control to add more 'requires')\n"
+				+ "\tyou must use this solution (or, of course, start in the classpath).\n\n\n"
 				+ "To start in classpath:\n\n" + "\tjava -jar update4j-"
 				+ Bootstrap.VERSION + ".jar [commands...] [-- business-args...]\n"
 				+ "\tjava -cp update4j-" + Bootstrap.VERSION
 				+ ".jar org.update4j.Bootstrap [commands...] [-- business-args...]\n"
-				+ "\tjava -cp * org.update4j.Bootstrap [commands...] [-- business-args...]\n\n"
+				+ "\tjava -cp * org.update4j.Bootstrap [commands...] [-- business-args...]\n\n\n"
+				
 				+ "Available commands:\n\n"
 				+ "\t--remote [url] - The remote (or if using file:/// scheme - local) location of the\n"
 				+ "\t\tconfiguration file. If it fails to download or command is missing, it will\n"
