@@ -17,7 +17,6 @@ package org.update4j.mapper;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;

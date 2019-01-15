@@ -74,9 +74,9 @@ public class Bootstrap {
 	 * argument list passed over to the delegate.
 	 * 
 	 * <p>
-	 * The class name should be the <i>Canonical Class Name</i> i.e. the String
-	 * returned when calling {@link Class#getCanonicalName()}. If the system cannot
-	 * locate the passed class it fails.
+	 * The class name should be the <i>Binary Class Name</i> i.e. nested classes
+	 * should use the {@code $} sign. If the system cannot locate the passed class it
+	 * fails.
 	 * 
 	 */
 	public static void main(String[] args) throws Throwable {
@@ -141,6 +141,12 @@ public class Bootstrap {
 	/**
 	 * Starts the bootstrap by locating the given class.
 	 * 
+	 * 
+	 * <p>
+	 * The class name should be the <i>Binary Class Name</i> i.e. nested classes
+	 * should use the {@code $} sign. If the system cannot locate the passed class it
+	 * fails.
+	 * 
 	 * @param classname
 	 *            The class name of the delegate to load.
 	 * 
@@ -154,6 +160,12 @@ public class Bootstrap {
 	/**
 	 * Starts the bootstrap by locating the given class, with the given list as
 	 * command-line arguments.
+	 * 
+	 * 
+	 * <p>
+	 * The class name should be the <i>Binary Class Name</i> i.e. nested classes
+	 * should use the {@code $} sign. If the system cannot locate the passed class it
+	 * fails.
 	 * 
 	 * @param classname
 	 *            The class name of the delegate to load.
@@ -170,6 +182,11 @@ public class Bootstrap {
 	/**
 	 * Starts the bootstrap by locating the given class, with the provided
 	 * injectable to exchange fields.
+	 * 
+	 * <p>
+	 * The class name should be the <i>Binary Class Name</i> i.e. nested classes
+	 * should use the {@code $} sign. If the system cannot locate the passed class it
+	 * fails.
 	 * 
 	 * @param classname
 	 *            The class name of the delegate to load.
@@ -233,6 +250,12 @@ public class Bootstrap {
 	/**
 	 * Starts the bootstrap by locating the given class, with the given list as
 	 * command-line arguments, with the provided injectable to exchange fields.
+	 * 
+	 * 
+	 * <p>
+	 * The class name should be the <i>Binary Class Name</i> i.e. nested classes
+	 * should use the {@code $} sign. If the system cannot locate the passed class it
+	 * fails.
 	 * 
 	 * @param classname
 	 *            The class name of the delegate to load.

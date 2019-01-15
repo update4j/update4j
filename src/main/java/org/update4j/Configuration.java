@@ -2385,7 +2385,7 @@ public class Configuration {
 		 * same key if non of them have the same os.
 		 * 
 		 * <p>
-		 * The value may contain a placeholder.
+		 * The value may contain placeholders.
 		 * 
 		 * <p>
 		 * This method can be called repeatedly. It will add them all to a single list.
@@ -2459,7 +2459,7 @@ public class Configuration {
 		 * used to override the value of listed properties.
 		 * 
 		 * <p>
-		 * The value may contain a placeholder.
+		 * The value may contain placeholders.
 		 * 
 		 * <p>
 		 * This method can be called repeatedly, it will add them all to a single map.
@@ -2491,7 +2491,7 @@ public class Configuration {
 		 * used to override the value of listed properties.
 		 * 
 		 * <p>
-		 * The values may contain a placeholder.
+		 * The values may contain placeholders.
 		 * 
 		 * <p>
 		 * This method can be called repeatedly, it will add them all to a single map.
@@ -2522,6 +2522,10 @@ public class Configuration {
 		 * Hint the builder to replace the value of the given system property if a
 		 * proper match is found.
 		 * 
+		 * <p>
+		 * If the system property is referenced as a placeholder anywhere else in the
+		 * builder, this is not needed.
+		 * 
 		 * @param str
 		 *            The system property key.
 		 * @return The builder for chaining.
@@ -2535,6 +2539,10 @@ public class Configuration {
 		/**
 		 * Hint the builder to replace the value of the given system properties if a
 		 * proper match is found.
+		 * 
+		 * <p>
+		 * If these system properties are referenced as placeholders anywhere else in
+		 * the builder, this is not needed.
 		 * 
 		 * @param p
 		 *            A collection of system property keys.

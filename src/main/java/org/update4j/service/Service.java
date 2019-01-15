@@ -55,7 +55,7 @@ public interface Service extends Injectable {
 			// an explicit class name is used
 			// first lets look at providers, to locate in closed modules
 			for (Provider<T> p : providers) {
-				if (p.type().getCanonicalName().equals(classname))
+				if (p.type().getName().equals(classname))
 					return p.get();
 			}
 
