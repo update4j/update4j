@@ -147,13 +147,36 @@ public class Warning {
 		}
 	}
 
+	public static void missingSysMod(String sysMod) {
+		if (shouldWarn("bootConflict")) {
+			System.err.println("WARNING: The system module '" + sysMod
+							+ "' is not present in the boot JVM image, which likely\n"
+							+ "\tmeans you are running in a minimized jlink image and was not included.\n"
+							+ "\tIf the module will never really end up in the modulepath (but rather only in the classpath)\n"
+							+ "\tyou may suppress this validation by setting 'ignoreBootConflict=\"true\"' in\n"
+							+ "\tthe configuration.\n");
+		}
+	}
+
 	public static void signature() {
 		if (shouldWarn("signature")) {
 			System.err.println("WARNING: Updating without signature validation is strongly discouraged.");
 		}
 	}
 
-	private static boolean shouldWarn(String key) {
+	public static void unresolvedSystemModule(String sysMod) {
+		if (shouldWarn("unresolvedSystemModule")) {
+			System.out.println("WARNING: As a fundamental restriction to the Java Module System,\n"
+							+ "\tdynamically loaded modules cannot resolve system modules\n"
+							+ "\tthat were not already resolved in the boot modulepath. Currently your business\n"
+							+ "\tapp requires '" + sysMod + "' and has not been required anywhere in the bootstrap.\n"
+							+ "\tTo fix this, either redundantly require it in the bootstrap's module descriptor\n"
+							+ "\tjust for the sake of being added to the module graph, or add this flag to the JVM:\n\n"
+							+ "\t\t--add-modules " + sysMod +"\n");
+		}
+	}
+
+	public static boolean shouldWarn(String key) {
 		return !"true".equals(System.getProperty(PREFIX, System.getProperty(PREFIX + "." + key)));
 	}
 
