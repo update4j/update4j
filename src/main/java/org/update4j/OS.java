@@ -15,13 +15,15 @@
  */
 package org.update4j;
 
+import java.util.Locale;
+
 public enum OS {
 	WINDOWS("win"), MAC("mac"), LINUX("linux"), OTHER("other");
 
 	public static final OS CURRENT;
 
 	static {
-		String os = System.getProperty("os.name", "generic").toLowerCase();
+		String os = System.getProperty("os.name", "generic").toLowerCase(Locale.ROOT);
 
 		if ((os.contains("mac")) || (os.contains("darwin")))
 			CURRENT = MAC;
