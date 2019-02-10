@@ -15,6 +15,9 @@
  */
 package org.update4j.util;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.update4j.service.Launcher;
 
 public class Warning {
@@ -164,15 +167,18 @@ public class Warning {
 		}
 	}
 
-	public static void unresolvedSystemModule(String sysMod) {
-		if (shouldWarn("unresolvedSystemModule")) {
+	public static void unresolvedSystemModules(List<String> sysMods) {
+		if (shouldWarn("unresolvedSystemModules")) {
+			String humanReadable = sysMods.size() == 1 ? "'" + sysMods.get(0) + "' and" : "system modules that";
+			String commaSeparated = sysMods.stream().collect(Collectors.joining(","));
+
 			System.out.println("WARNING: As a fundamental restriction to the Java Module System,\n"
 							+ "\tdynamically loaded modules cannot resolve system modules\n"
 							+ "\tthat were not already resolved in the boot modulepath. Currently your business\n"
-							+ "\tapp requires '" + sysMod + "' and has not been required anywhere in the bootstrap.\n"
+							+ "\tapp requires " + humanReadable + " has not been required anywhere in the bootstrap.\n"
 							+ "\tTo fix this, either redundantly require it in the bootstrap's module descriptor\n"
 							+ "\tjust for the sake of being added to the module graph, or add this flag to the JVM:\n\n"
-							+ "\t\t--add-modules " + sysMod +"\n");
+							+ "\t\t--add-modules " + commaSeparated + "\n");
 		}
 	}
 

@@ -15,7 +15,9 @@
  */
 package org.update4j.util;
 
+import java.lang.module.ModuleFinder;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class StringUtils {
 
@@ -26,6 +28,7 @@ public class StringUtils {
 
 	private static final Set<String> keywords;
 	private static final Set<String> moduleKeywords;
+	private static final Set<String> systemModules;
 
 	static {
 		keywords = Set.of("abstract", "continue", "for", "new", "switch", "assert", "default", "goto", "package",
@@ -34,8 +37,26 @@ public class StringUtils {
 						"instanceof", "return", "transient", "catch", "extends", "int", "short", "try", "char", "final",
 						"interface", "static", "void", "class", "finally", "long", "strictfp", "volatile", "const",
 						"float", "native", "super", "while");
+
 		moduleKeywords = Set.of("module", "open", "opens", "exports", "requires", "transitive", "to", "with",
 						"provides", "uses");
+
+		// Last updated JDK 11
+		systemModules = Set.of("java.rmi", "jdk.management.jfr", "jdk.jdi", "jdk.charsets", "jdk.pack", "java.xml",
+						"jdk.xml.dom", "jdk.rmic", "java.datatransfer", "jdk.jstatd", "jdk.httpserver", "jdk.jcmd",
+						"java.desktop", "java.se", "java.security.sasl", "jdk.zipfs", "java.base", "jdk.crypto.ec",
+						"jdk.javadoc", "jdk.management.agent", "jdk.jshell", "jdk.editpad", "java.sql.rowset",
+						"jdk.sctp", "jdk.jsobject", "jdk.unsupported", "jdk.jlink", "java.smartcardio",
+						"jdk.scripting.nashorn", "jdk.scripting.nashorn.shell", "java.security.jgss", "java.compiler",
+						"jdk.dynalink", "jdk.unsupported.desktop", "jdk.accessibility", "jdk.security.jgss", "java.sql",
+						"jdk.hotspot.agent", "java.transaction.xa", "java.xml.crypto", "java.logging", "jdk.jfr",
+						"jdk.internal.vm.ci", "jdk.crypto.cryptoki", "jdk.net", "java.naming", "jdk.internal.ed",
+						"java.prefs", "java.net.http", "jdk.compiler", "jdk.naming.rmi", "jdk.internal.opt",
+						"jdk.jconsole", "jdk.attach", "jdk.crypto.mscapi", "jdk.internal.le", "java.management",
+						"jdk.jdwp.agent", "jdk.internal.jvmstat", "java.instrument", "jdk.internal.vm.compiler",
+						"jdk.internal.vm.compiler.management", "jdk.management", "jdk.security.auth", "java.scripting",
+						"jdk.jdeps", "jdk.aot", "jdk.jartool", "java.management.rmi", "jdk.naming.dns",
+						"jdk.localedata");
 	}
 
 	public static boolean isClassName(String name) {
@@ -83,5 +104,9 @@ public class StringUtils {
 		filename = filename.replaceAll("\\.{2,}", ".");
 
 		return filename;
+	}
+
+	public static boolean isSystemModule(String str) {
+		return systemModules.contains(str);
 	}
 }

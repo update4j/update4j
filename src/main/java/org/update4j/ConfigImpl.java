@@ -363,7 +363,7 @@ class ConfigImpl {
 
 		for (Requires require : newMod.requires()) {
 			String reqName = require.name();
-			if (reqName.startsWith("java.") || reqName.startsWith("jdk.")) {
+			if (StringUtils.isSystemModule(reqName)) {
 				if (!sysMods.contains(reqName)) {
 					Warning.missingSysMod(reqName);
 					throw new IllegalStateException("System module '" + reqName
@@ -409,24 +409,28 @@ class ConfigImpl {
 						.collect(Collectors.toSet());
 
 		// Warn if any module requires an unresolved system module
-		if (Warning.shouldWarn("unresolvedSystemModule")) {
-
+		if (Warning.shouldWarn("unresolvedSystemModules")) {
 			Set<String> resolvedSysMods = ModuleLayer.boot()
 							.modules()
 							.stream()
 							.map(m -> m.getName())
 							.collect(Collectors.toSet());
-
+			
+			List<String> missingSysMods = new ArrayList<>();
+			
 			for (ModuleDescriptor descriptor : moduleDescriptors) {
 				for(Requires require : descriptor.requires()) {
 					String reqName = require.name();
-					if(reqName.startsWith("java.") || reqName.startsWith("jdk.")) {
+					if(StringUtils.isSystemModule(reqName)) {
 						if(!resolvedSysMods.contains(reqName)) {
-							Warning.unresolvedSystemModule(reqName);
+							missingSysMods.add(reqName);
 						}
 					}
 				}
 			}
+			if (missingSysMods.size() > 0)
+				Warning.unresolvedSystemModules(missingSysMods);
+			
 		}
 
 		List<String> moduleNames = moduleDescriptors.stream().map(ModuleDescriptor::name).collect(Collectors.toList());
