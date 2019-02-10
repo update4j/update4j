@@ -1,6 +1,8 @@
 * *Upcoming Release*
+  * Changed signature of `UpdateHandler.startCheckUpdateFile()` to return `boolean`. Returning `false` will skip that file from being updated.
+  * Pass an argument and system properties from the config when using the `DefaultLauncher`.
   * `DefaultLauncher` is now aware of JavaFX and will start `javafx.application.Application` even if missing a main method in class defined in `default.launcher.main.class`.
-  * Reduced system dependencies to `java.xml` (breaking change in some cases).
+  * Reduced system dependencies to `java.xml` and added warnings if system module is not properly resolved.
 * **1.4.0**
   * Added dependency injection framework to communicate between the bootstrap and service provider.
   * Consequently, removed provider consumers at update and launch, and passing args at launch.
@@ -9,7 +11,7 @@
   * Locate explicit service providers even if not properly registered as required by `ServiceLoader`.
   * Made many service methods `default`.
   * Added `osFromFilename()` method in `FileMetadata` builder.
-  * Properly set encoding to Unicode when reading remote config in `DefualtBootstrap`.
+  * Properly set encoding to Unicode when reading remote config in `DefaultBootstrap`.
   * Bug fix when local config file was missing in `DefaultBootstrap::launchFirst`.
   * Changed how `--delegate` argument in `Bootstrap` works.
   * Fixed bug in `deleteOldFiles()` where it would try to compare files even if it belongs to different OS.
