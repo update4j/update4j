@@ -17,6 +17,7 @@ package org.update4j.service;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.update4j.Configuration;
@@ -26,7 +27,10 @@ import org.update4j.util.StringUtils;
 
 public class DefaultLauncher implements Launcher {
 
-	public static final String MAIN_CLASS_PROPERTY_KEY = "default.launcher.main.class";
+	public static final String DOMAIN_PREFIX = "default.launcher";
+	public static final String MAIN_CLASS_PROPERTY_KEY = DOMAIN_PREFIX + ".main.class";
+	public static final String ARGUMENT_PROPERTY_KEY = DOMAIN_PREFIX + ".argument";
+	public static final String SYSTEM_PROPERTY_KEY_PREFIX = DOMAIN_PREFIX + ".system";
 
 	@InjectTarget(required = false)
 	private List<String> args;
@@ -60,7 +64,23 @@ public class DefaultLauncher implements Launcher {
 							"Main class at key '" + MAIN_CLASS_PROPERTY_KEY + "' is not a valid Java class name.");
 		}
 
-		String[] argsArray = args == null ? new String[0] : args.toArray(new String[args.size()]);
+		if (args == null)
+			args = new ArrayList<>();
+
+		String argument = context.getConfiguration().getResolvedProperty(ARGUMENT_PROPERTY_KEY);
+		if (argument != null)
+			args.add(argument);
+
+		String[] argsArray = args.toArray(new String[args.size()]);
+
+		context.getConfiguration().getResolvedProperties().entrySet().stream().forEach(e -> {
+			String pfx = SYSTEM_PROPERTY_KEY_PREFIX + ".";
+			// starts with but not equals, to filter missing <name> part
+			if (e.getKey().startsWith(pfx) && !e.getKey().equals(pfx)) {
+				String key = e.getKey().substring(pfx.length());
+				System.setProperty(key, e.getValue());
+			}
+		});
 
 		// we are fully aware, so no need to warn
 		// if NoClassDefFoundError arises for any other reason
@@ -91,16 +111,32 @@ public class DefaultLauncher implements Launcher {
 		}
 	}
 
+	// @formatter:off
 	private static void usage() {
-		System.err.println("In order to start your business application using the DefaultLauncher\n"
-						+ "\tyou must add a property in the configuration with the key:\n\n" + "\t\t"
-						+ MAIN_CLASS_PROPERTY_KEY + "\n\n" + "\tand your main class as its value.\n\n"
+		System.err.println("Customize the setup of the default launcher by setting properties in the config\n"
+						+ "\taccording tothe following table:\n\n" + table()
+
 						+ "\tWhile the default behavior works for a majority of cases, you may even\n"
 						+ "\tfurther customize the launch process by implementing your own Launcher\n"
 						+ "\tand either register it as a service provider, or pass an instance directly\n"
 						+ "\tto a call to Configuration.launch().\n\n"
 						+ "\tFor more details how to register service providers please refer to the Github wiki:\n"
 						+ "\thttps://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers");
+	}
+
+	private static String table() {
+		return "\t\t+--------------------------------+------------------------------------+\n"
+			 + "\t\t| default.launcher.main.class    | The main class of the business app.|\n"
+			 + "\t\t|                                | Required.                          |\n"
+			 + "\t\t+--------------------------------+------------------------------------+\n"
+			 + "\t\t| default.launcher.argument      | A single string to be augmented    |\n"
+			 + "\t\t|                                | to the args list.                  |\n"
+			 + "\t\t+--------------------------------+------------------------------------+\n"
+			 + "\t\t| default.launcher.system.<name> | Pass a system property with the    |\n"
+			 + "\t\t|                                | provided value using the <name> as |\n"
+			 + "\t\t|                                | the system property key.           |\n"
+			 + "\t\t|                                | May be used for many properties.   |\n"
+			 + "\t\t+--------------------------------+------------------------------------+\n\n\n";
 	}
 
 }
