@@ -64,8 +64,8 @@ public class DefaultLauncher implements Launcher {
 							"Main class at key '" + MAIN_CLASS_PROPERTY_KEY + "' is not a valid Java class name.");
 		}
 
-		if (args == null)
-			args = new ArrayList<>();
+		// If immutable avoid exception
+		args = new ArrayList<>(args);
 
 		String argument = context.getConfiguration().getResolvedProperty(ARGUMENT_PROPERTY_KEY);
 		if (argument != null)
@@ -114,14 +114,14 @@ public class DefaultLauncher implements Launcher {
 	// @formatter:off
 	private static void usage() {
 		System.err.println("Customize the setup of the default launcher by setting properties in the config\n"
-						+ "\taccording tothe following table:\n\n" + table()
+						+ "\taccording to the following table:\n\n" + table()
 
 						+ "\tWhile the default behavior works for a majority of cases, you may even\n"
 						+ "\tfurther customize the launch process by implementing your own Launcher\n"
 						+ "\tand either register it as a service provider, or pass an instance directly\n"
 						+ "\tto a call to Configuration.launch().\n\n"
 						+ "\tFor more details how to register service providers please refer to the Github wiki:\n"
-						+ "\thttps://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers");
+						+ "\thttps://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers\n");
 	}
 
 	private static String table() {
@@ -136,7 +136,7 @@ public class DefaultLauncher implements Launcher {
 			 + "\t\t|                                | provided value using the <name> as |\n"
 			 + "\t\t|                                | the system property key.           |\n"
 			 + "\t\t|                                | May be used for many properties.   |\n"
-			 + "\t\t+--------------------------------+------------------------------------+\n\n\n";
+			 + "\t\t+--------------------------------+------------------------------------+\n\n";
 	}
 
 }
