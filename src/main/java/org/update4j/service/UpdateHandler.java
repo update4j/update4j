@@ -31,6 +31,7 @@ public interface UpdateHandler extends Service {
 	}
 
 	default boolean shouldCheckForUpdate(FileMetadata file) {
+		return true;
 	}
 
 	default void startCheckUpdateFile(FileMetadata file) throws Throwable {
