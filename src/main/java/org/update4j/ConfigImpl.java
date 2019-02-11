@@ -90,17 +90,17 @@ class ConfigImpl {
 			double updateJobCompleted = 0;
 
 			for (FileMetadata file : osFiles) {
-				if(!handler.startCheckUpdateFile(file)) {
-					continue;
+				if(handler.shouldCheckForUpdate(file) {
+					handler.startCheckUpdateFile(file)
+				
+					boolean needsUpdate = file.requiresUpdate();
+
+					if (needsUpdate)
+						requiresUpdate.add(file);
+
+					handler.doneCheckUpdateFile(file, needsUpdate);
 				}
-
-				boolean needsUpdate = file.requiresUpdate();
-
-				if (needsUpdate)
-					requiresUpdate.add(file);
-
-				handler.doneCheckUpdateFile(file, needsUpdate);
-
+				
 				updateJobCompleted += file.getSize();
 				handler.updateCheckUpdatesProgress((float) (updateJobCompleted / updateJobSize));
 			}

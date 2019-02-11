@@ -30,17 +30,10 @@ public interface UpdateHandler extends Service {
 	default void startCheckUpdates() throws Throwable {
 	}
 
-	/**
-	 * Called on each file before any check is performed.
-	 * 
-	 * <p>
-	 * If {@code false} is returned, this file will completely skip the update
-	 * process and the system will immediately proceed with the next file.
-	 * {@link #doneCheckUpdateFile(FileMetadata, boolean)} will <em>not</em> be
-	 * called.
-	 */
-	default boolean startCheckUpdateFile(FileMetadata file) throws Throwable {
-		return true;
+	default boolean shouldCheckForUpdate(FileMetadata file) {
+	}
+
+	default void startCheckUpdateFile(FileMetadata file) throws Throwable {
 	}
 
 	default void doneCheckUpdateFile(FileMetadata file, boolean requires) throws Throwable {
