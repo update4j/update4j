@@ -19,6 +19,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.update4j.Configuration;
 import org.update4j.LaunchContext;
@@ -71,6 +73,20 @@ public class DefaultLauncher implements Launcher {
 		if (argument != null)
 			args.add(argument);
 
+		// use TreeMap to sort
+		Map<String,String> argMap=new TreeMap<>();
+		context.getConfiguration().getResolvedProperties().entrySet().stream().forEach(e -> {
+			final String pfx = ARGUMENT_PROPERTY_KEY + ".";
+			// starts with but not equals, to filter missing <name> part
+			if (e.getKey().startsWith(pfx) && !e.getKey().equals(pfx)) {
+				String key = e.getKey().substring(pfx.length());
+				argMap.put(key, e.getValue());
+			}
+		    });
+		argMap.entrySet().stream().forEach(e -> {
+				this.args.add(e.getValue());
+		    });
+        
 		String[] argsArray = args.toArray(new String[args.size()]);
 
 		context.getConfiguration().getResolvedProperties().entrySet().stream().forEach(e -> {
@@ -131,6 +147,9 @@ public class DefaultLauncher implements Launcher {
 			 + "\t\t+--------------------------------+------------------------------------+\n"
 			 + "\t\t| default.launcher.argument      | A single string to be augmented    |\n"
 			 + "\t\t|                                | to the args list.                  |\n"
+             + "\t\t+--------------------------------+------------------------------------+\n"
+             + "\t\t| default.launcher.argument.<num>| Additional arguments for           |\n"
+             + "\t\t|                                | the args list ordered by <num>     |\n"
 			 + "\t\t+--------------------------------+------------------------------------+\n"
 			 + "\t\t| default.launcher.system.<name> | Pass a system property with the    |\n"
 			 + "\t\t|                                | provided value using the <name> as |\n"
