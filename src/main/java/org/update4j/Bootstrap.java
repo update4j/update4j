@@ -34,6 +34,8 @@ import org.update4j.service.Service;
  */
 public class Bootstrap {
 
+	private Bootstrap() { }
+	
 	/**
 	 * The version of the current build of the framework.
 	 */

@@ -168,7 +168,7 @@ import org.update4j.util.StringUtils;
  * Configuration config = Configuration.read(Files.newBufferedReader(Paths.get("config.xml")));
  * 
  * // read files from actual locations listed in config
- * // in our case ${user.loc}/Desktop/file1.jar
+ * // in our case ${user.home}/Desktop/file1.jar
  * Configuration newConfig = config.sync();
  * 
  * // read files from different base path but same individual file name
@@ -1298,7 +1298,14 @@ public class Configuration {
 
 			FileMetadata file = fileBuilder.build();
 			for (FileMetadata prevFile : files) {
-				if (prevFile.getPath().equals(file.getPath())) {
+				// if any path is null (by referencing foreign property), ignore
+				if ((prevFile.getPath() != null && file.getPath() != null)
+								// files do not have cascading as properties, so if 
+								// at least one is null, OR both are non-null but same os
+								&& ((prevFile.getOs() == null || file.getOs() == null)
+												|| prevFile.getOs() == file.getOs())
+								// and have same paths, throw exception
+								&& prevFile.getPath().equals(file.getPath())) {
 					throw new IllegalStateException("2 files resolve to same 'path': " + file.getPath());
 				}
 			}
