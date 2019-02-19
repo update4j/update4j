@@ -88,7 +88,7 @@ public class DefaultLauncher implements Launcher {
 
 		context.getConfiguration().getResolvedProperties().entrySet().stream().forEach(e -> {
 			String pfx = SYSTEM_PROPERTY_KEY_PREFIX + ".";
-			// starts with but not equals, to filter missing <name> part
+			// starts with but not equals, to filter missing <key> part
 			if (e.getKey().startsWith(pfx) && !e.getKey().equals(pfx)) {
 				String key = e.getKey().substring(pfx.length());
 				System.setProperty(key, e.getValue());
@@ -153,8 +153,8 @@ public class DefaultLauncher implements Launcher {
 			 + "\t\t|                                | are always first in the list       |\n"
 			 + "\t\t|                                | followed by these property values. |\n"
 			 + "\t\t+--------------------------------+------------------------------------+\n"
-			 + "\t\t| default.launcher.system.<name> | Pass system properties with the    |\n"
-			 + "\t\t|                                | provided values using the <name> as|\n"
+			 + "\t\t| default.launcher.system.<key>  | Pass system properties with the    |\n"
+			 + "\t\t|                                | provided values using the <key> as |\n"
 			 + "\t\t|                                | the system property key.           |\n"
 			 + "\t\t+--------------------------------+------------------------------------+\n\n";
 	}
