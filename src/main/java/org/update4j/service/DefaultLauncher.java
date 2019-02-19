@@ -19,6 +19,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.update4j.Configuration;
 import org.update4j.LaunchContext;
@@ -64,14 +66,25 @@ public class DefaultLauncher implements Launcher {
 							"Main class at key '" + MAIN_CLASS_PROPERTY_KEY + "' is not a valid Java class name.");
 		}
 
-		// If immutable avoid exception
-		args = new ArrayList<>(args);
+		List<String> localArgs = new ArrayList<>();
+		if (this.args != null)
+			localArgs.addAll(this.args);
 
-		String argument = context.getConfiguration().getResolvedProperty(ARGUMENT_PROPERTY_KEY);
-		if (argument != null)
-			args.add(argument);
+		// use TreeMap to sort
+		Map<String, String> argMap = new TreeMap<>();
+		context.getConfiguration().getResolvedProperties().entrySet().stream().forEach(e -> {
+			final String pfx = ARGUMENT_PROPERTY_KEY + ".";
+			// starts with but not equals, to filter missing <key> part
+			if (e.getKey().startsWith(pfx) && !e.getKey().equals(pfx)) {
+				String key = e.getKey().substring(pfx.length());
+				argMap.put(key, e.getValue());
+			}
+		});
+		argMap.entrySet().stream().forEach(e -> {
+			localArgs.add(e.getValue());
+		});
 
-		String[] argsArray = args.toArray(new String[args.size()]);
+		String[] argsArray = localArgs.toArray(new String[localArgs.size()]);
 
 		context.getConfiguration().getResolvedProperties().entrySet().stream().forEach(e -> {
 			String pfx = SYSTEM_PROPERTY_KEY_PREFIX + ".";
@@ -126,16 +139,23 @@ public class DefaultLauncher implements Launcher {
 
 	private static String table() {
 		return "\t\t+--------------------------------+------------------------------------+\n"
-			 + "\t\t| default.launcher.main.class    | The main class of the business app.|\n"
+			 + "\t\t| default.launcher.main.class    | The main class of the business app |\n"
+			 + "\t\t|                                | having a main method or subclassing|\n"
+			 + "\t\t|                                | javafx.application.Application     |\n"
+			 + "\t\t|                                |                                    |\n"
 			 + "\t\t|                                | Required.                          |\n"
 			 + "\t\t+--------------------------------+------------------------------------+\n"
-			 + "\t\t| default.launcher.argument      | A single string to be augmented    |\n"
-			 + "\t\t|                                | to the args list.                  |\n"
+			 + "\t\t| default.launcher.argument.<key>| Pass values in the args list,      |\n"
+			 + "\t\t|                                | ordered by the default String sort |\n"
+			 + "\t\t|                                | algorithm of <key>.                |\n"
+			 + "\t\t|                                |                                    |\n"
+			 + "\t\t|                                | Arguments passed from the bootstrap|\n"
+			 + "\t\t|                                | are always first in the list       |\n"
+			 + "\t\t|                                | followed by these property values. |\n"
 			 + "\t\t+--------------------------------+------------------------------------+\n"
-			 + "\t\t| default.launcher.system.<name> | Pass a system property with the    |\n"
-			 + "\t\t|                                | provided value using the <name> as |\n"
+			 + "\t\t| default.launcher.system.<name> | Pass system properties with the    |\n"
+			 + "\t\t|                                | provided values using the <name> as|\n"
 			 + "\t\t|                                | the system property key.           |\n"
-			 + "\t\t|                                | May be used for many properties.   |\n"
 			 + "\t\t+--------------------------------+------------------------------------+\n\n";
 	}
 
