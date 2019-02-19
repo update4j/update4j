@@ -1,8 +1,9 @@
 * *Upcoming Release*
-  * Changed signature of `UpdateHandler.startCheckUpdateFile()` to return `boolean`. Returning `false` will skip that file from being updated.
-  * Pass an argument and system properties from the config when using the `DefaultLauncher`.
+  * Added `UpdateHandler.shouldCheckForUpdate()`. Returning `false` will skip that file from being updated.
+  * Pass arguments and system properties from the config when using the `DefaultLauncher`.
   * `DefaultLauncher` is now aware of JavaFX and will start `javafx.application.Application` even if missing a main method in class defined in `default.launcher.main.class`.
   * Reduced system dependencies to `java.xml` and added warnings if system module is not properly resolved.
+  * When validating configuration and checking if 2 files resolve to same path; it will now allow if the files target different operating systems.
 * **1.4.0**
   * Added dependency injection framework to communicate between the bootstrap and service provider.
   * Consequently, removed provider consumers at update and launch, and passing args at launch.

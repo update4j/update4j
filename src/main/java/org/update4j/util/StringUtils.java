@@ -15,9 +15,7 @@
  */
 package org.update4j.util;
 
-import java.lang.module.ModuleFinder;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class StringUtils {
 

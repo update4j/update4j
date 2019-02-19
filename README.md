@@ -60,6 +60,10 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 
 ## What's New in 1.4.x &mdash; [Migration Guide](https://github.com/update4j/update4j/wiki/Migration-to-1.4.x)
+  * Added `UpdateHandler.shouldCheckForUpdate()`. Returning `false` will skip that file from being updated.
+  * Pass arguments and system properties from the config when using the `DefaultLauncher`.
+  * `DefaultLauncher` is now aware of JavaFX and will start `javafx.application.Application` even if missing a main method in class defined in `default.launcher.main.class`.
+  * Reduced system dependencies to `java.xml` and added warnings if system module is not properly resolved. _(breaking change in some cases)_.
   * Added dependency injection framework to communicate between the bootstrap and service provider.
   * Consequently, removed provider consumers at update and launch, and passing args at launch.
   * Removed many confusing `getXxxProperty()` methods in `Configuration` class.
