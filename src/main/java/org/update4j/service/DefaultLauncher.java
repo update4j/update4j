@@ -31,7 +31,7 @@ public class DefaultLauncher implements Launcher {
 
 	public static final String DOMAIN_PREFIX = "default.launcher";
 	public static final String MAIN_CLASS_PROPERTY_KEY = DOMAIN_PREFIX + ".main.class";
-	public static final String ARGUMENT_PROPERTY_KEY = DOMAIN_PREFIX + ".argument";
+	public static final String ARGUMENT_PROPERTY_KEY_PREFIX = DOMAIN_PREFIX + ".argument";
 	public static final String SYSTEM_PROPERTY_KEY_PREFIX = DOMAIN_PREFIX + ".system";
 
 	@InjectTarget(required = false)
@@ -73,7 +73,7 @@ public class DefaultLauncher implements Launcher {
 		// use TreeMap to sort
 		Map<String, String> argMap = new TreeMap<>();
 		context.getConfiguration().getResolvedProperties().entrySet().stream().forEach(e -> {
-			final String pfx = ARGUMENT_PROPERTY_KEY + ".";
+			final String pfx = ARGUMENT_PROPERTY_KEY_PREFIX + ".";
 			// starts with but not equals, to filter missing <key> part
 			if (e.getKey().startsWith(pfx) && !e.getKey().equals(pfx)) {
 				String key = e.getKey().substring(pfx.length());
