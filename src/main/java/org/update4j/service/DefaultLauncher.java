@@ -70,28 +70,24 @@ public class DefaultLauncher implements Launcher {
 		if (this.args != null)
 			localArgs.addAll(this.args);
 
-		// use TreeMap to sort
-		Map<String, String> argMap = new TreeMap<>();
-		context.getConfiguration().getResolvedProperties().entrySet().stream().forEach(e -> {
-			final String pfx = ARGUMENT_PROPERTY_KEY_PREFIX + ".";
-			// starts with but not equals, to filter missing <key> part
-			if (e.getKey().startsWith(pfx) && !e.getKey().equals(pfx)) {
-				String key = e.getKey().substring(pfx.length());
-				argMap.put(key, e.getValue());
+		// use TreeMap to sort by key
+		Map<Integer, String> argMap = new TreeMap<>();
+		context.getConfiguration().getResolvedProperties().forEach((k,v) -> {
+			String pfx = ARGUMENT_PROPERTY_KEY_PREFIX + ".";
+			// starts with but not equals, to filter missing <num> part
+			if (k.startsWith(pfx) && !k.equals(pfx)) {
+				int num = Integer.parseInt(k.substring(pfx.length()));
+				argMap.put(num, v);
 			}
 		});
-		argMap.entrySet().stream().forEach(e -> {
-			localArgs.add(e.getValue());
-		});
-
+		
+		localArgs.addAll(argMap.values());
 		String[] argsArray = localArgs.toArray(new String[localArgs.size()]);
 
-		context.getConfiguration().getResolvedProperties().entrySet().stream().forEach(e -> {
+		context.getConfiguration().getResolvedProperties().forEach((k,v) -> {
 			String pfx = SYSTEM_PROPERTY_KEY_PREFIX + ".";
-			// starts with but not equals, to filter missing <key> part
-			if (e.getKey().startsWith(pfx) && !e.getKey().equals(pfx)) {
-				String key = e.getKey().substring(pfx.length());
-				System.setProperty(key, e.getValue());
+			if (k.startsWith(pfx) && !k.equals(pfx)) {
+				System.setProperty(k.substring(pfx.length()), v);
 			}
 		});
 
@@ -145,9 +141,10 @@ public class DefaultLauncher implements Launcher {
 			 + "\t\t|                                |                                    |\n"
 			 + "\t\t|                                | Required.                          |\n"
 			 + "\t\t+--------------------------------+------------------------------------+\n"
-			 + "\t\t| default.launcher.argument.<key>| Pass values in the args list,      |\n"
-			 + "\t\t|                                | ordered by the default String sort |\n"
-			 + "\t\t|                                | algorithm of <key>.                |\n"
+			 + "\t\t| default.launcher.argument.<num>| Pass values in the args list,      |\n"
+			 + "\t\t|                                | ordered by <num>. It will throw a  |\n"
+			 + "\t\t|                                | NumberFormatException if <num> is  |\n"
+			 + "\t\t|                                | not a valid integer.               |\n"
 			 + "\t\t|                                |                                    |\n"
 			 + "\t\t|                                | Arguments passed from the bootstrap|\n"
 			 + "\t\t|                                | are always first in the list       |\n"
