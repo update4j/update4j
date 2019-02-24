@@ -1,4 +1,5 @@
 * *Upcoming Release*
+  * Allow 2 files with same path in config if both target different operating systems.
   * Added `UpdateHandler.shouldCheckForUpdate()`. Returning `false` will skip that file from being updated.
   * Pass arguments and system properties from the config when using the `DefaultLauncher`.
   * `DefaultLauncher` is now aware of JavaFX and will start `javafx.application.Application` even if missing a main method in class defined in `default.launcher.main.class`.

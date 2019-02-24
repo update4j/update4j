@@ -2251,7 +2251,7 @@ public class Configuration {
 		public PlaceholderMatchType getMatchType() {
 			return matcher == null ? PlaceholderMatchType.WHOLE_WORD : matcher;
 		}
-
+		
 		/**
 		 * Collects all information passed to the builder, replaces matches with
 		 * placeholder according to the {@link #getMatchType()} policy and validates all

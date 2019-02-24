@@ -1,6 +1,6 @@
 # [![update4j-logo][3]][3]
 
-[![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.4.0-yellow.svg)](https://search.maven.org/search?q=org.update4j)    [![Gitter](https://badges.gitter.im/update4j/update4j.svg)](https://gitter.im/update4j/update4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.4.1-yellow.svg)](https://search.maven.org/search?q=org.update4j)    [![Gitter](https://badges.gitter.im/update4j/update4j.svg)](https://gitter.im/update4j/update4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 
 **Read the [documentation](https://github.com/update4j/update4j/wiki/Documentation), explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/index.html), or [see it in action](https://github.com/update4j/update4j/wiki/Demo-Application)**
@@ -22,20 +22,19 @@ Auto-updater and launcher for your distributed applications. Built with Java 9's
 
 ## Overview
 
-The update4j framework is the first auto-update and launcher framework completely compatible with Java 9 and up. Easily host your application files anywhere in the cloud accessible via a URL (even Google Drive, Dropbox, Amazon S3, or Maven Central)
-and you can synchronize them with all your distributed applications.
+The update4j framework is the first auto-update and launcher framework completely compatible with Java 9 and up. Easily host your application files anywhere (even Google Drive, Dropbox, Amazon S3, or Maven Central) and you can synchronize them with all your distributed applications. You can use [any protocol you wish](https://gitter.im/update4j/update4j?at=5c7067c1a378ef11f6236c86) to retrieve those files and may be protected under authenticated API.
 
 In update4j _you_ have ultimate control of every process, from startup - update - launch - shutdown; unlike other auto-update frameworks that yields over the control only once the business application was launched. In addition, every single piece of code is completely updatable; [even the framework itself](https://github.com/update4j/update4j/wiki/Documentation#updating-update4j-itself), once a new version is released!
 
 ## Installation & Usage
 
-You can [download](https://repo1.maven.org/maven2/org/update4j/update4j/1.4.0/update4j-1.4.0.jar) or install using Maven:
+You can [download](https://repo1.maven.org/maven2/org/update4j/update4j/1.4.1/update4j-1.4.1.jar) or install using Maven:
 
 ```xml
 <dependency>
     <groupId>org.update4j</groupId>
     <artifactId>update4j</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1</version>
 </dependency>
 ```
 
@@ -44,7 +43,7 @@ You can use it as a regular dependency, or you may run it as a runnable JAR file
 To run it in the modulepath, use either of:
 
 ```shell
-$ java -p update4j-1.4.0.jar -m org.update4j
+$ java -p update4j-1.4.1.jar -m org.update4j
 $ java -p . -m org.update4j
 
 ```
@@ -52,7 +51,7 @@ $ java -p . -m org.update4j
 To run it in the classpath, use either of:
 
 ```shell
-$ java -jar update4j-1.4.0.jar
+$ java -jar update4j-1.4.1.jar
 $ java -cp * org.update4j.Bootstrap
 ```
 
