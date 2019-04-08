@@ -51,7 +51,7 @@ public class FileUtils {
 	public static long getChecksum(Path path) throws IOException {
 		try (InputStream input = Files.newInputStream(path)) {
 			Adler32 checksum = new Adler32();
-			byte[] buf = new byte[1024];
+			byte[] buf = new byte[1024 * 8];
 
 			int read;
 			while ((read = input.read(buf, 0, buf.length)) > -1)
@@ -98,7 +98,7 @@ public class FileUtils {
 			sign.initSign(key);
 
 			try (InputStream input = Files.newInputStream(path)) {
-				byte[] buf = new byte[1024];
+				byte[] buf = new byte[1024 * 8];
 				int len;
 				while ((len = input.read(buf, 0, buf.length)) > 0)
 					sign.update(buf, 0, len);

@@ -1,4 +1,6 @@
 * *Upcoming Release*
+  * Increased download byte buffer to 8kb *— suggested by [@ChristianCiach](https://github.com/ChristianCiach)*
+* **1.4.1**
   * Allow 2 files with same path in config if both target different operating systems.
   * Added `UpdateHandler.shouldCheckForUpdate()`. Returning `false` will skip that file from being updated.
   * Pass arguments and system properties from the config when using the `DefaultLauncher`.
@@ -23,7 +25,7 @@
   * Renamed `UpdateHandler::connect` to `UpdateHandler::openDownloadStream`
   * Added more `Configuration.Builder::signer` overloads.
   * Default bootstrap now deletes old files if `--syncLocal` was used.
-* **1.3.2** *— h/t [@ChristianCiach](https://github.com/ChristianCiach)*
+* **1.3.2** *— Tested on Linux by [@ChristianCiach](https://github.com/ChristianCiach)*
   * Control how files are downloaded with `UpdateHandler::connect`.
   * Delete old files with `Configuration::deleteOldFiles`.
 * **1.3.1**

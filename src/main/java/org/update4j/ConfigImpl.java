@@ -124,7 +124,7 @@ class ConfigImpl {
 
 					int read = 0;
 					double currentCompleted = 0;
-					byte[] buffer = new byte[1024];
+					byte[] buffer = new byte[1024 * 8];
 
 					Path output;
 					if (!updateTemp) {
