@@ -128,8 +128,8 @@ class ConfigImpl {
 
 					Path output;
 					if (!updateTemp) {
-						Files.createDirectories(file.getPath().getParent());
-						output = Files.createTempFile(file.getPath().getParent(), null, null);
+						Files.createDirectories(file.getNormalizedPath().getParent());
+						output = Files.createTempFile(file.getNormalizedPath().getParent(), null, null);
 					} else {
 						Files.createDirectories(tempDir);
 						output = Files.createTempFile(tempDir, null, null);
@@ -234,13 +234,13 @@ class ConfigImpl {
 				}
 
 				for (FileMetadata fm : files.keySet()) {
-					FileUtils.verifyNotLocked(fm.getPath());
+					FileUtils.verifyNotLocked(fm.getNormalizedPath());
 				}
 
 				// mimic a single transaction.
 				// if it fails in between moves, we're doomed
 				for (Map.Entry<FileMetadata, Path> entry : files.entrySet()) {
-					FileUtils.secureMoveFile(entry.getValue(), entry.getKey().getPath());
+					FileUtils.secureMoveFile(entry.getValue(), entry.getKey().getNormalizedPath());
 				}
 			}
 
@@ -253,7 +253,7 @@ class ConfigImpl {
 				for (Map.Entry<FileMetadata, Path> entry : files.entrySet()) {
 
 					// gotta swap keys and values to get source -> target
-					updateTempData.put(entry.getValue().toFile(), entry.getKey().getPath().toFile());
+					updateTempData.put(entry.getValue().toFile(), entry.getKey().getNormalizedPath().toFile());
 				}
 
 				try (ObjectOutputStream out = new ObjectOutputStream(
@@ -382,13 +382,13 @@ class ConfigImpl {
 						.filter(FileMetadata::isModulepath)
 						.collect(Collectors.toList());
 
-		List<Path> modulepaths = modules.stream().map(FileMetadata::getPath).collect(Collectors.toList());
+		List<Path> modulepaths = modules.stream().map(FileMetadata::getNormalizedPath).collect(Collectors.toList());
 
 		List<URL> classpaths = config.getFiles()
 						.stream()
 						.filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
 						.filter(FileMetadata::isClasspath)
-						.map(FileMetadata::getPath)
+						.map(FileMetadata::getNormalizedPath)
 						.map(path -> {
 							try {
 								return path.toUri().toURL();
@@ -454,7 +454,7 @@ class ConfigImpl {
 			if (!mod.getAddExports().isEmpty() || !mod.getAddOpens().isEmpty() || !mod.getAddReads().isEmpty()) {
 				ModuleReference reference = finder.findAll()
 								.stream()
-								.filter(ref -> new File(ref.location().get()).toPath().equals(mod.getPath()))
+								.filter(ref -> new File(ref.location().get()).toPath().equals(mod.getNormalizedPath()))
 								.findFirst()
 								.orElseThrow(IllegalStateException::new);
 

@@ -67,6 +67,7 @@ public class FileMetadata {
 
 	private final URI uri;
 	private final Path path;
+	private Path normalizedPath;
 	private final OS os;
 	private final long checksum;
 	private final long size;
@@ -174,6 +175,15 @@ public class FileMetadata {
 	 */
 	public Path getPath() {
 		return path;
+	}
+	
+	Path getNormalizedPath() {
+		if(getPath() == null)
+			return null;
+		if(normalizedPath == null)
+			normalizedPath = path.normalize();
+		
+		return normalizedPath;
 	}
 
 	/**
