@@ -1,4 +1,4 @@
-* *Upcoming Release*
+* **1.4.2**
   * Increased download byte buffer to 8kb *— suggested by [@ChristianCiach](https://github.com/ChristianCiach)*
 * **1.4.1**
   * Allow 2 files with same path in config if both target different operating systems.
