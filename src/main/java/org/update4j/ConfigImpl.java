@@ -364,6 +364,11 @@ class ConfigImpl {
 						.collect(Collectors.toSet());
 
 		for (Requires require : newMod.requires()) {
+
+			// static requires are not mandatory
+			if (require.modifiers().contains(Requires.Modifier.STATIC))
+				continue;
+
 			String reqName = require.name();
 			if (StringUtils.isSystemModule(reqName)) {
 				if (!sysMods.contains(reqName)) {
@@ -371,6 +376,7 @@ class ConfigImpl {
 					throw new IllegalStateException("System module '" + reqName
 									+ "' is missing from JVM image, required by '" + newMod.name() + "'");
 				}
+
 			}
 		}
 	}
@@ -422,6 +428,11 @@ class ConfigImpl {
 			
 			for (ModuleDescriptor descriptor : moduleDescriptors) {
 				for(Requires require : descriptor.requires()) {
+
+					// static requires are not mandatory
+					if (require.modifiers().contains(Requires.Modifier.STATIC))
+						continue;
+
 					String reqName = require.name();
 					if(StringUtils.isSystemModule(reqName)) {
 						if(!resolvedSysMods.contains(reqName)) {

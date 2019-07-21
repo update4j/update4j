@@ -1,3 +1,5 @@
+* **1.4.3**
+  * Don't throw exception on jar download that `static requires` missing system module *— [@ChristianCiach](https://github.com/ChristianCiach)*
 * **1.4.2**
   * Increased download byte buffer to 8kb *— suggested by [@ChristianCiach](https://github.com/ChristianCiach)*
 * **1.4.1**

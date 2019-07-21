@@ -76,8 +76,10 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 ## Attribution
 
-This project was highly influenced by [edvin/fxlauncher](https://github.com/edvin/fxlauncher/). Thanks for the insights
-that made this possible.
+Credit where credit is due:
+
+  * [@edvin](https://github.com/edvin), original author of [edvin/FXLauncher](https://github.com/edvin/fxlauncher) which highly influenced the design of update4j.
+  * [@ChristianCiach](https://github.com/ChristianCiach) who single-handedly found 90% of bugs of this framework.
 
 ## License
 
