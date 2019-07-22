@@ -243,12 +243,16 @@ public class SingleInstanceManager {
 
 					int port = Integer.parseInt(in.readLine());
 
-					try (Socket signal = new Socket("localhost", port);
-									BufferedWriter out = new BufferedWriter(
-													new OutputStreamWriter(signal.getOutputStream()))) {
+					try (Socket signal = new Socket("localhost", port)) {
+						// set timeout in case of a messed up network interface
+						signal.setSoTimeout(1000);
 
-						for (String s : args) {
-							out.write(s + "\n");
+						try (BufferedWriter out = new BufferedWriter(
+								new OutputStreamWriter(signal.getOutputStream()))) {
+
+							for (String s : args) {
+								out.write(s + "\n");
+							}
 						}
 					}
 
