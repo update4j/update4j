@@ -242,10 +242,14 @@ class ConfigImpl {
 				for (Map.Entry<FileMetadata, Path> entry : files.entrySet()) {
 					FileUtils.secureMoveFile(entry.getValue(), entry.getKey().getNormalizedPath());
 				}
+				
+				// avoid deleting files in exception catch block if
+				// exception arises in UpdateHandler.doneDownload() or UpdateHandler.succeeded()
+				files.clear();
 			}
 
 			// otherwise if update temp, save to file
-			if (isTemp) {
+			else {
 				Path updateDataFile = tempDir.resolve(Update.UPDATE_DATA);
 
 				// Path is not serializable, so convert to file
