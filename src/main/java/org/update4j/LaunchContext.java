@@ -39,7 +39,7 @@ public class LaunchContext {
 
 	/**
 	 * Returns the {@link ModuleLayer} where modules in the config that were marked
-	 * with @{code modulepath} are dynamically loaded.
+	 * with {@code modulepath} are dynamically loaded.
 	 * 
 	 * @return The dynamic module layer.
 	 */

@@ -17,6 +17,19 @@ package org.update4j.service;
 
 import java.util.List;
 
+import org.update4j.Bootstrap;
+
+/**
+ * An implementation of this interface can be used as a delegate for a bootstrap application to be located by {@link Bootstrap}.
+ * 
+ * <p>
+ * For more info how to use services, check out the <a href=
+ * "https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers">GitHub
+ * Wiki</a>.
+ * 
+ * @author Mordechai Meisels
+ *
+ */
 @FunctionalInterface
 public interface Delegate extends Service {
 

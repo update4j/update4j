@@ -17,9 +17,26 @@ package org.update4j.service;
 
 import org.update4j.LaunchContext;
 
+/**
+ * An implementation of this interface can be used as an entry point to the
+ * business application.
+ * 
+ * <p>
+ * For more info how to use services, check out the <a href=
+ * "https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers">GitHub
+ * Wiki</a>.
+ * 
+ * @author Mordechai Meisels
+ *
+ */
 @FunctionalInterface
 public interface Launcher extends Service {
 
+	/**
+	 * Called when the business application should be launched.
+	 * 
+	 * @param context Context information about the launch.
+	 */
 	void run(LaunchContext context);
 
 }
