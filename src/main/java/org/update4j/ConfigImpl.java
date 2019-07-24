@@ -52,6 +52,7 @@ class ConfigImpl {
 		}
 
 		boolean updateTemp = tempDir != null;
+		boolean doneDownloads = false;
 		boolean success;
 
 		// if no explicit handler were passed
@@ -170,18 +171,19 @@ class ConfigImpl {
 				}
 
 				completeDownloads(downloadedCollection, tempDir, updateTemp);
-
+				doneDownloads = true;
+				
 				handler.doneDownloads();
 			}
-
-			handler.succeeded();
+			
 			success = true;
-
 		} catch (Throwable t) {
 			// clean-up as update failed
 
 			try {
-				if (!downloadedCollection.isEmpty()) {
+				// if an exception was thrown in handler.doneDownloads()
+				// done delete files, as they are now in their final location
+				if ((updateTemp || !doneDownloads) && !downloadedCollection.isEmpty()) {
 					for (Path p : downloadedCollection.values()) {
 						Files.deleteIfExists(p);
 					}
@@ -208,9 +210,12 @@ class ConfigImpl {
 				}
 			}
 
-			handler.failed(t);
 			success = false;
+			handler.failed(t);
 		}
+		
+		if(success)
+			handler.succeeded();
 
 		handler.stop();
 
@@ -242,10 +247,6 @@ class ConfigImpl {
 				for (Map.Entry<FileMetadata, Path> entry : files.entrySet()) {
 					FileUtils.secureMoveFile(entry.getValue(), entry.getKey().getNormalizedPath());
 				}
-				
-				// avoid deleting files in exception catch block if
-				// exception arises in UpdateHandler.doneDownload() or UpdateHandler.succeeded()
-				files.clear();
 			}
 
 			// otherwise if update temp, save to file

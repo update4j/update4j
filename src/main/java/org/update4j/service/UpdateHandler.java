@@ -340,9 +340,7 @@ public interface UpdateHandler extends Service {
 	 * Called when the update process is complete, even if no files actually required an update.
 	 * 
 	 * <p>
-	 * If an exception arises in this method: If the update is an
-	 * {@code updateTemp()}, the files will be deleted; otherwise the files will be
-	 * untouched and {@link #failed(Throwable)} will be called.
+	 * If an exception arises in this method, the exception will bubble up to the {@code update()} method.
 	 * 
 	 */
 	default void succeeded() {
