@@ -288,7 +288,7 @@ public class FileMetadata {
 	 * than reinstalling the application.
 	 * 
 	 * <p>
-	 * This file check is done for each and every file with the (@code .jar} file
+	 * This file check is done for each and every file with the {@code .jar} file
 	 * extension, even if the file was explicitly marked with the {@code modulepath}
 	 * (meaning it is only loaded on the <em>dynamic</em> modulepath).
 	 * 

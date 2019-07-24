@@ -74,12 +74,11 @@ For more information refer to [Starting the Application](https://github.com/upda
   * Changed how `--delegate` argument in `Bootstrap` works.
 
 
-## Attribution
+## Contributors
 
-Credit where credit is due:
-
-  * [@edvin](https://github.com/edvin), original author of [edvin/FXLauncher](https://github.com/edvin/fxlauncher) which highly influenced the design of update4j.
-  * [@ChristianCiach](https://github.com/ChristianCiach) who single-handedly found 90% of bugs.
+  * [@mordechaim](https://github.com/mordechaim) — lead contributor.
+  * [@ChristianCiach](https://github.com/ChristianCiach) — tested and inspired many features and bugfixes.
+  * [@edvin](https://github.com/edvin) — original author of [edvin/FXLauncher](https://github.com/edvin/fxlauncher) which highly influenced the design of update4j.
 
 ## License
 
