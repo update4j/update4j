@@ -423,12 +423,6 @@ import org.update4j.util.StringUtils;
  * config.launch(new MyLauncher());
  * </pre>
  * 
- * <p>
- * A call to launch will launch the application in a new thread (to give it
- * separate context), but it will still not return until
- * {@link Launcher#run(LaunchContext)} returned (not counting new threads in the
- * business app).
- * 
  * @author Mordechai Meisels
  *
  */
@@ -755,10 +749,8 @@ public class Configuration {
 	 * <p>
 	 * If the given string is {@code null}, the same value will be returned.
 	 * 
-	 * @param str
-	 *            The string to attempt to replace with placeholders.
-	 * @param isPath
-	 *            Whether the given string is a path like string.
+	 * @param str    The string to attempt to replace with placeholders.
+	 * @param isPath Whether the given string is a path like string.
 	 * @return The replaced string, or {@code null} if {@code null} was passed.
 	 */
 	public String implyPlaceholders(String str, PlaceholderMatchType matchType) {
@@ -830,70 +822,15 @@ public class Configuration {
 	 * {@link DefaultUpdateHandler} if non were found.
 	 * 
 	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
-	 * 
-	 * <p>
 	 * Any error that arises once the update handler was loaded just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @return If no error was thrown in the whole process.
 	 */
@@ -906,70 +843,15 @@ public class Configuration {
 	 * handler.
 	 * 
 	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
-	 * 
-	 * <p>
 	 * Any error that arises just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param handler The {@link UpdateHandler} to use for process callbacks.
 	 * @return If no error was thrown in the whole process.
@@ -993,73 +875,18 @@ public class Configuration {
 	 * 
 	 * to exchange fields to and from both instances. When injection is complete it
 	 * will call all methods of both instances, marked with {@link PostInject},
-	 * following the behavior documented in {@link Injectable} JavaDoc.
-	 * 
-	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
+	 * following the behavior documented in {@link Injectable} documentation.
 	 * 
 	 * <p>
 	 * Any error that arises once the update handler was loaded just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param injectable The object to use for field exchange between the bootstrap
 	 *                   and the update handler.
@@ -1076,74 +903,19 @@ public class Configuration {
 	 * {@link DefaultUpdateHandler} if non were found.
 	 * 
 	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
-	 * 
-	 * <p>
 	 * It will use the provided {@link PublicKey} to validate signatures of each
 	 * individual file. It will <em>not</em> validate the config's own signature.
 	 * 
 	 * <p>
 	 * Any error that arises once the update handler was loaded just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param key The {@link PublicKey} to validate the files' signatures.
 	 * @return If no error was thrown in the whole process.
@@ -1167,68 +939,7 @@ public class Configuration {
 	 * 
 	 * to exchange fields to and from both instances. When injection is complete it
 	 * will call all methods of both instances, marked with {@link PostInject},
-	 * following the behavior documented in {@link Injectable} JavaDoc.
-	 * 
-	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
+	 * following the behavior documented in {@link Injectable} documentation.
 	 * 
 	 * <p>
 	 * It will use the provided {@link PublicKey} to validate signatures of each
@@ -1237,7 +948,13 @@ public class Configuration {
 	 * <p>
 	 * Any error that arises once the update handler was loaded just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param key        The {@link PublicKey} to validate the files' signatures.
 	 * @param injectable The object to use for field exchange between the bootstrap
@@ -1253,74 +970,19 @@ public class Configuration {
 	 * handler.
 	 * 
 	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
-	 * 
-	 * <p>
 	 * It will use the provided {@link PublicKey} to validate signatures of each
 	 * individual file. It will <em>not</em> validate the config's own signature.
 	 * 
 	 * <p>
-	 * Any error that arises just get's passed to
+	 * Any error that arises once the update handler was loaded just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param key     The {@link PublicKey} to validate the files' signatures.
 	 * @param handler The {@link UpdateHandler} to use for process callbacks.
@@ -1341,70 +1003,15 @@ public class Configuration {
 	 * be finalized by calling {@link Update#finalizeUpdate(Path)}.
 	 * 
 	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
-	 * 
-	 * <p>
 	 * Any error that arises once the update handler was loaded just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param tempDir The location to temporarily store the downloaded files until
 	 *                {@link Update#finalizeUpdate(Path)} is called.
@@ -1429,78 +1036,22 @@ public class Configuration {
 	 * 
 	 * to exchange fields to and from both instances. When injection is complete it
 	 * will call all methods of both instances, marked with {@link PostInject},
-	 * following the behavior documented in {@link Injectable} JavaDoc.
-	 * 
+	 * following the behavior documented in {@link Injectable} documentation.
 	 * 
 	 * <p>
 	 * It will download all files in the {@code tempDir} directory, which can later
 	 * be finalized by calling {@link Update#finalizeUpdate(Path)}.
 	 * 
 	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
-	 * 
-	 * <p>
 	 * Any error that arises once the update handler was loaded just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param tempDir    The location to temporarily store the downloaded files
 	 *                   until {@link Update#finalizeUpdate(Path)} is called.
@@ -1521,70 +1072,15 @@ public class Configuration {
 	 * be finalized by calling {@link Update#finalizeUpdate(Path)}.
 	 * 
 	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
-	 * 
-	 * <p>
 	 * Any error that arises just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param tempDir The location to temporarily store the downloaded files until
 	 *                {@link Update#finalizeUpdate(Path)} is called.
@@ -1606,74 +1102,19 @@ public class Configuration {
 	 * be finalized by calling {@link Update#finalizeUpdate(Path)}.
 	 * 
 	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
-	 * 
-	 * <p>
 	 * It will use the provided {@link PublicKey} to validate signatures of each
 	 * individual file. It will <em>not</em> validate the config's own signature.
 	 * 
 	 * <p>
 	 * Any error that arises once the update handler was loaded just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param tempDir The location to temporarily store the downloaded files until
 	 *                {@link Update#finalizeUpdate(Path)} is called.
@@ -1699,72 +1140,11 @@ public class Configuration {
 	 * 
 	 * to exchange fields to and from both instances. When injection is complete it
 	 * will call all methods of both instances, marked with {@link PostInject},
-	 * following the behavior documented in {@link Injectable} JavaDoc.
+	 * following the behavior documented in {@link Injectable} documentation.
 	 * 
 	 * <p>
 	 * It will download all files in the {@code tempDir} directory, which can later
 	 * be finalized by calling {@link Update#finalizeUpdate(Path)}.
-	 * 
-	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
 	 * 
 	 * <p>
 	 * It will use the provided {@link PublicKey} to validate signatures of each
@@ -1773,7 +1153,13 @@ public class Configuration {
 	 * <p>
 	 * Any error that arises once the update handler was loaded just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param tempDir    The location to temporarily store the downloaded files
 	 *                   until {@link Update#finalizeUpdate(Path)} is called.
@@ -1795,74 +1181,19 @@ public class Configuration {
 	 * be finalized by calling {@link Update#finalizeUpdate(Path)}.
 	 * 
 	 * <p>
-	 * It will then do its work, calling methods in the update handler in precisely
-	 * this order:
-	 * 
-	 * <p>
-	 * <ul>
-	 * <li>{@link UpdateHandler#init(UpdateContext)}</li>
-	 * <li>{@link UpdateHandler#startCheckUpdates()}</li>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
-	 * {@code 0f}</li>
-	 * <p>
-	 * For each file in the config:
-	 * <ul>
-	 * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
-	 * <p>
-	 * If previous call returned {@code true}:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
-	 * <p>
-	 * If there are any files that need an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloads()}</li>
-	 * <p>
-	 * For each file requiring an update:
-	 * <ul>
-	 * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
-	 * only, set to {@code 0f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * set to {@code 0f}. You can observe the remote server latency between
-	 * {@code startDownloadFile()} and this</li>
-	 * <p>
-	 * Repeatedly, until file download completes:
-	 * <ul>
-	 * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
-	 * updates the fraction of {@code 1f}</li>
-	 * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
-	 * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#doneDownloads()}</li>
-	 * </ul>
-	 * <p>
-	 * If successfully updated (or no updates were required, successfully):
-	 * <ul>
-	 * <li>{@link UpdateHandler#succeeded()}</li>
-	 * </ul>
-	 * <p>
-	 * Otherwise, for any exception, even if thrown by the update handler:
-	 * <ul>
-	 * <li>{@link UpdateHandler#failed(Throwable)}</li>
-	 * </ul>
-	 * <li>{@link UpdateHandler#stop()}</li>
-	 * </ul>
-	 * 
-	 * <p>
 	 * It will use the provided {@link PublicKey} to validate signatures of each
 	 * individual file. It will <em>not</em> validate the config's own signature.
 	 * 
 	 * <p>
 	 * Any error that arises just get's passed to
 	 * {@link UpdateHandler#failed(Throwable)} and this method returns
-	 * {@code false}.
+	 * {@code false}. An exception thrown in
+	 * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+	 * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+	 * method.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 * @param tempDir The location to temporarily store the downloaded files until
 	 *                {@link Update#finalizeUpdate(Path)} is called.
@@ -1880,14 +1211,17 @@ public class Configuration {
 	 * paths, dynamically.
 	 * 
 	 * <p>
-	 * It will then locate the class returned by
-	 * {@link #getLauncher()} or -- if it returns {@code null} -- the
-	 * registered highest version {@link Launcher} or
+	 * It will then locate the class returned by {@link #getLauncher()} or -- if it
+	 * returns {@code null} -- the registered highest version {@link Launcher} or
 	 * {@link DefaultLauncher} if non were found.
 	 * 
 	 * <p>
-	 * It will then call {@link Launcher#run(LaunchContext)} on a new thread, and block the caller of this method until
-	 * {@code run()} returns. New threads spawned by the {@code run()} methods do not count.
+	 * It will then call {@link Launcher#run(LaunchContext)} on a new thread, and
+	 * block the caller of this method until {@code run()} returns. New threads
+	 * spawned by the {@code run()} methods do not count.
+	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
 	 * 
 	 */
 	public void launch() {
@@ -1900,9 +1234,8 @@ public class Configuration {
 	 * paths, dynamically.
 	 * 
 	 * <p>
-	 * It will then locate the class returned by
-	 * {@link #getLauncher()} or -- if it returns {@code null} -- the
-	 * registered highest version {@link Launcher} or
+	 * It will then locate the class returned by {@link #getLauncher()} or -- if it
+	 * returns {@code null} -- the registered highest version {@link Launcher} or
 	 * {@link DefaultLauncher} if non were found.
 	 * 
 	 * <p>
@@ -1914,12 +1247,18 @@ public class Configuration {
 	 * 
 	 * to exchange fields to and from both instances. When injection is complete it
 	 * will call all methods of both instances, marked with {@link PostInject},
-	 * following the behavior documented in {@link Injectable} JavaDoc.
+	 * following the behavior documented in {@link Injectable} documentation.
 	 * 
 	 * <p>
-	 * It will then call {@link Launcher#run(LaunchContext)} on a new thread, and block the caller of this method until
-	 * {@code run()} returns. New threads spawned by the {@code run()} methods do not count.
+	 * It will then call {@link Launcher#run(LaunchContext)} on a new thread, and
+	 * block the caller of this method until {@code run()} returns. New threads
+	 * spawned by the {@code run()} methods do not count.
 	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
+	 * 
+	 * @param injectable The object to use for field exchange between the bootstrap
+	 *                   and the launcher.
 	 */
 	public void launch(Injectable injectable) {
 		ConfigImpl.doLaunch(this, injectable, null);
@@ -1931,9 +1270,14 @@ public class Configuration {
 	 * paths, dynamically.
 	 * 
 	 * <p>
-	 * It will then call {@link Launcher#run(LaunchContext)} on a new thread, and block the caller of this method until
-	 * {@code run()} returns. New threads spawned by the {@code run()} methods do not count.
+	 * It will then call {@link Launcher#run(LaunchContext)} on a new thread, and
+	 * block the caller of this method until {@code run()} returns. New threads
+	 * spawned by the {@code run()} methods do not count.
 	 * 
+	 * <p>
+	 * This method is intended to be used on the client machine only.
+	 * 
+	 * @param launcher The launcher to use as the business application entry point
 	 */
 	public void launch(Launcher launcher) {
 		ConfigImpl.doLaunch(this, null, launcher);
@@ -2387,7 +1731,7 @@ public class Configuration {
 	 * were made it will also update the {@code timestamp}.
 	 * 
 	 * <p>
-	 * This method is intended to be used on the development machine only to draft a
+	 * This method is intended to be used on the development/build machine only to draft a
 	 * new release when changes are made to files but it's still the same files.
 	 * 
 	 * <p>
@@ -2413,7 +1757,7 @@ public class Configuration {
 	 * {@code timestamp}.
 	 * 
 	 * <p>
-	 * This method is intended to be used on the development machine only to draft a
+	 * This method is intended to be used on the development/build machine only to draft a
 	 * new release when changes are made to files but it's still the same files.
 	 * 
 	 * <p>
@@ -2438,7 +1782,7 @@ public class Configuration {
 	 * config. If changes were made it will also update the {@code timestamp}.
 	 * 
 	 * <p>
-	 * This method is intended to be used on the development machine only to draft a
+	 * This method is intended to be used on the development/build machine only to draft a
 	 * new release when changes are made to files but it's still the same files.
 	 * 
 	 * <p>
@@ -2466,7 +1810,7 @@ public class Configuration {
 	 * the {@code timestamp}.
 	 * 
 	 * <p>
-	 * This method is intended to be used on the development machine only to draft a
+	 * This method is intended to be used on the development/build machine only to draft a
 	 * new release when changes are made to files but it's still the same files.
 	 * 
 	 * <p>
@@ -2621,7 +1965,7 @@ public class Configuration {
 	 * The entry point to the Builder API.
 	 * 
 	 * <p>
-	 * This should <em>only</em> be used on the development machine when drafting a
+	 * This should <em>only</em> be used on the development/build machine when drafting a
 	 * new release. It should not be used to load a config on the client side.
 	 * 
 	 * @return A configuration builder.

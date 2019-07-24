@@ -33,59 +33,59 @@ import org.update4j.inject.Injectable;
  * 
  * <p>
  * <ul>
- * <li>{@link UpdateHandler#init(UpdateContext)}</li>
- * <li>{@link UpdateHandler#startCheckUpdates()}</li>
- * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)} -- set to
+ * <li>{@link #init(UpdateContext)}</li>
+ * <li>{@link #startCheckUpdates()}</li>
+ * <li>{@link #updateCheckUpdatesProgress(float)} -- set to
  * {@code 0f}</li>
  * <p>
  * For each file in the config:
  * <ul>
- * <li>{@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}</li>
+ * <li>{@link #shouldCheckForUpdate(FileMetadata)}</li>
  * <p>
  * If previous call returned {@code true}:
  * <ul>
- * <li>{@link UpdateHandler#startCheckUpdateFile(FileMetadata)}</li>
- * <li>{@link UpdateHandler#doneCheckUpdateFile(FileMetadata, boolean)}</li>
+ * <li>{@link #startCheckUpdateFile(FileMetadata)}</li>
+ * <li>{@link #doneCheckUpdateFile(FileMetadata, boolean)}</li>
  * </ul>
- * <li>{@link UpdateHandler#updateCheckUpdatesProgress(float)}</li>
+ * <li>{@link #updateCheckUpdatesProgress(float)}</li>
  * </ul>
- * <li>{@link UpdateHandler#doneCheckUpdates()}</li>
+ * <li>{@link #doneCheckUpdates()}</li>
  * <p>
  * If there are any files that need an update:
  * <ul>
- * <li>{@link UpdateHandler#startDownloads()}</li>
+ * <li>{@link #startDownloads()}</li>
  * <p>
  * For each file requiring an update:
  * <ul>
- * <li>{@link UpdateHandler#startDownloadFile(FileMetadata)}</li>
- * <li>{@link UpdateHandler#updateDownloadProgress(float)} -- on the first file
+ * <li>{@link #startDownloadFile(FileMetadata)}</li>
+ * <li>{@link #updateDownloadProgress(float)} -- on the first file
  * only, set to {@code 0f}</li>
- * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
+ * <li>{@link #updateDownloadFileProgress(FileMetadata, float)} --
  * set to {@code 0f}. You can observe the remote server latency between
  * {@code startDownloadFile()} and this</li>
  * <p>
  * Repeatedly, until file download completes:
  * <ul>
- * <li>{@link UpdateHandler#updateDownloadFileProgress(FileMetadata, float)} --
+ * <li>{@link #updateDownloadFileProgress(FileMetadata, float)} --
  * updates the fraction of {@code 1f}</li>
- * <li>{@link UpdateHandler#updateDownloadProgress(float)}</li>
+ * <li>{@link #updateDownloadProgress(float)}</li>
  * </ul>
- * <li>{@link UpdateHandler#validatingFile(FileMetadata, Path)}</li>
- * <li>{@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}</li>
+ * <li>{@link #validatingFile(FileMetadata, Path)}</li>
+ * <li>{@link #doneDownloadFile(FileMetadata, Path)}</li>
  * </ul>
- * <li>{@link UpdateHandler#doneDownloads()}</li>
+ * <li>{@link #doneDownloads()}</li>
  * </ul>
  * <p>
  * If successfully updated (or no updates were required, successfully):
  * <ul>
- * <li>{@link UpdateHandler#succeeded()}</li>
+ * <li>{@link #succeeded()}</li>
  * </ul>
  * <p>
  * Otherwise, for any exception, even if thrown by the update handler:
  * <ul>
- * <li>{@link UpdateHandler#failed(Throwable)}</li>
+ * <li>{@link #failed(Throwable)}</li>
  * </ul>
- * <li>{@link UpdateHandler#stop()}</li>
+ * <li>{@link #stop()}</li>
  * </ul>
  * 
  * <p>
