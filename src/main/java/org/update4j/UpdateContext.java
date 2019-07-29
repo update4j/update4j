@@ -40,7 +40,7 @@ public class UpdateContext {
 	private PublicKey key;
 
 	UpdateContext(Configuration config, List<FileMetadata> requiresUpdate, List<FileMetadata> updated, Path tempDir,
-					PublicKey key) {
+			PublicKey key) {
 		configuration = Objects.requireNonNull(config);
 
 		this.requiresUpdate = Collections.unmodifiableList(requiresUpdate);
@@ -78,12 +78,15 @@ public class UpdateContext {
 	 * 
 	 * <p>
 	 * The files in this list are not actually in their final location expressed in
-	 * {@link FileMetadata#getPath()}, instead they reside in the same directory
-	 * with a temporary filename that is passed as the second argument of
-	 * {@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}. The file goes
-	 * into the final location once {@link UpdateHandler#doneDownloads()} is called.
+	 * {@link FileMetadata#getPath()}, instead they reside in the same directory (or
+	 * temp directory, for temp updates) with a temporary filename that is passed as
+	 * the second argument of
+	 * {@link UpdateHandler#doneDownloadFile(FileMetadata, Path)}. For regular
+	 * updates, the file goes into the final location before
+	 * {@link UpdateHandler#doneDownloads()} is called. For temp updates, it is
+	 * moved when {@link Update#finalizeUpdate(Path)} is called.
 	 * 
-	 * @return An unmodifiable list of file currently updated.
+	 * @return An unmodifiable list of files currently updated.
 	 */
 	public List<FileMetadata> getUpdated() {
 		return updated;

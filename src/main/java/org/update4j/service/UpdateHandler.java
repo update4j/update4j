@@ -47,8 +47,10 @@ import org.update4j.inject.Injectable;
  * <li>{@link #startCheckUpdateFile(FileMetadata)}</li>
  * <li>{@link #doneCheckUpdateFile(FileMetadata, boolean)}</li>
  * </ul>
+ * <p>
  * <li>{@link #updateCheckUpdatesProgress(float)}</li>
  * </ul>
+ * <p>
  * <li>{@link #doneCheckUpdates()}</li>
  * <p>
  * If there are any files that need an update:
@@ -70,9 +72,11 @@ import org.update4j.inject.Injectable;
  * updates the fraction of {@code 1f}</li>
  * <li>{@link #updateDownloadProgress(float)}</li>
  * </ul>
+ * <p>
  * <li>{@link #validatingFile(FileMetadata, Path)}</li>
  * <li>{@link #doneDownloadFile(FileMetadata, Path)}</li>
  * </ul>
+ * <p>
  * <li>{@link #doneDownloads()}</li>
  * </ul>
  * <p>
@@ -85,6 +89,7 @@ import org.update4j.inject.Injectable;
  * <ul>
  * <li>{@link #failed(Throwable)}</li>
  * </ul>
+ * <p>
  * <li>{@link #stop()}</li>
  * </ul>
  * 
@@ -310,14 +315,19 @@ public interface UpdateHandler extends Service {
 	}
 
 	/**
-	 * All downloads were completed and all temporary files were moved to its final
-	 * location. This method will only be called if there were actually files that
-	 * required updates.
+	 * <b>If the update was a regular -- non-temp -- update:</b> All downloads were completed
+	 * and all temporary files were moved to its final
+	 * location. If an exception is thrown in this method, the new files remain untouched
+	 * and {@link #failed(Throwable)} will be called.
 	 * 
 	 * <p>
-	 * If an exception arises in this method: If the update is an
-	 * {@code updateTemp()}, the files will be deleted; otherwise the files will be
-	 * untouched and {@link #failed(Throwable)} will be called.
+	 * <b>If the update was a temp update:</b> All downloads were complete and reside 
+	 * in their temporary location. If an exception is thrown in this method, it will delete the
+	 * update, revert any changes and {@link #failed(Throwable)} will be called.
+	 * 
+	 * <p>
+	 * This method will only be called if there were actually files that
+	 * required updates.
 	 * 
 	 * @throws Throwable Any exception will be passed to {@link #failed(Throwable)}
 	 *                   and the {@code update()} method will return false.

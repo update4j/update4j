@@ -46,8 +46,7 @@ public class Update {
 	 * This method does not guarantee that files were not tempered or that the
 	 * update can actually be finalized in general.
 	 * 
-	 * @param tempDir
-	 *            The location to check for a temporary update.
+	 * @param tempDir The location to check for a temporary update.
 	 * @return Whether the directory contains an update.
 	 */
 	public static boolean containsUpdate(Path tempDir) {
@@ -60,13 +59,11 @@ public class Update {
 	 * run.
 	 * 
 	 * 
-	 * @param tempDir
-	 *            The location to look for the update.
-	 * @return Whether it actually contained an update instead of an empty file.
-	 * 
-	 * @throws IOException
-	 *             If the update was tempered or any file system operation during
-	 *             finalization failed.
+	 * @param tempDir The location to look for the update.
+	 * @return Whether directory actually contained an update instead of an empty
+	 *         {@code .update} file.
+	 * @throws IOException If the update was tempered or any file system operation
+	 *                     during finalization failed.
 	 */
 	@SuppressWarnings("unchecked")
 	public static boolean finalizeUpdate(Path tempDir) throws IOException {
