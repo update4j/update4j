@@ -37,10 +37,17 @@ public class ArgUtils {
 			if (arg.startsWith("--")) {
 				Matcher m = pattern.matcher(arg);
 				if (m.find()) {
-					map.put(m.group(1), m.group(2));
+					String key = m.group(1);
+					if(map.containsKey(key))
+						throw new IllegalArgumentException("Duplicate command '" + key + "'.");
+					
+					map.put(key, m.group(2));
 				} else {
 					arg = arg.substring(2);
 
+					if(map.containsKey(arg))
+						throw new IllegalArgumentException("Duplicate command '" + arg + "'.");
+					
 					if (i + 1 < list.size()) {
 						String value = list.get(i + 1).trim();
 						if (!value.startsWith("--")) {
