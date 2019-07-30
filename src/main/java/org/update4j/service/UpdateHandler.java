@@ -315,13 +315,13 @@ public interface UpdateHandler extends Service {
 	}
 
 	/**
-	 * <b>If the update was a regular -- non-temp -- update:</b> All downloads were completed
+	 * <b>If the update was a regular — non-temp — update:</b> All downloads completed
 	 * and all temporary files were moved to its final
 	 * location. If an exception is thrown in this method, the new files remain untouched
 	 * and {@link #failed(Throwable)} will be called.
 	 * 
 	 * <p>
-	 * <b>If the update was a temp update:</b> All downloads were complete and reside 
+	 * <b>If the update was a temp update:</b> All downloads completed and reside 
 	 * in their temporary location. If an exception is thrown in this method, it will delete the
 	 * update, revert any changes and {@link #failed(Throwable)} will be called.
 	 * 
