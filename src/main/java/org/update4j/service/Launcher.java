@@ -16,10 +16,36 @@
 package org.update4j.service;
 
 import org.update4j.LaunchContext;
+import org.update4j.inject.Injectable;
 
 /**
  * An implementation of this interface can be used as an entry point to the
  * business application.
+ * 
+ * <p>
+ * If you wish to create your custom bootstrap but use the {@link DefaultLauncher}, you might 
+ * pass over a list of strings that will be used as the arguments in {@code main}, by adding a
+ * field in the bootstrap:
+ * 
+ * <pre>
+ * {@literal @InjectSource}
+ * private List&lt;String&gt; args;
+ * </pre>
+ * 
+ * that contains the arguments, and launch by using one of the overloads that take an {@link Injectable}:
+ * 
+ * <pre>
+ * config.launch(this);
+ * </pre>
+ * 
+ * <p>
+ * If the launcher is started by the {@link DefaultBootstrap} but you define your own launcher,
+ * you can capture the business command-line arguments by adding this field in the launcher:
+ * 
+ * <pre>
+ * {@literal @InjectTarget}
+ * private List&lt;String&gt; args;
+ * </pre>
  * 
  * <p>
  * For more info how to use services, check out the <a href=

@@ -147,17 +147,15 @@ import org.update4j.util.StringUtils;
  * Given this XML {@code config.xml}:
  * 
  * <pre>
- * <xmp>
- * <configuration timestamp="2018-08-22T19:31:40.448450500Z">
- *     <base uri="https://example.com/" path="${user.loc}"/>
- *     <properties>
- *         <property key="user.loc" value="${user.home}/Desktop/"/>
- *     </properties>
- *     <files>
- *         <file path="file1.jar" size="1348" checksum="fd7adfb7"/>
- *     </files>
- * </configuration>
- * </xmp>
+ * &lt;configuration timestamp="2018-08-22T19:31:40.448450500Z"&gt;
+ *     &lt;base uri="https://example.com/" path="${user.loc}"/&gt;
+ *     &lt;properties&gt;
+ *         &lt;property key="user.loc" value="${user.home}/Desktop/"/&gt;
+ *     &lt;/properties&gt;
+ *     &lt;files&gt;
+ *         &lt;file path="file1.jar" size="1348" checksum="fd7adfb7"/&gt;
+ *     &lt;/files&gt;
+ * &lt;/configuration&gt;
  * </pre>
  * 
  * <p>
@@ -189,14 +187,12 @@ import org.update4j.util.StringUtils;
  * config XML and {@code sync()} will do the rest:
  * 
  * <pre>
- * <xmp>
- * <files>
- *         <file path="file1.jar" size="1348" checksum="fd7adfb7"/>
+ * &lt;files&gt;
+ *         &lt;file path="file1.jar" size="1348" checksum="fd7adfb7"/&gt;
  *         
- *         <!-- The new file -->
- *         <file path="file2.jar" />
- * </files>
- * </xmp>
+ *         &lt;!-- The new file --&gt;
+ *         &lt;file path="file2.jar" /&gt;
+ * &lt;/files&gt;
  * </pre>
  * 
  * 
