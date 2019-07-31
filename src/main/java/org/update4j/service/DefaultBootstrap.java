@@ -111,31 +111,24 @@ public class DefaultBootstrap implements Delegate {
 			String arg = e.getKey();
 
 			if ("syncLocal".equals(arg)) {
-				validateNotSet(syncLocal, "syncLocal");
 				ArgUtils.validateNoValue(e);
 				syncLocal = true;
 			} else if ("launchFirst".equals(arg)) {
-				validateNotSet(launchFirst, "launchFirst");
 				ArgUtils.validateNoValue(e);
 				launchFirst = true;
 			} else if ("stopOnUpdateError".equals(arg)) {
-				validateNotSet(stopOnUpdateError, "stopOnUpdateError");
 				ArgUtils.validateNoValue(e);
 				stopOnUpdateError = true;
 			} else if ("singleInstance".equals(arg)) {
-				validateNotSet(singleInstance, "singleInstance");
 				ArgUtils.validateNoValue(e);
 				singleInstance = true;
 			} else if ("remote".equals(arg)) {
-				validateNotSet(remote, "remote");
 				ArgUtils.validateHasValue(e);
 				remote = e.getValue();
 			} else if ("local".equals(arg)) {
-				validateNotSet(local, "local");
 				ArgUtils.validateHasValue(e);
 				local = e.getValue();
 			} else if ("cert".equals(arg)) {
-				validateNotSet(cert, "cert");
 				ArgUtils.validateHasValue(e);
 				cert = e.getValue();
 			} else if ("delegate".equals(arg)) {
@@ -145,16 +138,6 @@ public class DefaultBootstrap implements Delegate {
 								"Unknown option \"" + arg + "\". Separate business app arguments with '--'.");
 			}
 		}
-	}
-
-	private void validateNotSet(boolean val, String command) {
-		if (val)
-			throw new IllegalArgumentException("Duplicate '--" + command + "' command.");
-	}
-
-	private void validateNotSet(String val, String command) {
-		if (val != null)
-			throw new IllegalArgumentException("Duplicate '--" + command + "' command.");
 	}
 
 	private void updateFirst() throws Throwable {
