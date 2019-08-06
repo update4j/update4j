@@ -5,17 +5,20 @@
 
 **Read the [documentation](https://github.com/update4j/update4j/wiki/Documentation), explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/index.html), or [see it in action](https://github.com/update4j/update4j/wiki/Demo-Application)**
 
-A _DIY-framework_ library: create the environment and lifecycle to make your own auto-update framework and hack it to the core, or use the built-in default lifecycle (or bootstrap).
+_Create a framework_: design the environment and lifecycle to make your own auto-update framework and hack it to the core, or use the built-in default lifecycle (or bootstrap).
 
 ## Screenshots
 
 ### Headless
+
 Using the default built-in bootstrap, downloads 4 files then launches `hello-world.jar`. You can see that subsequent runs won't download again.
+
 [![headless][2]][2]
 
 ### JavaFX
 
 Using a custom bootstrap implemented to report progress in JavaFX, downloads 4 files then launches `hello-world.jar`.
+
 [![javafx][1]][1]
 
 
