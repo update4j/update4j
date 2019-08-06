@@ -338,7 +338,7 @@ public class DefaultBootstrap implements Delegate {
 				+ "\tyour configuration generation on each build (Maven's maven-exec-plugin for one).\n\n"
 				+ "\tFor more details how to create a configuration please refer to the Javadoc:\n"
 				+ "\thttp://docs.update4j.org/javadoc/update4j/org.update4j/org/update4j/Configuration.html\n\n"
-				+ "\tWhile the default bootstrap works perfectly as an ad-hoc impatient setup, you might\n"
+				+ "\tWhile the default bootstrap works perfectly as an ad-hoc out-of-the-box setup, you might\n"
 				+ "\tfurther customize the update and launch life-cycle to the last detail by\n"
 				+ "\timplementing a custom bootstrap and update/launch your business application\n"
 				+ "\tusing the Configuration.update() and Configuration.launch() methods.\n\n"
