@@ -5,26 +5,27 @@
 
 **Read the [documentation](https://github.com/update4j/update4j/wiki/Documentation), explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/index.html), or [see it in action](https://github.com/update4j/update4j/wiki/Demo-Application)**
 
-Auto-updater and launcher for your distributed applications. Built with Java 9's module system in mind.
+A _DIY-framework_ library: create the environment and lifecycle to make your own auto-update framework and hack it to the core, or use the built-in default lifecycle (or bootstrap).
 
 ## Screenshots
 
 ### Headless
-<sup>Downloads 4 files then launches `hello-world.jar`. You can see that subsequent runs won't download again.</sup>
+Using the default built-in bootstrap, downloads 4 files then launches `hello-world.jar`. You can see that subsequent runs won't download again.
 [![headless][2]][2]
 
 ### JavaFX
 
-<sup>Downloads 4 files then launches `hello-world.jar`</sup>
+Using a custom bootstrap implemented to report progress in JavaFX, downloads 4 files then launches `hello-world.jar`.
 [![javafx][1]][1]
-
 
 
 ## Overview
 
-The update4j framework is the first auto-update and launcher framework completely compatible with Java 9 and up. Easily host your application files anywhere (even Google Drive, Dropbox, Amazon S3, or Maven Central) and you can synchronize them with all your distributed applications. You can use [any protocol you wish](https://gitter.im/update4j/update4j?at=5c7067c1a378ef11f6236c86) to retrieve those files and may be protected under authenticated API.
+Update4j is the first auto-update and launcher library completely compatible with Java 9 and up. Easily host your application files anywhere (even Google Drive, Dropbox, Amazon S3, Maven Central, or your private FTP server) and you can synchronize them with all your distributed applications. You can use [any protocol you wish](https://gitter.im/update4j/update4j?at=5c7067c1a378ef11f6236c86) to retrieve those files and may be protected under authenticated API.
 
-In update4j _you_ have ultimate control of every process, from startup - update - launch - shutdown; unlike other auto-update frameworks that yields over the control only once the business application was launched. In addition, every single piece of code is completely updatable; [even the framework itself](https://github.com/update4j/update4j/wiki/Documentation#updating-update4j-itself), once a new version is released!
+In update4j _you_ have ultimate control of every process, from startup - update - launch - shutdown, since it's a library (you call the 3rd party code) not a framework (3rd party calls your code outside your control). In addition, every single piece of code is completely updatable; [even update4j itself](https://github.com/update4j/update4j/wiki/Documentation#updating-update4j-itself), once a new version is released!
+
+
 
 ## Installation & Usage
 
