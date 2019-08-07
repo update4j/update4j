@@ -5,13 +5,13 @@
 
 **Read the [documentation](https://github.com/update4j/update4j/wiki/Documentation), explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/index.html), or [see it in action](https://github.com/update4j/update4j/wiki/Demo-Application)**
 
-_Create a framework_: design the environment and lifecycle to make your own auto-update framework and hack it to the core, or use the built-in default lifecycle (or bootstrap).
+_Create a framework_: design the environment and lifecycle (&mdashbootstrap) to make your own auto-update framework and hack it to the core, or use the built-in default bootstrap.
 
 ## Screenshots
 
 ### Headless
 
-Using the default built-in bootstrap, downloads 4 files then launches `hello-world.jar`. You can see that subsequent runs won't download again.
+Using the default bootstrap, downloads 4 files then launches `hello-world.jar`. You can see that subsequent runs won't download again.
 
 [![headless][2]][2]
 
@@ -24,7 +24,7 @@ Using a custom bootstrap implemented to report progress in JavaFX, downloads 4 f
 
 ## Overview
 
-Update4j is the first auto-update and launcher library completely compatible with Java 9 and up. Easily host your application files anywhere (even Google Drive, Dropbox, Amazon S3, Maven Central, or your private FTP server) and you can synchronize them with all your distributed applications. You can use [any protocol you wish](https://gitter.im/update4j/update4j?at=5c7067c1a378ef11f6236c86) to retrieve those files and may be protected under authenticated API.
+Update4j is the first auto-update and launcher library designed for Java 9+. Easily host your application files anywhere (even Google Drive, Dropbox, Amazon S3, or Maven Central) and you can synchronize them with all your distributed applications. You can use [any protocol you wish](https://gitter.im/update4j/update4j?at=5c7067c1a378ef11f6236c86) to retrieve those files and may be protected under authenticated API.
 
 In update4j _you_ have ultimate control of every process, from startup - update - launch - shutdown, since it's a library (you call the 3rd party code) not a framework (3rd party calls your code outside your control). In addition, every single piece of code is completely updatable; [even update4j itself](https://github.com/update4j/update4j/wiki/Documentation#updating-update4j-itself), once a new version is released!
 
