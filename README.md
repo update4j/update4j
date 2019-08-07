@@ -5,7 +5,7 @@
 
 **Read the [documentation](https://github.com/update4j/update4j/wiki/Documentation), explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/index.html), or [see it in action](https://github.com/update4j/update4j/wiki/Demo-Application)**
 
-_Create a framework_: design the environment and lifecycle (&mdashbootstrap) to make your own auto-update framework and hack it to the core, or use the built-in default bootstrap.
+_Create a framework_: design the environment and lifecycle (&mdash;bootstrap) to make your own auto-update framework and hack it to the core, or use the built-in default bootstrap.
 
 ## Screenshots
 
