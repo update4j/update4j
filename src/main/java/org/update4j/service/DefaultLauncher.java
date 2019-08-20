@@ -128,7 +128,9 @@ public class DefaultLauncher implements Launcher {
 						+ "\tWhile the default behavior works for a majority of cases, you may even\n"
 						+ "\tfurther customize the launch process by implementing your own Launcher\n"
 						+ "\tand either register it as a service provider, or pass an instance directly\n"
-						+ "\tto a call to Configuration.launch().\n\n"
+						+ "\tto a call to Configuration.launch(). This allows you to leverage the dependency\n"
+						+ "\tinjection feature by calling any overload of Configuration.launch() that accepts\n"
+						+ "\tan Injectable.\n\n"
 						+ "\tFor more details how to register service providers please refer to the Github wiki:\n"
 						+ "\thttps://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers\n");
 	}

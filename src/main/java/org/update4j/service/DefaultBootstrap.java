@@ -342,23 +342,8 @@ public class DefaultBootstrap implements Delegate {
 				+ "\tfurther customize the update and launch life-cycle to the last detail by\n"
 				+ "\timplementing a custom bootstrap and update/launch your business application\n"
 				+ "\tusing the Configuration.update() and Configuration.launch() methods.\n\n"
-				+ "\tIf you choose to implement your own bootstrap, there are 2 ways to do it:\n\n"
-				+ "\t\t- Standard Mode: Start the bootstrap application using your own main method and\n"
-				+ "\t\t  and use update4j as just another library.\n"
-				+ "\t\t  You will not be able to update the bootstrap application (as code cannot safely\n"
-				+ "\t\t  overwrite itself), only the business application will be updatable.\n\n"
-				+ "\t\t- Delegate Mode: Move your main method into an implementation of Delegate\n"
-				+ "\t\t  and start just as you did now, i.e. calling update4j's main method.\n"
-				+ "\t\t  This allows you to update the bootstrap application by releasing a newer version\n"
-				+ "\t\t  with a higher version() number and make it visible to the JVM boot classpath\n"
-				+ "\t\t  or modulepath by placing it in the right directory. Once the delegate runs, you\n"
-				+ "\t\t  continue like in Standard Mode.\n"
-				+ "\t\t  It is recommended not to use this feature before you can get everything\n"
-				+ "\t\t  to run smoothly in Standard Mode, as this adds an extra layer of complexity.\n\n"
 				+ "\tFor more details about implementing the bootstrap, please refer to the Github wiki:\n"
-				+ "\thttps://github.com/update4j/update4j/wiki/Documentation#lifecycle\n"
-				+ "\tFor more details how to register service providers please refer to the Github wiki:\n"
-				+ "\thttps://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers\n\n");
+				+ "\thttps://github.com/update4j/update4j/wiki/Documentation#lifecycle\n\n");
 
 		usage();
 	}
@@ -402,7 +387,12 @@ public class DefaultBootstrap implements Delegate {
 				+ "\tjava -cp update4j-" + Bootstrap.VERSION
 				+ ".jar org.update4j.Bootstrap [commands...] [-- business-args...]\n"
 				+ "\tjava -cp * org.update4j.Bootstrap [commands...] [-- business-args...]\n\n\n"
-				
+				+ "\tWhen starting in the classpath you can still leverage the full power of the Module\n"
+				+ "\tSystem but only for the business application. If a file is marked with the \"modulepath\"\n"
+				+ "\tattribute, the Module System will enforce all modularity rules for that individual module.\n\n"
+				+ "\tUsing this combination of paths is a very simple way to circumvent the system module\n"
+				+ "\trestriction explained in the previous section, i.e. it will automatically include all\n"
+				+ "\tsystem modules into the runtime.\n\n\n"
 				+ "Available commands:\n\n"
 				+ "\t--remote [url] - The remote (or if using file:/// scheme - local) location of the\n"
 				+ "\t\tconfiguration file. If it fails to download or command is missing, it will\n"
