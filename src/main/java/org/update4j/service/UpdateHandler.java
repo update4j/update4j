@@ -105,8 +105,15 @@ public interface UpdateHandler extends Service {
 
 	/**
 	 * Called after injection (see {@link Configuration#update(Injectable)}) but
-	 * before anything update related has started. To do any initialization before
-	 * injection, do it in the constructor.
+	 * before anything update related has started.
+	 * 
+	 * <p>
+	 * To do any initialization before injection, do it in the constructor, but be
+	 * aware that unless you specify the handler in the {@code updateHandler} section
+	 * of the configuration, the constructor might be called even if this provider
+	 * will not be used in the end. This happens as the service loading mechanism
+	 * first loads all providers and then compares versions to use the one with
+	 * the highest version. 
 	 * 
 	 * <p>
 	 * You can use the {@link UpdateContext} to get information or the current state

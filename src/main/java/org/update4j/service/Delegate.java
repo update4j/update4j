@@ -20,7 +20,8 @@ import java.util.List;
 import org.update4j.Bootstrap;
 
 /**
- * An implementation of this interface can be used as a delegate for a bootstrap application to be located by {@link Bootstrap}.
+ * An implementation of this interface can be used as a delegate for a bootstrap
+ * application to be located by {@link Bootstrap}.
  * 
  * <p>
  * For more info how to use services, check out the <a href=
@@ -33,5 +34,25 @@ import org.update4j.Bootstrap;
 @FunctionalInterface
 public interface Delegate extends Service {
 
+	/**
+	 * The bootstrap's main method, if you start it via the {@link Bootstrap} class
+	 * or run update4j as a jar file.
+	 * 
+	 * <p>
+	 * This method is called after dependency injection was performed using any
+	 * overload of {@code Bootstrap.start()} that takes an {@link Injectable}.
+	 * 
+	 * <p>
+	 * To do any initialization before injection, do it in the constructor, but be
+	 * aware that unless you specify the delegate with the {@code --delegate} flag,
+	 * the constructor might be called even if this provider will not be used in the
+	 * end. This happens as the service loading mechanism first loads all providers
+	 * and then compares versions to use the one with the highest version.
+	 * 
+	 * @param args
+	 *            Command line arguments
+	 * 
+	 * @throws Throwable
+	 */
 	void main(List<String> args) throws Throwable;
 }
