@@ -22,7 +22,7 @@ import org.update4j.service.Launcher;
 
 public class Warning {
 
-	private static final String PREFIX = "suppress.warning";
+	private static final String PREFIX = "update4j.suppress.warning";
 
 	public static void lock(String filename) {
 		if (shouldWarn("lock")) {

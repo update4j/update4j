@@ -93,7 +93,7 @@ public class DefaultLauncher implements Launcher {
 
 		// we are fully aware, so no need to warn
 		// if NoClassDefFoundError arises for any other reason
-		System.setProperty("suppress.warning.access", "true");
+		System.setProperty("update4j.suppress.warning.access", "true");
 
 		try {
 			Class<?> clazz = Class.forName(mainClass, true, context.getClassLoader());
