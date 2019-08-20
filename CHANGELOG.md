@@ -1,3 +1,7 @@
+* **1.4.4**
+  * Fixed fatal bug if an exception was thrown in `UpdateHander.doneDownloads()` or `UpdateHanlder.succeeded()`.
+  * Changed warning suppression system property key from `suppress.warning` to `update4j.suppress.warning`.
+  * Restricted passing the same command to `DefaultBootstrap` twice.
 * **1.4.3**
   * Don't throw exception on jar download that `static requires` missing system module *— [@ChristianCiach](https://github.com/ChristianCiach)*
 * **1.4.2**
