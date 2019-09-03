@@ -26,7 +26,7 @@ import org.update4j.service.Service;
 /**
  * This class consists of convenience methods and the module's main method to
  * locate and start the bootstrap application in <a href=
- * "https://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers">Delegate
+ * "https://github.com/update4j/update4j/wiki/Documentation#creating-a-bootstrap">Delegate
  * Mode</a>.
  * 
  * @author Mordechai Meisels
