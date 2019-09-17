@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.update4j.inject.Injectable;
+import org.update4j.inject.PostInject;
 import org.update4j.mapper.ConfigMapper;
 import org.update4j.mapper.FileMapper;
 import org.update4j.service.Launcher;
@@ -235,7 +236,7 @@ import org.update4j.util.StringUtils;
  * 
  * <pre>
  * try (Writer out = Files.newBufferedWriter(location)) {
- * 	config.write(location);
+ * 	config.write(out);
  * }
  * 
  * // or get a String
@@ -284,7 +285,7 @@ import org.update4j.util.StringUtils;
  * newest version, or you can update afterwards and only get the new version on
  * next restart. In the latter case &mdash; on Windows &mdash; you cannot update
  * existing files, since the JVM locks them upon launch; you can call any of the
- * {@code updateTemp()} overloads and complete the launch on next restart via
+ * {@code updateTemp()} overloads and complete the update on next restart via
  * {@link Update#finalizeUpdate(Path)}.
  * 
  * <p>
@@ -451,8 +452,8 @@ public class Configuration {
 	 * clients willing to act according to this value.
 	 * 
 	 * 
-	 * @return The timestamp this configuration was last updated, or when currently
-	 *         loaded, if missing from XML.
+	 * @return The timestamp this configuration was last updated, or @{null}, 
+	 *         if missing from the XML.
 	 */
 	public Instant getTimestamp() {
 		return timestamp;
@@ -746,7 +747,7 @@ public class Configuration {
 	 * If the given string is {@code null}, the same value will be returned.
 	 * 
 	 * @param str    The string to attempt to replace with placeholders.
-	 * @param isPath Whether the given string is a path like string.
+	 * @param matchType The word-breaking policy to use when matching.
 	 * @return The replaced string, or {@code null} if {@code null} was passed.
 	 */
 	public String implyPlaceholders(String str, PlaceholderMatchType matchType) {
@@ -786,6 +787,8 @@ public class Configuration {
 	 * 
 	 * @param str
 	 *            The string to attempt to replace with placeholders.
+	 * @param matchType
+     *            The match policy to use.
 	 * @param isPath
 	 *            Whether the given string is a path like string.
 	 * @return The replaced string, or {@code null} if {@code null} was passed.
@@ -797,6 +800,11 @@ public class Configuration {
 	/**
 	 * Checks the metadata of every file and returns {@code true} if at-least one
 	 * file requires an update, and {@code false} if no file requires an update.
+	 *
+	 * <p>
+	 * This method is completely unaware of
+	 * {@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}, i.e. it might return
+	 * {@code true} even if that method returns {@code false} for a particular file.
 	 * 
 	 * @return If at-least one file requires an update.
 	 * @throws IOException
@@ -1214,7 +1222,7 @@ public class Configuration {
 	 * <p>
 	 * It will then call {@link Launcher#run(LaunchContext)} on a new thread, and
 	 * block the caller of this method until {@code run()} returns. New threads
-	 * spawned by the {@code run()} methods do not count.
+	 * spawned by the {@code run()} method will not block.
 	 * 
 	 * <p>
 	 * This method is intended to be used on the client machine only.
@@ -1248,7 +1256,7 @@ public class Configuration {
 	 * <p>
 	 * It will then call {@link Launcher#run(LaunchContext)} on a new thread, and
 	 * block the caller of this method until {@code run()} returns. New threads
-	 * spawned by the {@code run()} methods do not count.
+	 * spawned by the {@code run()} method will not block.
 	 * 
 	 * <p>
 	 * This method is intended to be used on the client machine only.
@@ -1268,7 +1276,7 @@ public class Configuration {
 	 * <p>
 	 * It will then call {@link Launcher#run(LaunchContext)} on a new thread, and
 	 * block the caller of this method until {@code run()} returns. New threads
-	 * spawned by the {@code run()} methods do not count.
+	 * spawned by the {@code run()} method will not block.
 	 * 
 	 * <p>
 	 * This method is intended to be used on the client machine only.
@@ -1333,6 +1341,10 @@ public class Configuration {
 	 * 
 	 * in other words, you must first update the current config, or if using
 	 * {@code updateTemp()} you must first call {@link Update#finalizeUpdate(Path)}.
+	 * If you return {@code false} in {@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}
+	 * for a particular file, you cannot use this method out of the box. You can hand-modify
+	 * the config to strip those files by removing them with {@link #generateXmlMapper()}.
+	 * Consult the <em>Manual XML Manipulation</em> section in this class JavaDoc.
 	 * 
 	 * 
 	 * @param oldConfig
@@ -1399,6 +1411,10 @@ public class Configuration {
 	 * 
 	 * in other words, you must first update the current config, or if using
 	 * {@code updateTemp()} you must first call {@link Update#finalizeUpdate(Path)}.
+	 * If you return {@code false} in {@link UpdateHandler#shouldCheckForUpdate(FileMetadata)}
+	 * for a particular file, you cannot use this method out of the box. You can hand-modify
+	 * the config to strip those files by removing them with {@link #generateXmlMapper()}.
+	 * Consult the <em>Manual XML Manipulation</em> section in this class JavaDoc.
 	 * 
 	 * 
 	 * @param oldConfig
@@ -1443,7 +1459,7 @@ public class Configuration {
 	}
 
 	/**
-	 * Returns a list of files of old files present in {@code oldConfig}ut not in
+	 * Returns a list of files of old files present in {@code oldConfig} but not in
 	 * the current.
 	 * 
 	 * 
@@ -2630,8 +2646,8 @@ public class Configuration {
 
 		/**
 		 * Attempt to replace strings with listed or system property placeholders
-		 * according to the given policy. {@code null} is set the
-		 * {@link PlaceholderMatchType#WHOLE_WORD} when building.
+		 * according to the given policy. By default, or if you use {@code null},
+		 * it will use {@link PlaceholderMatchType#WHOLE_WORD}.
 		 * 
 		 * @param matcher
 		 *            The match type to be used when implying placeholders.
