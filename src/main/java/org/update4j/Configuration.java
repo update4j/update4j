@@ -716,6 +716,11 @@ public class Configuration {
 	 * </pre>
 	 * 
 	 * <p>
+	 * Additionally, if {@code isPath} is {@code true}, {@code user.home} and
+	 * {@code user.dir} will only be matched to the beginning of the string or just after 
+	 * the {@code file:} URI scheme in the beginning of the string.
+	 * 
+	 * <p>
 	 * If the given string is {@code null}, the same value will be returned.
 	 * 
 	 * @param str
@@ -769,6 +774,11 @@ public class Configuration {
 	 * // -> newString is "${user.home}/Desktop" even though the real system
 	 * // property value is "C:\\Users\\User" on Windows
 	 * </pre>
+	 * 
+	 * <p>
+	 * Additionally, if {@code isPath} is {@code true}, {@code user.home} and
+	 * {@code user.dir} will only be matched to the beginning of the string or just after 
+	 * the {@code file:} URI scheme in the beginning of the string.
 	 * 
 	 * <p>
 	 * You can specify how matches should be found by passing the

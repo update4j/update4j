@@ -222,11 +222,7 @@ public class PropertyManager {
 						.stream()
 						.filter(e -> !e.getValue().isEmpty())
 						.sorted((e1, e2) -> e2.getValue().length() - e1.getValue().length())
-						.peek(e -> {
-							if (isPath) {
-								e.setValue(e.getValue().replace("\\", "/"));
-							}
-						})
+						.peek(e -> normalizePath(e, isPath))
 						.collect(Collectors.toList());
 
 		for (Map.Entry<String, String> e : resolved) {
@@ -240,25 +236,35 @@ public class PropertyManager {
 			return str;
 		}
 
-		/*
-		 * https://stackoverflow.com/a/34464459/1751640
-		 * 
-		 * This regex will not replace characters inside an existing placeholder.
-		 */
-		if (matchType == PlaceholderMatchType.EVERY_OCCURRENCE) {
+		if (matchType == PlaceholderMatchType.EVERY_OCCURRENCE || matchType == PlaceholderMatchType.WHOLE_WORD) {
 			for (Map.Entry<String, String> e : resolved) {
-				String pattern = "(?<!\\$\\{[^{}]{0,500})" + Pattern.quote(e.getValue());
+				String key = e.getKey();
+				String wrappedKey = Matcher.quoteReplacement(wrap(key));
+				String quote = Pattern.quote(e.getValue());
 
-				str = str.replaceAll(pattern, Matcher.quoteReplacement(wrap(e.getKey())));
-			}
+				if (matchType == PlaceholderMatchType.WHOLE_WORD)
+					quote = "\\b" + quote + "\\b";
 
-			return str;
-		}
+				/*
+				 * Those keys must only match the beginning of a file path or file:// uri
+				 * see GitHub Issue #73
+				 */
+				if (isPath && (key.equals("user.home") || key.equals("user.dir"))) {
+					// if hardcoded into string
+					if (str.contains(wrap(key)))
+						continue;
 
-		if (matchType == PlaceholderMatchType.WHOLE_WORD) {
-			for (Map.Entry<String, String> e : resolved) {
-				String pattern = "(?<!\\$\\{[^{}]{0,500})\\b" + Pattern.quote(e.getValue()) + "\\b";
-				str = str.replaceAll(pattern, Matcher.quoteReplacement(wrap(e.getKey())));
+					str = str.replaceFirst("^(file:/*)?" + quote, "$1" + wrappedKey);
+				} else {
+					
+					/*
+					 * https://stackoverflow.com/a/34464459
+					 * This regex will not replace characters inside an existing placeholder.
+					 */
+					String pattern = "(\\$\\{[^{}]*)|" + quote;
+					Matcher m = Pattern.compile(pattern).matcher(str);
+					str = m.replaceAll(i -> i.group(1) != null ? Matcher.quoteReplacement(i.group(1)) : wrappedKey);
+				}
 			}
 
 			return str;
@@ -267,7 +273,13 @@ public class PropertyManager {
 		// In case we rename this enum, lets stay safe the IDE will automatically fix this
 		throw new UnsupportedOperationException("Unknown " + PlaceholderMatchType.class.getSimpleName());
 	}
-
+	
+	private static void normalizePath(Map.Entry<String, String> e, boolean isPath) {
+		if (isPath) {
+			e.setValue(e.getValue().replace("\\", "/"));
+		}
+	}
+	
 	private static Map<String, String> extractPropertiesForCurrentMachine(Collection<? extends Property> properties,
 					Collection<String> systemProperties) {
 
