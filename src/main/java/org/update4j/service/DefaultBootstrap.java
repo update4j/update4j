@@ -335,7 +335,7 @@ public class DefaultBootstrap implements Delegate {
 				+ "\tBefore you start, you first need to create a \"configuration\" file that contains\n"
 				+ "\tall details required to run. You can create one by using Configuration.builder()\n"
 				+ "\tBuilder API. For automation, you might use a build-tool plugin that executes\n"
-				+ "\tyour configuration generation on each build (Maven's maven-exec-plugin for one).\n\n"
+				+ "\tyour configuration generation on each build (Maven's exec-maven-plugin for one).\n\n"
 				+ "\tFor more details how to create a configuration please refer to the Javadoc:\n"
 				+ "\thttp://docs.update4j.org/javadoc/update4j/org.update4j/org/update4j/Configuration.html\n\n"
 				+ "\tWhile the default bootstrap works perfectly as an ad-hoc out-of-the-box setup, you might\n"

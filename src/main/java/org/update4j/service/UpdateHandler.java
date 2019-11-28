@@ -128,7 +128,7 @@ public interface UpdateHandler extends Service {
 	}
 
 	/**
-	 * Called after {@link #init()}, just before starting to check for updates.
+	 * Called after {@link #init(UpdateContext)}, just before starting to check for updates.
 	 * 
 	 * @throws Throwable Freely throw any exception, it will gracefully terminate
 	 *                   the update process and revert any file changes.
@@ -273,7 +273,7 @@ public interface UpdateHandler extends Service {
 
 	/**
 	 * Called repeatedly, updating the {@code frac} value to reflect the overall
-	 * state of the download or all files. It will be called the first time with the
+	 * state of the download of all files. It will be called the first time with the
 	 * value {@code 0f}.
 	 * 
 	 * 
@@ -286,7 +286,7 @@ public interface UpdateHandler extends Service {
 	}
 
 	/**
-	 * The file was successfully downloaded and is now about to be passed throw a
+	 * The file was successfully downloaded and is now about to be passed through a
 	 * series of validations.
 	 * 
 	 * <p>
@@ -346,28 +346,35 @@ public interface UpdateHandler extends Service {
 	 * Called when the update process failed.
 	 * 
 	 * <p>
-	 * If an exception arises in this method, the exception will bubble up to the {@code update()} method.
+	 * If an exception arises in this method, the exception will bubble up to the
+	 * {@link Configuration#update()} method.
 	 * 
-	 * @param t The exception thrown that failed the update process.
+	 * @param t
+	 *            The exception thrown that failed the update process.
 	 */
 	default void failed(Throwable t) {
 	}
 
 	/**
-	 * Called when the update process is complete, even if no files actually required an update.
+	 * Called when the update process is complete, even if no files actually
+	 * required an update.
 	 * 
 	 * <p>
-	 * If an exception arises in this method, the exception will bubble up to the {@code update()} method.
+	 * If an exception arises in this method, the exception will bubble up to the
+	 * {@link Configuration#update()} method.
 	 * 
 	 */
 	default void succeeded() {
 	}
 
 	/**
-	 * Called just before the {@code update()} method returns, regardless of the error state (unless an exception was thrown in {@code #failed(Throwable)}.
+	 * Called just before the {@link Configuration#update()} method returns,
+	 * regardless of the error state (unless an exception was thrown in
+	 * {@link #failed(Throwable)} or {@link #succeeded()}).
 	 * 
 	 * <p>
-	 * If an exception arises in this method, the exception will bubble up to the {@code update()} method.
+	 * If an exception arises in this method, the exception will bubble up to the
+	 * {@link Configuration#update()} method.
 	 */
 	default void stop() {
 	}
