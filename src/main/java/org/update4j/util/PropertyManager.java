@@ -242,9 +242,6 @@ public class PropertyManager {
 				String wrappedKey = Matcher.quoteReplacement(wrap(key));
 				String quote = Pattern.quote(e.getValue());
 
-				if (matchType == PlaceholderMatchType.WHOLE_WORD)
-					quote = "\\b" + quote + "\\b";
-
 				/*
 				 * Those keys must only match the beginning of a file path or file:// uri
 				 * see GitHub Issue #73
@@ -253,10 +250,16 @@ public class PropertyManager {
 					// if hardcoded into string
 					if (str.contains(wrap(key)))
 						continue;
+					
+					if (matchType == PlaceholderMatchType.WHOLE_WORD)
+						quote = quote + "\\b";
 
 					str = str.replaceFirst("^(file:/*)?" + quote, "$1" + wrappedKey);
 				} else {
 					
+					if (matchType == PlaceholderMatchType.WHOLE_WORD)
+						quote = "\\b" + quote + "\\b";
+
 					/*
 					 * https://stackoverflow.com/a/34464459
 					 * This regex will not replace characters inside an existing placeholder.
