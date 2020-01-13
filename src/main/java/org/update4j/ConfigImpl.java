@@ -239,7 +239,7 @@ class ConfigImpl {
 				}
 
 				for (FileMetadata fm : files.keySet()) {
-					FileUtils.verifyNotLocked(fm.getNormalizedPath());
+					FileUtils.verifyAccessible(fm.getNormalizedPath());
 				}
 
 				// mimic a single transaction.
@@ -266,7 +266,7 @@ class ConfigImpl {
 					out.writeObject(updateTempData);
 				}
 
-				FileUtils.windowsHide(updateDataFile);
+				FileUtils.windowsHidden(updateDataFile, true);
 			}
 		}
 	}

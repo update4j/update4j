@@ -189,7 +189,7 @@ public class SingleInstanceManager {
 			FileLock lock = randomAccess.getChannel().tryLock();
 
 			if (lock != null) {
-				FileUtils.windowsHide(lockFile);
+				FileUtils.windowsHidden(lockFile, true);
 
 				ServerSocket server = new ServerSocket(0, 0, InetAddress.getByName(null));
 
@@ -212,7 +212,7 @@ public class SingleInstanceManager {
 					out.write("" + server.getLocalPort());
 				}
 
-				FileUtils.windowsHide(portFile);
+				FileUtils.windowsHidden(portFile, false);
 
 				Thread listen = new Thread(() -> {
 					while (!server.isClosed()) {

@@ -109,7 +109,7 @@ public class Update {
 
 		try {
 			for (Map.Entry<Path, Path> e : files.entrySet()) {
-				FileUtils.verifyNotLocked(e.getValue());
+				FileUtils.verifyAccessible(e.getValue());
 			}
 		} catch (FileSystemException fse) {
 			String msg = fse.getMessage();

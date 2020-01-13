@@ -19,13 +19,16 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -186,46 +189,31 @@ public class FileUtils {
 		return false;
 	}
 
-	public static void windowsHide(Path file) {
+	public static void windowsHidden(Path file, boolean hidden) {
 		if (OS.CURRENT != OS.WINDOWS)
 			return;
 
 		try {
-			Files.setAttribute(file, "dos:hidden", true);
+			Files.setAttribute(file, "dos:hidden", hidden);
 		} catch (Exception e) {
 		}
 	}
 
-	public static void windowsUnhide(Path file) {
-		if (OS.CURRENT != OS.WINDOWS)
-			return;
+	public static void verifyAccessible(Path path) throws IOException {
+		boolean exists = Files.exists(path);
 
-		try {
-			Files.setAttribute(file, "dos:hidden", false);
-		} catch (Exception e) {
-		}
-	}
-
-	public static void verifyNotLocked(Path path) throws IOException {
-		if (OS.CURRENT != OS.WINDOWS)
-			return;
-
-		if (!Files.isRegularFile(path)) {
-			return;
-		}
-
-		Path temp = Files.createTempFile(path.getParent(), null, null);
-
-		try {
-			Files.move(path, temp, StandardCopyOption.REPLACE_EXISTING);
-			Files.move(temp, path);
+		if (exists && !Files.isWritable(path))
+			throw new AccessDeniedException(path.toString());
+		
+		try (Writer out = Files.newBufferedWriter(path, exists ? StandardOpenOption.APPEND : StandardOpenOption.CREATE)) {
 		} finally {
-			Files.deleteIfExists(temp);
+			if(!exists)
+				Files.deleteIfExists(path);
 		}
-
 	}
 
 	public static void secureMoveFile(Path source, Path target) throws IOException {
+		// for windows we can't go wrong because the OS manages locking
 		if (OS.CURRENT == OS.WINDOWS || Files.notExists(target)) {
 			Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
 			return;
