@@ -96,12 +96,12 @@ public class DefaultLauncher implements Launcher {
 		System.setProperty("update4j.suppress.warning.access", "true");
 
 		try {
-			Class<?> clazz = Class.forName(mainClass, true, context.getClassLoader());
+			Class<?> clazz = context.getClassLoader().loadClass(mainClass);
 
 			// first check for JavaFx start method
 			Class<?> javafx = null;
 			try {
-				javafx = Class.forName("javafx.application.Application", true, context.getClassLoader());
+				javafx = context.getClassLoader().loadClass("javafx.application.Application");
 			} catch (ClassNotFoundException e) {
 				// no JavaFx present, skip.
 			}
