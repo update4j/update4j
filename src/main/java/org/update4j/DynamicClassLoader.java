@@ -50,7 +50,7 @@ public final class DynamicClassLoader extends URLClassLoader {
 		try {
 			add(Paths.get(jarfile).toRealPath().toUri().toURL());
 		} catch (IOException e) {
-			new AssertionError(e);
+			throw new AssertionError(e);
 		}
 	}
 }
