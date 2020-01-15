@@ -46,11 +46,7 @@ public final class DynamicClassLoader extends URLClassLoader {
 	 *  Required for Java Agents when this classloader is used as the system classloader
 	 */
 	@SuppressWarnings("unused")
-	private void appendToClassPathForInstrumentation(String jarfile) {
-		try {
-			add(Paths.get(jarfile).toRealPath().toUri().toURL());
-		} catch (IOException e) {
-			throw new AssertionError(e);
-		}
+	private void appendToClassPathForInstrumentation(String jarfile) throws IOException {
+		add(Paths.get(jarfile).toRealPath().toUri().toURL());
 	}
 }
