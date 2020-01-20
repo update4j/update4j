@@ -112,11 +112,7 @@ public class Update {
 				FileUtils.verifyAccessible(e.getValue());
 			}
 		} catch (FileSystemException fse) {
-			String msg = fse.getMessage();
-			if (msg.contains("another process") || msg.contains("lock") || msg.contains("use")) {
-				Warning.lockFinalize(fse.getFile());
-			}
-
+			Warning.lockFinalize(fse);
 			throw fse;
 		}
 
