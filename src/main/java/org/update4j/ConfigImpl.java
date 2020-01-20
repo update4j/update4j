@@ -459,19 +459,18 @@ class ConfigImpl {
 
 		
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		ClassLoader classpathLoader = DynamicClassLoader.findAncestor(contextClassLoader);
-		if(classpathLoader != null) {
-			DynamicClassLoader dynamic = (DynamicClassLoader) classpathLoader;
+		DynamicClassLoader dynamic = DynamicClassLoader.findAncestor(contextClassLoader);
+		if(dynamic != null) {
 			for(URL url : classpaths) {
 				dynamic.add(url);
 			}
-		} else {
-			classpathLoader = new URLClassLoader("classpath", classpaths.toArray(new URL[classpaths.size()]),
-						contextClassLoader);
+        } else if (classpaths.size() > 0) {
+            contextClassLoader = new URLClassLoader("classpath", classpaths.toArray(new URL[classpaths.size()]),
+                            contextClassLoader);
 		}
 
 		ModuleLayer.Controller controller = ModuleLayer.defineModulesWithOneLoader(cf, List.of(parent),
-						classpathLoader);
+		                contextClassLoader);
 		ModuleLayer layer = controller.layer();
 
 		// manipulate exports, opens and reads
@@ -511,7 +510,6 @@ class ConfigImpl {
 			}
 		}
 
-		contextClassLoader = classpathLoader;
 		if (moduleNames.size() > 0) {
 			contextClassLoader = layer.findLoader(moduleNames.get(0));
 		}
