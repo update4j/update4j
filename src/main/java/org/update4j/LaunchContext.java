@@ -48,42 +48,50 @@ public class LaunchContext {
 	}
 
 	/**
-	 * Returns the class loader that classes in the dynamic classpath or modulepath
-	 * are loaded with. Use this to access dynamic classes in the bootstrap:
-	 * 
-	 * <pre>
-	 * Class&lt;?&gt; clazz = Class.forName("MyBusinessClass", true, ctx.getClassLoader());
-	 * </pre>
-	 * 
-	 * Once the class was loaded, the class itself has access to the dynamic
-	 * classpath in natural Java.
-	 * 
-	 * <p>
-	 * This is also necessary for frameworks that loads classes reflectively in
-	 * their own thread other than the main "launch" thread (JavaFX
-	 * {@code FXMLLoader} or Spring to name a few). Since these frameworks are not
-	 * aware of the dynamically augmented classes and they use a different thread,
-	 * {@link Thread#getContextClassLoader()} does not return this instance. You
-	 * might want explicitly set it to the thread that does the loading:
-	 * 
-	 * <pre>
-	 * Thread.currentThread().setContextClassLoader(ctx.getClassLoader());
-	 * </pre>
-	 * 
-	 * <p>
-	 * Or use the frameworks' methods that take an explicit class loader, as in
-	 * {@code FXMLLoader}:
-	 * 
-	 * <pre>
-	 * FXMLLoader loader = new FXMLLoader(myLocation);
-	 * loader.setClassLoader(ctx.getClassLoader());
-	 * </pre>
-	 * 
-	 * <b>Note:</b> The thread that calls {@link Launcher#run(LaunchContext)}
-	 * already has this set as the context class loader.
-	 * 
-	 * @return The dynamic class loader.
-	 */
+     * Returns the class loader that classes in the dynamic classpath or modulepath
+     * are loaded with. Use this to access dynamic classes in the bootstrap:
+     * 
+     * <pre>
+     * Class&lt;?&gt; clazz = ctx.getClassLoader().loadClass("MyBusinessClass");
+     * </pre>
+     * 
+     * Once the class was loaded, the class itself has access to the dynamic
+     * classpath in natural Java.
+     * 
+     * <p>
+     * This is also necessary for libraries or frameworks that loads classes
+     * reflectively (JavaFX {@code FXMLLoader} or Spring to name a few) <i>and those
+     * libraries were loaded in the bootstrap</i>. Since they are not aware of the
+     * dynamically augmented classes and they run in a different thread which is not
+     * a child of the launch thread, {@link Thread#getContextClassLoader()} does not
+     * return this instance. You might want explicitly set it to the thread that
+     * does the loading:
+     * 
+     * <pre>
+     * Thread.currentThread().setContextClassLoader(ctx.getClassLoader());
+     * </pre>
+     * 
+     * <p>
+     * Or use the libraries' methods that take an explicit class loader, as in
+     * {@code FXMLLoader}:
+     * 
+     * <pre>
+     * FXMLLoader loader = new FXMLLoader(myLocation);
+     * loader.setClassLoader(ctx.getClassLoader());
+     * </pre>
+     * 
+     * You might find using {@link DynamicClassLoader} simpler and suiting better to
+     * your needs. Check out <a href=
+     * "https://github.com/update4j/update4j/wiki/Documentation#classloading-model">Classloading
+     * Model</a> in the GitHub wiki.
+     * 
+     * <p>
+     * <b>Note:</b> The thread that calls {@link Launcher#run(LaunchContext)}
+     * already has this set as the context class loader. New threads spawned from
+     * this thread will also automatically assign this as the context class loader.
+     * 
+     * @return The dynamic class loader.
+     */
 	public ClassLoader getClassLoader() {
 		return classLoader;
 	}
