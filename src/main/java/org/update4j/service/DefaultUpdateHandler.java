@@ -15,11 +15,21 @@
  */
 package org.update4j.service;
 
+import static org.update4j.util.StringUtils.formatSeconds;
+import static org.update4j.util.StringUtils.humanReadableByteCount;
+import static org.update4j.util.StringUtils.padLeft;
+import static org.update4j.util.StringUtils.padRight;
+import static org.update4j.util.StringUtils.repeat;
+
+import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.update4j.FileMetadata;
 import org.update4j.UpdateContext;
 import org.update4j.util.FileUtils;
+import org.update4j.util.StringUtils;
 
 public class DefaultUpdateHandler implements UpdateHandler {
 
@@ -35,60 +45,169 @@ public class DefaultUpdateHandler implements UpdateHandler {
 		this.context = context;
 	}
 
-
 	@Override
-	public void doneCheckUpdateFile(FileMetadata file, boolean requires) throws Throwable {
-		System.out.print(compactName(context.getConfiguration().getBasePath(), file.getPath()));
-		if (requires) {
-			System.out.println(":  UPDATE");
-		} else {
-			System.out.println(":  SYNCHRONIZED");
-		}
+	public void startDownloads() throws Throwable {
+		total = context.getRequiresUpdate().size();
+		ordinalWidth = String.valueOf(total).length() * 2 + 1;
+		initProgress();
 	}
-
 
 	@Override
 	public void startDownloadFile(FileMetadata file) throws Throwable {
-		//		System.out.print("Downloading: " + compactName(context.getConfiguration().getBasePath(), file.getPath()) + " <"
-		//						+ file.getUri() + "> ");
-		System.out.println("Downloading: " + compactName(context.getConfiguration().getBasePath(), file.getPath())
-						+ " <" + file.getUri() + ">");
+		index++;
+		println(renderFilename(file));
+		resetProgress(file.getSize());
 	}
 
-	//	private String percent;
-	//
-	//	@Override
-	//	public void updateDownloadFileProgress(FileMetadata file, float frac) throws InterruptedException {
-	//		if (frac == 0) {
-	//			System.out.print("(");
-	//		}
-	//
-	//		String percent = ((int) (frac * 100)) + "%)   ";
-	//		percent = percent.substring(0, 5);
-	//
-	//		if (!percent.equals(this.percent)) {
-	//			this.percent = percent;
-	//			if (frac != 0)
-	//				System.out.print("\b\b\b\b\b");
-	//			System.out.print(percent);
-	//		}
-	//
-	//		if (frac == 1) {
-	//			System.out.println();
-	//		}
-	//
-	//	}
+	@Override
+	public void updateDownloadFileProgress(FileMetadata file, float frac) throws Throwable {
+		currentFrac = frac;
+	}
+
+	@Override
+	public void doneDownloadFile(FileMetadata file, Path tempFile) throws Throwable {
+		clear();
+	}
 
 	@Override
 	public void failed(Throwable t) {
-		System.out.println();
-
+		clearln();
 		t.printStackTrace();
 	}
-	
-	private static String compactName(Path base, Path name) {
-		Path relative = FileUtils.relativize(base, name);
 
+	@Override
+	public void stop() {
+		stopTimer = true;
+	}
+	
+	//------- Progress rendering, highly inspired by https://github.com/ctongfei/progressbar
+
+	private PrintStream out;
+	private Timer timer;
+
+	private int totalWidth;
+	private int msgWidth;
+	private int rateWidth;
+	private int percentWidth;
+	private int timeWidth;
+	private String clear;
+	
+	private int ordinalWidth;
+	private int total;
+	private int index;
+	
+	private long totalBytes;
+	private float lastFrac;
+	private float currentFrac;
+	private long start;
+	private boolean stopTimer;
+	
+	protected void initProgress() {
+		out = out();
+		totalWidth = consoleWidth();
+		msgWidth = "Downloading".length();
+		rateWidth = "@ 100.0 kB/s".length();
+		percentWidth = "100%".length();
+		timeWidth = "0:00:00".length();
+		clear = "\r" + repeat(totalWidth, " ") + "\r";
+
+		timer = new Timer("Progress Printer", true);
+		timer.scheduleAtFixedRate(new TimerTask() {
+			public void run() {
+				if(stopTimer) {
+					timer.cancel();
+					return;
+				}
+				
+				print(renderProgress());
+				lastFrac = currentFrac;
+			}
+		}, 0, 1000);
+	}
+	
+	protected void resetProgress(long bytes) {
+		currentFrac = 0;
+		lastFrac = 0;
+		totalBytes = bytes;
+		start = System.currentTimeMillis();
+	}
+	
+	protected PrintStream out() {
+		return System.out;
+	}
+	
+	protected int consoleWidth() {
+		return 80;
+	}
+	
+	public void clear() {
+		out.print(clear);
+	}
+
+	public void clearln() {
+		out.println(clear);
+	}
+
+	public void print(String str) {
+		out.print("\r");
+		out.print(padRight(totalWidth, str));
+	}
+
+	public void println(String str) {
+		out.print("\r");
+		out.println(padRight(totalWidth, str));
+	}
+	
+	protected String renderProgress() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Downloading ");
+
+		String humanReadableBytes = humanReadableByteCount(totalBytes);
+
+		sb.append(humanReadableBytes);
+		sb.append(" ");
+		if(lastFrac == 0 && currentFrac == 0) {
+			sb.append(repeat(rateWidth + 1, " "));
+		} else {
+			sb.append("@ ");
+			sb.append(padRight(rateWidth - 2, humanReadableByteCount((long)((currentFrac - lastFrac) * totalBytes)) + "/s"));
+			sb.append(" ");
+		}
+		sb.append(padLeft(percentWidth, ((int) (currentFrac * 100)) + "%"));
+		sb.append(" [");
+
+		int progressWidth = totalWidth
+				- msgWidth 
+				- humanReadableBytes.length()
+				- rateWidth
+				- percentWidth
+				- timeWidth
+				- 7; // spaces
+
+		int pieces = (int) ((progressWidth - 2) * currentFrac);
+		String line = repeat(pieces, "=");
+		if (pieces < progressWidth - 2)
+			line += ">";
+
+		sb.append(padRight(progressWidth - 2, line));
+		sb.append("]");
+
+		long elapsed = System.currentTimeMillis() - start;
+		if (currentFrac > 0) {
+			sb.append(" (");
+			sb.append(formatSeconds(((long) (elapsed / currentFrac) - elapsed) / 1000));
+			sb.append(")");
+		}
+
+		return sb.toString();
+	}
+
+	protected String renderFilename(FileMetadata file) {
+		return StringUtils.padLeft(ordinalWidth, index + "/" + total) + " " + compactName(file.getPath());
+	}
+
+	protected String compactName(Path name) {
+		Path relative = FileUtils.relativize(context.getConfiguration().getBasePath(), name);
 		return relative.isAbsolute() ? relative.getFileName().toString() : relative.toString();
 	}
 }

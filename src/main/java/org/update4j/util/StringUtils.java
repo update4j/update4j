@@ -15,6 +15,9 @@
  */
 package org.update4j.util;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.Set;
 
 public class StringUtils {
@@ -106,5 +109,48 @@ public class StringUtils {
 
 	public static boolean isSystemModule(String str) {
 		return systemModules.contains(str);
+	}
+	
+	public static String repeat(int n, String str) {	
+		if(n < 0)
+			throw new IllegalArgumentException("n < 0: " + n);
+		// first lets try to use JDK 11's String::repeat
+		try {
+			Method repeat = String.class.getMethod("repeat", int.class);
+			return (String) repeat.invoke(str, n);
+		} catch (ReflectiveOperationException e) {
+			return String.join("", Collections.nCopies(n, str));
+		}
+	}
+	
+	public static String padLeft(int width, String str) {
+		if(str.length() >= width)
+			return str;
+		
+		return repeat(width - str.length(), " ") + str;
+	}
+	
+	public static String padRight(int width, String str) {
+		if(str.length() >= width)
+			return str;
+		
+		return str + repeat(width - str.length(), " ");
+	}
+	
+	public static String formatSeconds(long m) {
+        return String.format("%d:%02d:%02d", m / 3600, (m % 3600) / 60, m % 60);
+    }
+	
+	// https://stackoverflow.com/a/3758880/1751640
+	public static String humanReadableByteCount(long bytes) {
+	    String s = bytes < 0 ? "-" : "";
+	    long b = bytes == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(bytes);
+	    return b < 1000L ? bytes + " B"
+	            : b < 999_950L ? String.format("%s%.1f kB", s, b / 1e3)
+	            : (b /= 1000) < 999_950L ? String.format("%s%.1f MB", s, b / 1e3)
+	            : (b /= 1000) < 999_950L ? String.format("%s%.1f GB", s, b / 1e3)
+	            : (b /= 1000) < 999_950L ? String.format("%s%.1f TB", s, b / 1e3)
+	            : (b /= 1000) < 999_950L ? String.format("%s%.1f PB", s, b / 1e3)
+	            : String.format("%s%.1f EB", s, b / 1e6);
 	}
 }
