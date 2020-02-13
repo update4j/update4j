@@ -461,7 +461,7 @@ class ConfigImpl {
 
 		ModuleLayer parent = ModuleLayer.boot();
 		java.lang.module.Configuration cf = parent.configuration()
-						.resolveAndBind(ModuleFinder.of(), finder, moduleNames);
+						.resolveAndBind(finder, ModuleFinder.of(), moduleNames);
 
 		
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
