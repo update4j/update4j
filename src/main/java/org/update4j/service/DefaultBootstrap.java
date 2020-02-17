@@ -261,7 +261,7 @@ public class DefaultBootstrap implements Delegate {
 
 	}
 
-	private Reader openConnection(URL url) throws IOException {
+	protected Reader openConnection(URL url) throws IOException {
 
 		URLConnection connection = url.openConnection();
 
