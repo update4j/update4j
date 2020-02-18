@@ -140,20 +140,20 @@ public class DefaultUpdateHandler implements UpdateHandler {
 		return 80;
 	}
 	
-	public void clear() {
+	private void clear() {
 		out.print(clear);
 	}
 
-	public void clearln() {
+	private void clearln() {
 		out.println(clear);
 	}
 
-	public void print(String str) {
+	private void print(String str) {
 		out.print("\r");
 		out.print(padRight(totalWidth, str));
 	}
 
-	public void println(String str) {
+	private void println(String str) {
 		out.print("\r");
 		out.println(padRight(totalWidth, str));
 	}
@@ -206,7 +206,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
 		return StringUtils.padLeft(ordinalWidth, index + "/" + total) + " " + compactName(file.getPath());
 	}
 
-	protected String compactName(Path name) {
+	private String compactName(Path name) {
 		Path relative = FileUtils.relativize(context.getConfiguration().getBasePath(), name);
 		return relative.isAbsolute() ? relative.getFileName().toString() : relative.toString();
 	}
