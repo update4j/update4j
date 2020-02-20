@@ -326,97 +326,95 @@ public class DefaultBootstrap implements Delegate {
     }
 
     // @formatter:off
-	private static void welcome() {
+    private static void welcome() {
 
-		System.out.println(getLogo() + "\tWelcome to update4j, where you create your own auto-update lifecycle.\n\n"
-				+ "\tYou started its default bootstrap -- the built-in lifecycle -- which does\n"
-				+ "\tthe update and launch logic for you without complex setup. All you need is to\n"
-				+ "\tspecify some settings via command line arguments.\n\n"
-				+ "\tBefore you start, you first need to create a \"configuration\" file that contains\n"
-				+ "\tall details required to run. You can create one by using Configuration.builder()\n"
-				+ "\tBuilder API. For automation, you might use a build-tool plugin that executes\n"
-				+ "\tyour configuration generation on each build (Maven's exec-maven-plugin for one).\n\n"
-				+ "\tFor more details how to create a configuration please refer to the Javadoc:\n"
-				+ "\thttp://docs.update4j.org/javadoc/update4j/org.update4j/org/update4j/Configuration.html\n\n"
-				+ "\tWhile the default bootstrap works perfectly as an ad-hoc out-of-the-box setup, you might\n"
-				+ "\tfurther customize the update and launch lifecycle to the last detail by\n"
-				+ "\timplementing a custom bootstrap and update/launch your business application\n"
-				+ "\tusing the Configuration.update() and Configuration.launch() methods.\n\n"
-				+ "\tFor more details about implementing the bootstrap, please refer to the Github wiki:\n"
-				+ "\thttps://github.com/update4j/update4j/wiki/Documentation#lifecycle\n\n");
+        System.out.println(getLogo() + "\tWelcome to update4j, where you create your own auto-update lifecycle.\n\n"
+                + "\tYou started its default bootstrap -- the built-in lifecycle -- which does\n"
+                + "\tthe update and launch logic for you without complex setup. All you need is to\n"
+                + "\tspecify some settings via command line arguments.\n\n"
+                + "\tBefore you start, you first need to create a \"configuration\" file that contains\n"
+                + "\tall details required to run. You can create one by using Configuration.builder()\n"
+                + "\tBuilder API. For automation, you might use a build-tool plugin that executes\n"
+                + "\tyour configuration generation on each build (Maven's exec-maven-plugin for one).\n\n"
+                + "\tFor more details how to create a configuration please refer to the Javadoc:\n"
+                + "\thttp://docs.update4j.org/javadoc/update4j/org.update4j/org/update4j/Configuration.html\n\n"
+                + "\tWhile the default bootstrap works perfectly as an ad-hoc out-of-the-box setup, you might\n"
+                + "\tfurther customize the update and launch lifecycle to the last detail by\n"
+                + "\timplementing a custom bootstrap and update/launch your business application\n"
+                + "\tusing the Configuration.update() and Configuration.launch() methods.\n\n"
+                + "\tFor more details about implementing the bootstrap, please refer to the Github wiki:\n"
+                + "\thttps://github.com/update4j/update4j/wiki/Documentation#lifecycle\n\n");
 
-		usage();
-	}
+        usage();
+    }
 
-	private static String getLogo() {
+    private static String getLogo() {
 
-		return
+        return
 
-		"\n"
-				+ "\t                 _       _          ___ _ \n"
-				+ "\t                | |     | |        /   (_)\n"
-				+ "\t _   _ _ __   __| | __ _| |_ ___  / /| |_ \n"
-				+ "\t| | | | '_ \\ / _` |/ _` | __/ _ \\/ /_| | |\n"
-				+ "\t| |_| | |_) | (_| | (_| | ||  __/\\___  | |\n"
-				+ "\t \\__,_| .__/ \\__,_|\\__,_|\\__\\___|    |_/ |\n"
-				+ "\t      | |                             _/ |\n"
-				+ "\t      |_|                            |__/ \n\n\n"
+        "\n"
+                + "\t                 _       _          ___ _ \n"
+                + "\t                | |     | |        /   (_)\n"
+                + "\t _   _ _ __   __| | __ _| |_ ___  / /| |_ \n"
+                + "\t| | | | '_ \\ / _` |/ _` | __/ _ \\/ /_| | |\n"
+                + "\t| |_| | |_) | (_| | (_| | ||  __/\\___  | |\n"
+                + "\t \\__,_| .__/ \\__,_|\\__,_|\\__\\___|    |_/ |\n"
+                + "\t      | |                             _/ |\n"
+                + "\t      |_|                            |__/ \n\n\n"
 
-		;
+        ;
+    }
 
-	}
+    private static void usage() {
 
-	private static void usage() {
-		
-		System.err.println("To start in modulepath:\n\n"
-				+ "\tjava -p update4j-" + Bootstrap.VERSION
-				+ ".jar -m org.update4j [commands...] [-- business-args...]\n"
-				+ "\tjava -p . -m org.update4j [commands...] [-- business-args...]\n\n\n"
-				+ "\tWhen starting in the modulepath, be aware that as a fundamental restriction\n"
-				+ "\tof the modulepath only the boot (JVM native) modulepath can resolve *system*\n"
-				+ "\tmodules into the module graph. Therefore when the business application depends\n"
-				+ "\ton a system module that is not required by the bootstrap application\n"
-				+ "\tyou should still add a 'requires' directive in the bootstrap module in order\n"
-				+ "\tto make it end up in the module graph.\n\n"
-				+ "\tAlternatively, use the '--add-modules' flag to manually resolve those required\n"
-				+ "\tsystem modules.\n"
-				+ "\tIf you use the default bootstrap (and you don't have control to add more 'requires')\n"
-				+ "\tyou must use this solution (or, of course, start in the classpath).\n\n\n"
-				+ "To start in classpath:\n\n" + "\tjava -jar update4j-"
-				+ Bootstrap.VERSION + ".jar [commands...] [-- business-args...]\n"
-				+ "\tjava -cp update4j-" + Bootstrap.VERSION
-				+ ".jar org.update4j.Bootstrap [commands...] [-- business-args...]\n"
-				+ "\tjava -cp * org.update4j.Bootstrap [commands...] [-- business-args...]\n\n\n"
-				+ "\tWhen starting in the classpath you can still leverage the full power of the Module\n"
-				+ "\tSystem but only for the business application. If a file is marked with the \"modulepath\"\n"
-				+ "\tattribute, the Module System will enforce all modularity rules for that individual module.\n\n"
-				+ "\tUsing this combination of paths is a very simple way to circumvent the system module\n"
-				+ "\trestriction explained in the previous section, i.e. it will automatically include all\n"
-				+ "\tsystem modules into the runtime.\n\n\n"
-				+ "Available commands:\n\n"
-				+ "\t--remote [url] - The remote (or if using file:/// scheme - local) location of the\n"
-				+ "\t\tconfiguration file. If it fails to download or command is missing, it will\n"
-				+ "\t\tfall back to local.\n\n"
-				+ "\t--local [path] - The path of a local configuration to use if the remote failed to download\n"
-				+ "\t\tor was not passed. If both remote and local fail, startup fails.\n\n"
-				+ "\t--syncLocal - Sync the local configuration with the remote if it downloaded, loaded and\n"
-				+ "\t\tupdated files successfully. Useful to still allow launching without Internet connection.\n"
-				+ "\t\tDefault will not sync unless --launchFirst was specified.\n\n"
-				+ "\t--cert [path] - A path to an X.509 certificate file to use to verify signatures. If missing,\n"
-				+ "\t\tno signature verification will be performed.\n\n"
-				+ "\t--launchFirst - If specified, it will first launch the local application then silently\n"
-				+ "\t\tdownload the update; the update will be available only on next restart. It will still\n"
-				+ "\t\tdownload the remote and update first if the local config requires an update\n"
-				+ "\t\t(e.g. files were deleted). Must have a local configuration.\n"
-				+ "\t\tIf not specified it will update before launch and hang the application until done.\n\n"
-				+ "\t--stopOnUpdateError - Will stop the launch if an error occurred while downloading an update.\n"
-				+ "\t\tThis does not include if remote failed to download and it used local as a fallback.\n"
-				+ "\t\tIf --launchFirst was used, this only applies if the local config requires an update\n"
-				+ "\t\tand failed.\n\n"
-				+ "\t--singleInstance - Run the application as a single instance. Any subsequent attempts\n"
-				+ "\t\tto run will just exit. You can better control this feature by directly using the\n"
-				+ "\t\tSingleInstanceManager class.\n\n\n"
-				+ "To pass arguments to the business application, separate them with '--' (w/o quotes).");
-
-	}
+        String output = "To start in modulepath:\n\n"
+                + "\tjava -p update4j-$version$.jar -m org.update4j [commands...] [-- business-args...]\n"
+                + "\tjava -p . -m org.update4j [commands...] [-- business-args...]\n\n\n"
+                + "\tWhen starting in the modulepath, be aware that as a fundamental restriction\n"
+                + "\tof the modulepath only the boot (JVM native) modulepath can resolve *system*\n"
+                + "\tmodules into the module graph. Therefore when the business application depends\n"
+                + "\ton a system module that is not required by the bootstrap application\n"
+                + "\tyou should still add a 'requires' directive in the bootstrap module in order\n"
+                + "\tto make it end up in the module graph.\n\n"
+                + "\tAlternatively, use the '--add-modules' flag to manually resolve those required\n"
+                + "\tsystem modules.\n"
+                + "\tIf you use the default bootstrap (and you don't have control to add more 'requires')\n"
+                + "\tyou must use this solution (or, of course, start in the classpath).\n\n\n"
+                + "To start in classpath:\n\n"
+                + "\tjava -jar update4j-$version$.jar [commands...] [-- business-args...]\n"
+                + "\tjava -cp update4j-$version$.jar org.update4j.Bootstrap [commands...] [-- business-args...]\n"
+                + "\tjava -cp * org.update4j.Bootstrap [commands...] [-- business-args...]\n\n\n"
+                + "\tWhen starting in the classpath you can still leverage the full power of the Module\n"
+                + "\tSystem but only for the business application. If a file is marked with the \"modulepath\"\n"
+                + "\tattribute, the Module System will enforce all modularity rules for that individual module.\n\n"
+                + "\tUsing this combination of paths is a very simple way to circumvent the system module\n"
+                + "\trestriction explained in the previous section, i.e. it will automatically include all\n"
+                + "\tsystem modules into the runtime.\n\n\n"
+                + "Available commands:\n\n"
+                + "\t--remote [url] - The remote (or if using file:/// scheme - local) location of the\n"
+                + "\t\tconfiguration file. If it fails to download or command is missing, it will\n"
+                + "\t\tfall back to local.\n\n"
+                + "\t--local [path] - The path of a local configuration to use if the remote failed to download\n"
+                + "\t\tor was not passed. If both remote and local fail, startup fails.\n\n"
+                + "\t--syncLocal - Sync the local configuration with the remote if it downloaded, loaded and\n"
+                + "\t\tupdated files successfully. Useful to still allow launching without Internet connection.\n"
+                + "\t\tDefault will not sync unless --launchFirst was specified.\n\n"
+                + "\t--cert [path] - A path to an X.509 certificate file to use to verify signatures. If missing,\n"
+                + "\t\tno signature verification will be performed.\n\n"
+                + "\t--launchFirst - If specified, it will first launch the local application then silently\n"
+                + "\t\tdownload the update; the update will be available only on next restart. It will still\n"
+                + "\t\tdownload the remote and update first if the local config requires an update\n"
+                + "\t\t(e.g. files were deleted). Must have a local configuration.\n"
+                + "\t\tIf not specified it will update before launch and hang the application until done.\n\n"
+                + "\t--stopOnUpdateError - Will stop the launch if an error occurred while downloading an update.\n"
+                + "\t\tThis does not include if remote failed to download and it used local as a fallback.\n"
+                + "\t\tIf --launchFirst was used, this only applies if the local config requires an update\n"
+                + "\t\tand failed.\n\n"
+                + "\t--singleInstance - Run the application as a single instance. Any subsequent attempts\n"
+                + "\t\tto run will just exit. You can better control this feature by directly using the\n"
+                + "\t\tSingleInstanceManager class.\n\n\n"
+                + "To pass arguments to the business application, separate them with '--' (w/o quotes).";
+        
+                System.err.println(output.replace("$version$", Bootstrap.VERSION));
+    }
 }

@@ -121,41 +121,40 @@ public class DefaultLauncher implements Launcher {
     }
 
     // @formatter:off
-	private static void usage() {
-		System.err.println("Customize the setup of the default launcher by setting properties in the config\n"
-						+ "\taccording to the following table:\n\n" + table()
+    private static void usage() {
+        System.err.println("Customize the setup of the default launcher by setting properties in the config\n"
+                        + "\taccording to the following table:\n\n" + table()
 
-						+ "\tWhile the default behavior works for a majority of cases, you may even\n"
-						+ "\tfurther customize the launch process by implementing your own Launcher\n"
-						+ "\tand either register it as a service provider, or pass an instance directly\n"
-						+ "\tto a call to Configuration.launch(). This allows you to leverage the dependency\n"
-						+ "\tinjection feature by calling any overload of Configuration.launch() that accepts\n"
-						+ "\tan Injectable.\n\n"
-						+ "\tFor more details how to register service providers please refer to the Github wiki:\n"
-						+ "\thttps://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers\n");
-	}
+                        + "\tWhile the default behavior works for a majority of cases, you may even\n"
+                        + "\tfurther customize the launch process by implementing your own Launcher\n"
+                        + "\tand either register it as a service provider, or pass an instance directly\n"
+                        + "\tto a call to Configuration.launch(). This allows you to leverage the dependency\n"
+                        + "\tinjection feature by calling any overload of Configuration.launch() that accepts\n"
+                        + "\tan Injectable.\n\n"
+                        + "\tFor more details how to register service providers please refer to the Github wiki:\n"
+                        + "\thttps://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers\n");
+    }
 
-	private static String table() {
-		return "\t\t+--------------------------------+------------------------------------+\n"
-			 + "\t\t| default.launcher.main.class    | The main class of the business app |\n"
-			 + "\t\t|                                | having a main method or subclassing|\n"
-			 + "\t\t|                                | javafx.application.Application     |\n"
-			 + "\t\t|                                |                                    |\n"
-			 + "\t\t|                                | Required.                          |\n"
-			 + "\t\t+--------------------------------+------------------------------------+\n"
-			 + "\t\t| default.launcher.argument.<num>| Pass values in the args list,      |\n"
-			 + "\t\t|                                | ordered by <num>. It will throw a  |\n"
-			 + "\t\t|                                | NumberFormatException if <num> is  |\n"
-			 + "\t\t|                                | not a valid integer.               |\n"
-			 + "\t\t|                                |                                    |\n"
-			 + "\t\t|                                | Arguments passed from the bootstrap|\n"
-			 + "\t\t|                                | are always first in the list       |\n"
-			 + "\t\t|                                | followed by these property values. |\n"
-			 + "\t\t+--------------------------------+------------------------------------+\n"
-			 + "\t\t| default.launcher.system.<key>  | Pass system properties with the    |\n"
-			 + "\t\t|                                | provided values using the <key> as |\n"
-			 + "\t\t|                                | the system property key.           |\n"
-			 + "\t\t+--------------------------------+------------------------------------+\n\n";
-	}
-
+    private static String table() {
+        return "\t\t+--------------------------------+------------------------------------+\n"
+             + "\t\t| default.launcher.main.class    | The main class of the business app |\n"
+             + "\t\t|                                | having a main method or subclassing|\n"
+             + "\t\t|                                | javafx.application.Application     |\n"
+             + "\t\t|                                |                                    |\n"
+             + "\t\t|                                | Required.                          |\n"
+             + "\t\t+--------------------------------+------------------------------------+\n"
+             + "\t\t| default.launcher.argument.<num>| Pass values in the args list,      |\n"
+             + "\t\t|                                | ordered by <num>. It will throw a  |\n"
+             + "\t\t|                                | NumberFormatException if <num> is  |\n"
+             + "\t\t|                                | not a valid integer.               |\n"
+             + "\t\t|                                |                                    |\n"
+             + "\t\t|                                | Arguments passed from the bootstrap|\n"
+             + "\t\t|                                | are always first in the list       |\n"
+             + "\t\t|                                | followed by these property values. |\n"
+             + "\t\t+--------------------------------+------------------------------------+\n"
+             + "\t\t| default.launcher.system.<key>  | Pass system properties with the    |\n"
+             + "\t\t|                                | provided values using the <key> as |\n"
+             + "\t\t|                                | the system property key.           |\n"
+             + "\t\t+--------------------------------+------------------------------------+\n\n";
+    }
 }
