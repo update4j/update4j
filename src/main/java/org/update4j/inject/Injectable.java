@@ -54,88 +54,87 @@ import java.util.Map;
  */
 public interface Injectable {
 
-	public static void injectBidirectional(Injectable obj1, Injectable obj2)
-					throws UnsatisfiedInjectionException, IllegalAccessException, InvocationTargetException {
-		Map<String, Object> sources1 = getSourceObjects(obj1);
-		Map<String, Object> sources2 = getSourceObjects(obj2);
+    public static void injectBidirectional(Injectable obj1, Injectable obj2)
+                    throws UnsatisfiedInjectionException, IllegalAccessException, InvocationTargetException {
+        Map<String, Object> sources1 = getSourceObjects(obj1);
+        Map<String, Object> sources2 = getSourceObjects(obj2);
 
-		injectValues(obj2, sources1);
-		injectValues(obj1, sources2);
-		
-		notifyPostInject(obj1, obj2);
-		notifyPostInject(obj2, obj1);
+        injectValues(obj2, sources1);
+        injectValues(obj1, sources2);
 
-	}
+        notifyPostInject(obj1, obj2);
+        notifyPostInject(obj2, obj1);
 
-	public static void injectUnidirectional(Injectable source, Injectable target)
-					throws IllegalAccessException, UnsatisfiedInjectionException, InvocationTargetException {
-		Map<String, Object> sourceObjects = getSourceObjects(source);
-		injectValues(target, sourceObjects);
-		
-		notifyPostInject(source, target);
-		notifyPostInject(target, source);
-	}
+    }
 
-	private static Map<String, Object> getSourceObjects(Injectable obj) throws IllegalAccessException {
-		Map<String, Object> map = new HashMap<>();
+    public static void injectUnidirectional(Injectable source, Injectable target)
+                    throws IllegalAccessException, UnsatisfiedInjectionException, InvocationTargetException {
+        Map<String, Object> sourceObjects = getSourceObjects(source);
+        injectValues(target, sourceObjects);
 
-		for (Field f : obj.getClass().getDeclaredFields()) {
-			InjectSource annotation = f.getAnnotation(InjectSource.class);
+        notifyPostInject(source, target);
+        notifyPostInject(target, source);
+    }
 
-			if (annotation != null) {
-				String key = annotation.target();
-				key = key.isEmpty() ? f.getName() : key;
-				
-				if (map.containsKey(key)) {
-					throw new IllegalArgumentException("Two fields with '" + key + "' target.");
-				}
-				
+    private static Map<String, Object> getSourceObjects(Injectable obj) throws IllegalAccessException {
+        Map<String, Object> map = new HashMap<>();
 
-				f.setAccessible(true);
-				Object value = f.get(obj);
-				map.put(key, value);
+        for (Field f : obj.getClass().getDeclaredFields()) {
+            InjectSource annotation = f.getAnnotation(InjectSource.class);
 
-			}
-		}
+            if (annotation != null) {
+                String key = annotation.target();
+                key = key.isEmpty() ? f.getName() : key;
 
-		return map;
-	}
+                if (map.containsKey(key)) {
+                    throw new IllegalArgumentException("Two fields with '" + key + "' target.");
+                }
 
-	private static void injectValues(Injectable obj, Map<String, Object> map)
-					throws UnsatisfiedInjectionException, IllegalAccessException {
-		for (Field f : obj.getClass().getDeclaredFields()) {
-			InjectTarget annotation = f.getAnnotation(InjectTarget.class);
+                f.setAccessible(true);
+                Object value = f.get(obj);
+                map.put(key, value);
 
-			if (annotation != null) {
-				if (!map.containsKey(f.getName())) {
-					if (annotation.required()) {
-						throw new UnsatisfiedInjectionException(f);
-					}
-				} else {
-					Object value = map.get(f.getName());
-					
-					f.setAccessible(true);
-					f.set(obj, value);
-				}
-			}
-		}
-	}
+            }
+        }
 
-	private static void notifyPostInject(Injectable callback, Injectable parameter)
-					throws IllegalAccessException, InvocationTargetException {
-		for (Method m : callback.getClass().getDeclaredMethods()) {
-			PostInject annotation = m.getAnnotation(PostInject.class);
+        return map;
+    }
 
-			if (annotation != null) {
-				m.setAccessible(true);
+    private static void injectValues(Injectable obj, Map<String, Object> map)
+                    throws UnsatisfiedInjectionException, IllegalAccessException {
+        for (Field f : obj.getClass().getDeclaredFields()) {
+            InjectTarget annotation = f.getAnnotation(InjectTarget.class);
 
-				Object[] params = new Object[m.getParameterCount()];
-				if (m.getParameterCount() > 0 && m.getParameterTypes()[0].isInstance(parameter)) {
-					params[0] = parameter;
-				}
-				
-				m.invoke(callback, params);
-			}
-		}
-	}
+            if (annotation != null) {
+                if (!map.containsKey(f.getName())) {
+                    if (annotation.required()) {
+                        throw new UnsatisfiedInjectionException(f);
+                    }
+                } else {
+                    Object value = map.get(f.getName());
+
+                    f.setAccessible(true);
+                    f.set(obj, value);
+                }
+            }
+        }
+    }
+
+    private static void notifyPostInject(Injectable callback, Injectable parameter)
+                    throws IllegalAccessException, InvocationTargetException {
+        for (Method m : callback.getClass().getDeclaredMethods()) {
+            PostInject annotation = m.getAnnotation(PostInject.class);
+
+            if (annotation != null) {
+                m.setAccessible(true);
+
+                Object[] params = new Object[m.getParameterCount()];
+                if (m.getParameterCount() > 0 && m.getParameterTypes()[0].isInstance(parameter)) {
+                    params[0] = parameter;
+                }
+
+                m.invoke(callback, params);
+            }
+        }
+    }
 }

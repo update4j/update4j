@@ -19,44 +19,44 @@ import org.w3c.dom.Node;
 
 public abstract class XmlMapper {
 
-	public abstract void parse(Node node);
+    public abstract void parse(Node node);
 
-	//	public abstract Node toNode(Document doc);
+    //	public abstract Node toNode(Document doc);
 
-	public abstract String toXml();
+    public abstract String toXml();
 
-	public static String getAttributeValue(Node node, String key) {
-		Node n = node.getAttributes().getNamedItem(key);
+    public static String getAttributeValue(Node node, String key) {
+        Node n = node.getAttributes().getNamedItem(key);
 
-		if (n != null)
-			return n.getNodeValue();
+        if (n != null)
+            return n.getNodeValue();
 
-		return null;
-	}
+        return null;
+    }
 
-	public static String escape(String orig) {
-		StringBuilder builder = new StringBuilder();
+    public static String escape(String orig) {
+        StringBuilder builder = new StringBuilder();
 
-		for (char c : orig.toCharArray()) {
-			if (c == 0x0 || c == 0xfffe || c == 0xffff || (c >= 0xd800 && c <= 0xdfff) || c > 0x0ffff) {
-				continue;
-			} else if (c == '\'') {
-				builder.append("&apos;");
-			} else if (c == '"') {
-				builder.append("&quot;");
-			} else if (c == '&') {
-				builder.append("&amp;");
-			} else if (c == '<') {
-				builder.append("&lt;");
-			} else if (c == '>') {
-				builder.append("&gt;");
-			} else if (c <= 0x1f) {
-				builder.append("&#" + ((int) c) + ";");
-			} else {
-				builder.append(c);
-			}
-		}
+        for (char c : orig.toCharArray()) {
+            if (c == 0x0 || c == 0xfffe || c == 0xffff || (c >= 0xd800 && c <= 0xdfff) || c > 0x0ffff) {
+                continue;
+            } else if (c == '\'') {
+                builder.append("&apos;");
+            } else if (c == '"') {
+                builder.append("&quot;");
+            } else if (c == '&') {
+                builder.append("&amp;");
+            } else if (c == '<') {
+                builder.append("&lt;");
+            } else if (c == '>') {
+                builder.append("&gt;");
+            } else if (c <= 0x1f) {
+                builder.append("&#" + ((int) c) + ";");
+            } else {
+                builder.append(c);
+            }
+        }
 
-		return builder.toString();
-	}
+        return builder.toString();
+    }
 }

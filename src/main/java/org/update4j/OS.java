@@ -18,45 +18,45 @@ package org.update4j;
 import java.util.Locale;
 
 public enum OS {
-	WINDOWS("win"), MAC("mac"), LINUX("linux"), OTHER("other");
+    WINDOWS("win"), MAC("mac"), LINUX("linux"), OTHER("other");
 
-	public static final OS CURRENT;
+    public static final OS CURRENT;
 
-	static {
-		String os = System.getProperty("os.name", "generic").toLowerCase(Locale.ROOT);
+    static {
+        String os = System.getProperty("os.name", "generic").toLowerCase(Locale.ROOT);
 
-		if ((os.contains("mac")) || (os.contains("darwin")))
-			CURRENT = MAC;
-		else if (os.contains("win"))
-			CURRENT = WINDOWS;
-		else if (os.contains("nux"))
-			CURRENT = LINUX;
-		else
-			CURRENT = OTHER;
-	}
+        if ((os.contains("mac")) || (os.contains("darwin")))
+            CURRENT = MAC;
+        else if (os.contains("win"))
+            CURRENT = WINDOWS;
+        else if (os.contains("nux"))
+            CURRENT = LINUX;
+        else
+            CURRENT = OTHER;
+    }
 
-	private String name;
+    private String name;
 
-	OS(String name) {
-		this.name = name;
-	}
+    OS(String name) {
+        this.name = name;
+    }
 
-	public String getShortName() {
-		return name;
-	}
+    public String getShortName() {
+        return name;
+    }
 
-	public static OS fromShortName(String name) {
-		switch (name) {
-		case "win":
-			return WINDOWS;
-		case "mac":
-			return MAC;
-		case "linux":
-			return LINUX;
-		case "other":
-			return OTHER;
-		default:
-			throw new IllegalArgumentException("Unknown type: " + name);
-		}
-	}
+    public static OS fromShortName(String name) {
+        switch (name) {
+        case "win":
+            return WINDOWS;
+        case "mac":
+            return MAC;
+        case "linux":
+            return LINUX;
+        case "other":
+            return OTHER;
+        default:
+            throw new IllegalArgumentException("Unknown type: " + name);
+        }
+    }
 }

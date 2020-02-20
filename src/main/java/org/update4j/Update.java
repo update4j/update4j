@@ -37,100 +37,103 @@ import org.update4j.util.Warning;
  */
 public class Update {
 
-	public static final Path UPDATE_DATA = Paths.get(".update");
+    public static final Path UPDATE_DATA = Paths.get(".update");
 
-	/**
-	 * Returns whether the given directory has an update ready for finalization.
-	 * 
-	 * <p>
-	 * This method does not guarantee that files were not tempered or that the
-	 * update can actually be finalized in general.
-	 * 
-	 * @param tempDir The location to check for a temporary update.
-	 * @return Whether the directory contains an update.
-	 */
-	public static boolean containsUpdate(Path tempDir) {
-		return Files.isRegularFile(tempDir.resolve(UPDATE_DATA));
-	}
+    /**
+     * Returns whether the given directory has an update ready for finalization.
+     * 
+     * <p>
+     * This method does not guarantee that files were not tempered or that the
+     * update can actually be finalized in general.
+     * 
+     * @param tempDir
+     *            The location to check for a temporary update.
+     * @return Whether the directory contains an update.
+     */
+    public static boolean containsUpdate(Path tempDir) {
+        return Files.isRegularFile(tempDir.resolve(UPDATE_DATA));
+    }
 
-	/**
-	 * Finalizes an update that resides in the provided directory. This is typically
-	 * called in the beginning of a bootstrap to complete updates from a previous
-	 * run.
-	 * 
-	 * 
-	 * @param tempDir The location to look for the update.
-	 * @return Whether directory actually contained an update instead of an empty
-	 *         {@code .update} file.
-	 * @throws IOException If the update was tempered or any file system operation
-	 *                     during finalization failed.
-	 */
-	@SuppressWarnings("unchecked")
-	public static boolean finalizeUpdate(Path tempDir) throws IOException {
-		if (!containsUpdate(tempDir)) {
-			return false;
-		}
+    /**
+     * Finalizes an update that resides in the provided directory. This is typically
+     * called in the beginning of a bootstrap to complete updates from a previous
+     * run.
+     * 
+     * 
+     * @param tempDir
+     *            The location to look for the update.
+     * @return Whether directory actually contained an update instead of an empty
+     *         {@code .update} file.
+     * @throws IOException
+     *             If the update was tempered or any file system operation during
+     *             finalization failed.
+     */
+    @SuppressWarnings("unchecked")
+    public static boolean finalizeUpdate(Path tempDir) throws IOException {
+        if (!containsUpdate(tempDir)) {
+            return false;
+        }
 
-		Path updateData = tempDir.resolve(UPDATE_DATA);
+        Path updateData = tempDir.resolve(UPDATE_DATA);
 
-		Map<Path, Path> files = new HashMap<>();
+        Map<Path, Path> files = new HashMap<>();
 
-		try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(updateData))) {
-			Map<File, File> map = (Map<File, File>) in.readObject();
+        try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(updateData))) {
+            Map<File, File> map = (Map<File, File>) in.readObject();
 
-			boolean missing = false;
-			for (Map.Entry<File, File> e : map.entrySet()) {
-				if (Files.isRegularFile(e.getKey().toPath())) {
-					files.put(e.getKey().toPath(), e.getValue().toPath());
-				} else {
-					missing = true;
-				}
-			}
+            boolean missing = false;
+            for (Map.Entry<File, File> e : map.entrySet()) {
+                if (Files.isRegularFile(e.getKey().toPath())) {
+                    files.put(e.getKey().toPath(), e.getValue().toPath());
+                } else {
+                    missing = true;
+                }
+            }
 
-			if (missing) {
-				Files.deleteIfExists(updateData);
-				for (Map.Entry<Path, Path> e : files.entrySet()) {
-					Files.deleteIfExists(e.getKey());
-				}
-				if (FileUtils.isEmptyDirectory(tempDir)) {
-					Files.deleteIfExists(tempDir);
-				}
+            if (missing) {
+                Files.deleteIfExists(updateData);
+                for (Map.Entry<Path, Path> e : files.entrySet()) {
+                    Files.deleteIfExists(e.getKey());
+                }
+                if (FileUtils.isEmptyDirectory(tempDir)) {
+                    Files.deleteIfExists(tempDir);
+                }
 
-				throw new IllegalStateException(
-								"Files in the update had been tampered and finalize could not be completed.");
-			}
+                throw new IllegalStateException(
+                                "Files in the update had been tampered and finalize could not be completed.");
+            }
 
-		} catch (ClassNotFoundException e) {
-			throw new IOException(e);
-		}
+        } catch (ClassNotFoundException e) {
+            throw new IOException(e);
+        }
 
-		if (files.isEmpty())
-			return false;
+        if (files.isEmpty())
+            return false;
 
-		try {
-			for (Map.Entry<Path, Path> e : files.entrySet()) {
-				FileUtils.verifyAccessible(e.getValue());
-			}
-		} catch (FileSystemException fse) {
-			Warning.lockFinalize(fse);
-			throw fse;
-		}
+        try {
+            for (Map.Entry<Path, Path> e : files.entrySet()) {
+                FileUtils.verifyAccessible(e.getValue());
+            }
+        } catch (FileSystemException fse) {
+            Warning.lockFinalize(fse);
+            throw fse;
+        }
 
-		for (Map.Entry<Path, Path> e : files.entrySet()) {
-			if (e.getValue().getParent() != null) {
-				Files.createDirectories(e.getValue().getParent());
-			}
+        for (Map.Entry<Path, Path> e : files.entrySet()) {
+            if (e.getValue().getParent() != null) {
+                Files.createDirectories(e.getValue().getParent());
+            }
 
-			FileUtils.secureMoveFile(e.getKey(), e.getValue());
-		}
+            FileUtils.secureMoveFile(e.getKey(), e.getValue());
+        }
 
-		Files.deleteIfExists(updateData);
+        Files.deleteIfExists(updateData);
 
-		if (FileUtils.isEmptyDirectory(tempDir)) {
-			Files.deleteIfExists(tempDir);
-		}
+        if (FileUtils.isEmptyDirectory(tempDir)) {
+            Files.deleteIfExists(tempDir);
+        }
 
-		return true;
-	}
+        return true;
+    }
 
 }

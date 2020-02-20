@@ -48,217 +48,218 @@ import org.update4j.OS;
 
 public class FileUtils {
 
-	private FileUtils() {
-	}
+    private FileUtils() {
+    }
 
-	public static long getChecksum(Path path) throws IOException {
-		try (InputStream input = Files.newInputStream(path)) {
-			Adler32 checksum = new Adler32();
-			byte[] buf = new byte[1024 * 8];
+    public static long getChecksum(Path path) throws IOException {
+        try (InputStream input = Files.newInputStream(path)) {
+            Adler32 checksum = new Adler32();
+            byte[] buf = new byte[1024 * 8];
 
-			int read;
-			while ((read = input.read(buf, 0, buf.length)) > -1)
-				checksum.update(buf, 0, read);
+            int read;
+            while ((read = input.read(buf, 0, buf.length)) > -1)
+                checksum.update(buf, 0, read);
 
-			return checksum.getValue();
-		}
-	}
+            return checksum.getValue();
+        }
+    }
 
-	public static String getChecksumString(Path path) throws IOException {
-		return Long.toHexString(getChecksum(path));
-	}
+    public static String getChecksumString(Path path) throws IOException {
+        return Long.toHexString(getChecksum(path));
+    }
 
-	public static boolean isJarFile(Path path) throws IOException {
-		if (!isZipFile(path)) {
-			return false;
-		}
+    public static boolean isJarFile(Path path) throws IOException {
+        if (!isZipFile(path)) {
+            return false;
+        }
 
-		try (ZipFile zip = new ZipFile(path.toFile())) {
-			return zip.getEntry("META-INF/MANIFEST.MF") != null;
-		}
-	}
+        try (ZipFile zip = new ZipFile(path.toFile())) {
+            return zip.getEntry("META-INF/MANIFEST.MF") != null;
+        }
+    }
 
-	public static boolean isZipFile(Path path) throws IOException {
-		if (Files.isDirectory(path)) {
-			return false;
-		}
-		if (!Files.isReadable(path)) {
-			throw new IOException("Cannot read file " + path.toAbsolutePath());
-		}
-		if (Files.size(path) < 4) {
-			return false;
-		}
+    public static boolean isZipFile(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            return false;
+        }
+        if (!Files.isReadable(path)) {
+            throw new IOException("Cannot read file " + path.toAbsolutePath());
+        }
+        if (Files.size(path) < 4) {
+            return false;
+        }
 
-		try (DataInputStream in = new DataInputStream(Files.newInputStream(path))) {
-			int test = in.readInt();
-			return test == 0x504b0304;
-		}
-	}
+        try (DataInputStream in = new DataInputStream(Files.newInputStream(path))) {
+            int test = in.readInt();
+            return test == 0x504b0304;
+        }
+    }
 
-	public static byte[] sign(Path path, PrivateKey key) throws IOException {
-		try {
-			Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
-			sign.initSign(key);
+    public static byte[] sign(Path path, PrivateKey key) throws IOException {
+        try {
+            Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
+            sign.initSign(key);
 
-			try (InputStream input = Files.newInputStream(path)) {
-				byte[] buf = new byte[1024 * 8];
-				int len;
-				while ((len = input.read(buf, 0, buf.length)) > 0)
-					sign.update(buf, 0, len);
-			}
+            try (InputStream input = Files.newInputStream(path)) {
+                byte[] buf = new byte[1024 * 8];
+                int len;
+                while ((len = input.read(buf, 0, buf.length)) > 0)
+                    sign.update(buf, 0, len);
+            }
 
-			return sign.sign();
-		} catch (InvalidKeyException | SignatureException e) {
-			throw new IOException(e);
-		} catch (NoSuchAlgorithmException e) {
-			throw new AssertionError(e);
-		}
-	}
+            return sign.sign();
+        } catch (InvalidKeyException | SignatureException e) {
+            throw new IOException(e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new AssertionError(e);
+        }
+    }
 
-	public static String signAndEncode(Path path, PrivateKey key) throws IOException {
-		return Base64.getEncoder().encodeToString(sign(path, key));
-	}
+    public static String signAndEncode(Path path, PrivateKey key) throws IOException {
+        return Base64.getEncoder().encodeToString(sign(path, key));
+    }
 
-	public static Path fromUri(URI uri) {
-		String path = uri.getPath();
+    public static Path fromUri(URI uri) {
+        String path = uri.getPath();
 
-		if (uri.isAbsolute()) {
-			path = path.substring(path.lastIndexOf("/") + 1);
-		}
+        if (uri.isAbsolute()) {
+            path = path.substring(path.lastIndexOf("/") + 1);
+        }
 
-		return Paths.get(path);
+        return Paths.get(path);
 
-	}
+    }
 
-	public static URI fromPath(Path path) {
-		if (path.isAbsolute()) {
-			Path filename = path.getFileName();
+    public static URI fromPath(Path path) {
+        if (path.isAbsolute()) {
+            Path filename = path.getFileName();
 
-			return fromPath(filename);
-		}
+            return fromPath(filename);
+        }
 
-		try {
-			String uri = URLEncoder.encode(path.toString().replace("\\", "/"), "UTF-8");
+        try {
+            String uri = URLEncoder.encode(path.toString().replace("\\", "/"), "UTF-8");
 
-			uri = uri.replace("%2F", "/") // We still need directory structure
-							.replace("+", "%20"); // "+" only means space in queries, not in paths
-			return URI.create(uri);
-		} catch (UnsupportedEncodingException e) {
-			throw new AssertionError(e);
-		}
+            uri = uri.replace("%2F", "/") // We still need directory structure
+                            .replace("+", "%20"); // "+" only means space in queries, not in paths
+            return URI.create(uri);
+        } catch (UnsupportedEncodingException e) {
+            throw new AssertionError(e);
+        }
 
-	}
+    }
 
-	public static URI relativize(URI base, URI other) {
-		if (base == null || other == null)
-			return other;
+    public static URI relativize(URI base, URI other) {
+        if (base == null || other == null)
+            return other;
 
-		return base.relativize(other);
-	}
+        return base.relativize(other);
+    }
 
-	public static Path relativize(Path base, Path other) {
-		if (base == null || other == null)
-			return other;
+    public static Path relativize(Path base, Path other) {
+        if (base == null || other == null)
+            return other;
 
-		try {
-			return base.relativize(other);
-		} catch (IllegalArgumentException e) {
-		}
+        try {
+            return base.relativize(other);
+        } catch (IllegalArgumentException e) {
+        }
 
-		return other;
-	}
+        return other;
+    }
 
-	public static OS fromFilename(String filename) {
-		Pattern osPattern = Pattern.compile(".+-(linux|win|mac)\\.[^.]+");
-		Matcher osMatcher = osPattern.matcher(filename);
+    public static OS fromFilename(String filename) {
+        Pattern osPattern = Pattern.compile(".+-(linux|win|mac)\\.[^.]+");
+        Matcher osMatcher = osPattern.matcher(filename);
 
-		if (osMatcher.matches()) {
-			return OS.fromShortName(osMatcher.group(1));
-		}
+        if (osMatcher.matches()) {
+            return OS.fromShortName(osMatcher.group(1));
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	public static boolean isEmptyDirectory(Path path) throws IOException {
-		if (Files.isDirectory(path)) {
-			try (DirectoryStream<Path> dir = Files.newDirectoryStream(path)) {
-				return !dir.iterator().hasNext();
-			}
-		}
+    public static boolean isEmptyDirectory(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            try (DirectoryStream<Path> dir = Files.newDirectoryStream(path)) {
+                return !dir.iterator().hasNext();
+            }
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	public static void windowsHidden(Path file, boolean hidden) {
-		if (OS.CURRENT != OS.WINDOWS)
-			return;
+    public static void windowsHidden(Path file, boolean hidden) {
+        if (OS.CURRENT != OS.WINDOWS)
+            return;
 
-		try {
-			Files.setAttribute(file, "dos:hidden", hidden);
-		} catch (Exception e) {
-		}
-	}
+        try {
+            Files.setAttribute(file, "dos:hidden", hidden);
+        } catch (Exception e) {
+        }
+    }
 
-	public static void verifyAccessible(Path path) throws IOException {
-		boolean exists = Files.exists(path);
+    public static void verifyAccessible(Path path) throws IOException {
+        boolean exists = Files.exists(path);
 
-		if (exists && !Files.isWritable(path))
-			throw new AccessDeniedException(path.toString());
-		
-		try (Writer out = Files.newBufferedWriter(path, exists ? StandardOpenOption.APPEND : StandardOpenOption.CREATE)) {
-		} finally {
-			if(!exists)
-				Files.deleteIfExists(path);
-		}
-	}
+        if (exists && !Files.isWritable(path))
+            throw new AccessDeniedException(path.toString());
 
-	public static void secureMoveFile(Path source, Path target) throws IOException {
-		// for windows we can't go wrong because the OS manages locking
-		if (OS.CURRENT == OS.WINDOWS || Files.notExists(target)) {
-			Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
-			return;
-		}
+        try (Writer out = Files.newBufferedWriter(path,
+                        exists ? StandardOpenOption.APPEND : StandardOpenOption.CREATE)) {
+        } finally {
+            if (!exists)
+                Files.deleteIfExists(path);
+        }
+    }
 
-		// At this point we are on non-windows and exists
-		// Lets unlink file first so we don't run into file-busy errors.
-		Path temp = Files.createTempFile(target.getParent(), null, null);
-		Files.move(target, temp, StandardCopyOption.REPLACE_EXISTING);
+    public static void secureMoveFile(Path source, Path target) throws IOException {
+        // for windows we can't go wrong because the OS manages locking
+        if (OS.CURRENT == OS.WINDOWS || Files.notExists(target)) {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+            return;
+        }
 
-		try {
-			Files.move(source, target);
-		} catch (IOException e) {
-			Files.move(temp, target);
-			throw e;
-		} finally {
-			Files.deleteIfExists(temp);
-		}
-	}
+        // At this point we are on non-windows and exists
+        // Lets unlink file first so we don't run into file-busy errors.
+        Path temp = Files.createTempFile(target.getParent(), null, null);
+        Files.move(target, temp, StandardCopyOption.REPLACE_EXISTING);
 
-	public static void delayedDelete(Collection<Path> files, int secondsDelay) {
-		secondsDelay = Math.max(secondsDelay, 1);
-		List<String> commands = new ArrayList<>();
+        try {
+            Files.move(source, target);
+        } catch (IOException e) {
+            Files.move(temp, target);
+            throw e;
+        } finally {
+            Files.deleteIfExists(temp);
+        }
+    }
 
-		String filenames = files.stream()
-						.map(Path::toString)
-						.map(f -> "\"" + f.replace("\"", "\\\"") + "\"")
-						.collect(Collectors.joining(" "));
+    public static void delayedDelete(Collection<Path> files, int secondsDelay) {
+        secondsDelay = Math.max(secondsDelay, 1);
+        List<String> commands = new ArrayList<>();
 
-		if (OS.CURRENT == OS.WINDOWS) {
-			commands.addAll(List.of("cmd", "/c"));
-			commands.add("ping localhost -n " + (secondsDelay + 1) + " & del " + filenames);
-		} else {
-			commands.addAll(List.of("sh", "-c"));
-			commands.add("sleep " + secondsDelay + " ; rm " + filenames);
-		}
+        String filenames = files.stream()
+                        .map(Path::toString)
+                        .map(f -> "\"" + f.replace("\"", "\\\"") + "\"")
+                        .collect(Collectors.joining(" "));
 
-		ProcessBuilder pb = new ProcessBuilder(commands);
+        if (OS.CURRENT == OS.WINDOWS) {
+            commands.addAll(List.of("cmd", "/c"));
+            commands.add("ping localhost -n " + (secondsDelay + 1) + " & del " + filenames);
+        } else {
+            commands.addAll(List.of("sh", "-c"));
+            commands.add("sleep " + secondsDelay + " ; rm " + filenames);
+        }
 
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			try {
-				pb.start();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}));
-	}
+        ProcessBuilder pb = new ProcessBuilder(commands);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                pb.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+    }
 }

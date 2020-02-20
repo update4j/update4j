@@ -38,14 +38,14 @@ import java.lang.annotation.Target;
 @Documented
 public @interface InjectTarget {
 
-	/**
-	 * Set whether it should fail if the field has no match.
-	 * 
-	 * <p>
-	 * If an injector was not passed, the fields in a service provider will remain
-	 * {@code null} without any errors thrown.
-	 * 
-	 * @return Whether it should fail if a match could not be found.
-	 */
-	boolean required() default true;
+    /**
+     * Set whether it should fail if the field has no match.
+     * 
+     * <p>
+     * If an injector was not passed, the fields in a service provider will remain
+     * {@code null} without any errors thrown.
+     * 
+     * @return Whether it should fail if a match could not be found.
+     */
+    boolean required() default true;
 }

@@ -29,98 +29,98 @@ import org.update4j.util.StringUtils;
 
 public class DefaultLauncher implements Launcher {
 
-	public static final String DOMAIN_PREFIX = "default.launcher";
-	public static final String MAIN_CLASS_PROPERTY_KEY = DOMAIN_PREFIX + ".main.class";
-	public static final String ARGUMENT_PROPERTY_KEY_PREFIX = DOMAIN_PREFIX + ".argument";
-	public static final String SYSTEM_PROPERTY_KEY_PREFIX = DOMAIN_PREFIX + ".system";
+    public static final String DOMAIN_PREFIX = "default.launcher";
+    public static final String MAIN_CLASS_PROPERTY_KEY = DOMAIN_PREFIX + ".main.class";
+    public static final String ARGUMENT_PROPERTY_KEY_PREFIX = DOMAIN_PREFIX + ".argument";
+    public static final String SYSTEM_PROPERTY_KEY_PREFIX = DOMAIN_PREFIX + ".system";
 
-	@InjectTarget(required = false)
-	private List<String> args;
+    @InjectTarget(required = false)
+    private List<String> args;
 
-	@Override
-	public long version() {
-		return Long.MIN_VALUE;
-	}
+    @Override
+    public long version() {
+        return Long.MIN_VALUE;
+    }
 
-	public DefaultLauncher() {
+    public DefaultLauncher() {
 
-	}
+    }
 
-	public DefaultLauncher(List<String> args) {
-		this.args = args;
-	}
+    public DefaultLauncher(List<String> args) {
+        this.args = args;
+    }
 
-	@Override
-	public void run(LaunchContext context) {
-		Configuration config = context.getConfiguration();
+    @Override
+    public void run(LaunchContext context) {
+        Configuration config = context.getConfiguration();
 
-		String mainClass = config.getResolvedProperty(MAIN_CLASS_PROPERTY_KEY);
-		if (mainClass == null) {
-			usage();
+        String mainClass = config.getResolvedProperty(MAIN_CLASS_PROPERTY_KEY);
+        if (mainClass == null) {
+            usage();
 
-			throw new IllegalStateException("No main class property found at key '" + MAIN_CLASS_PROPERTY_KEY + "'.");
-		}
+            throw new IllegalStateException("No main class property found at key '" + MAIN_CLASS_PROPERTY_KEY + "'.");
+        }
 
-		if (!StringUtils.isClassName(mainClass)) {
-			throw new IllegalStateException(
-							"Main class at key '" + MAIN_CLASS_PROPERTY_KEY + "' is not a valid Java class name.");
-		}
+        if (!StringUtils.isClassName(mainClass)) {
+            throw new IllegalStateException(
+                            "Main class at key '" + MAIN_CLASS_PROPERTY_KEY + "' is not a valid Java class name.");
+        }
 
-		List<String> localArgs = new ArrayList<>();
-		if (this.args != null)
-			localArgs.addAll(this.args);
+        List<String> localArgs = new ArrayList<>();
+        if (this.args != null)
+            localArgs.addAll(this.args);
 
-		// use TreeMap to sort by key
-		Map<Integer, String> argMap = new TreeMap<>();
-		context.getConfiguration().getResolvedProperties().forEach((k,v) -> {
-			String pfx = ARGUMENT_PROPERTY_KEY_PREFIX + ".";
-			// starts with but not equals, to filter missing <num> part
-			if (k.startsWith(pfx) && !k.equals(pfx)) {
-				int num = Integer.parseInt(k.substring(pfx.length()));
-				argMap.put(num, v);
-			}
-		});
-		
-		localArgs.addAll(argMap.values());
-		String[] argsArray = localArgs.toArray(new String[localArgs.size()]);
+        // use TreeMap to sort by key
+        Map<Integer, String> argMap = new TreeMap<>();
+        context.getConfiguration().getResolvedProperties().forEach((k, v) -> {
+            String pfx = ARGUMENT_PROPERTY_KEY_PREFIX + ".";
+            // starts with but not equals, to filter missing <num> part
+            if (k.startsWith(pfx) && !k.equals(pfx)) {
+                int num = Integer.parseInt(k.substring(pfx.length()));
+                argMap.put(num, v);
+            }
+        });
 
-		context.getConfiguration().getResolvedProperties().forEach((k,v) -> {
-			String pfx = SYSTEM_PROPERTY_KEY_PREFIX + ".";
-			if (k.startsWith(pfx) && !k.equals(pfx)) {
-				System.setProperty(k.substring(pfx.length()), v);
-			}
-		});
+        localArgs.addAll(argMap.values());
+        String[] argsArray = localArgs.toArray(new String[localArgs.size()]);
 
-		// we are fully aware, so no need to warn
-		// if NoClassDefFoundError arises for any other reason
-		System.setProperty("update4j.suppress.warning.access", "true");
+        context.getConfiguration().getResolvedProperties().forEach((k, v) -> {
+            String pfx = SYSTEM_PROPERTY_KEY_PREFIX + ".";
+            if (k.startsWith(pfx) && !k.equals(pfx)) {
+                System.setProperty(k.substring(pfx.length()), v);
+            }
+        });
 
-		try {
-			Class<?> clazz = context.getClassLoader().loadClass(mainClass);
+        // we are fully aware, so no need to warn
+        // if NoClassDefFoundError arises for any other reason
+        System.setProperty("update4j.suppress.warning.access", "true");
 
-			// first check for JavaFx start method
-			Class<?> javafx = null;
-			try {
-				javafx = context.getClassLoader().loadClass("javafx.application.Application");
-			} catch (ClassNotFoundException e) {
-				// no JavaFx present, skip.
-			}
+        try {
+            Class<?> clazz = context.getClassLoader().loadClass(mainClass);
 
-			if (javafx != null && javafx.isAssignableFrom(clazz)) {
-				Method launch = javafx.getMethod("launch", Class.class, String[].class);
-				launch.invoke(null, clazz, argsArray);
-			} else {
-				Method main = clazz.getMethod("main", String[].class);
-				main.invoke(null, new Object[] { argsArray });
-			}
+            // first check for JavaFx start method
+            Class<?> javafx = null;
+            try {
+                javafx = context.getClassLoader().loadClass("javafx.application.Application");
+            } catch (ClassNotFoundException e) {
+                // no JavaFx present, skip.
+            }
 
-		} catch (ClassNotFoundException | IllegalAccessException | InvocationTargetException
-						| NoSuchMethodException e) {
-			throw new RuntimeException(e);
-		}
-	}
+            if (javafx != null && javafx.isAssignableFrom(clazz)) {
+                Method launch = javafx.getMethod("launch", Class.class, String[].class);
+                launch.invoke(null, clazz, argsArray);
+            } else {
+                Method main = clazz.getMethod("main", String[].class);
+                main.invoke(null, new Object[] { argsArray });
+            }
 
-	// @formatter:off
+        } catch (ClassNotFoundException | IllegalAccessException | InvocationTargetException
+                        | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // @formatter:off
 	private static void usage() {
 		System.err.println("Customize the setup of the default launcher by setting properties in the config\n"
 						+ "\taccording to the following table:\n\n" + table()

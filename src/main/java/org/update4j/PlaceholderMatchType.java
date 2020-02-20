@@ -24,24 +24,24 @@ package org.update4j;
  *
  */
 public enum PlaceholderMatchType {
-	/**
-	 * Will break words with placeholders if it finds a match.
-	 */
-	EVERY_OCCURRENCE,
+    /**
+     * Will break words with placeholders if it finds a match.
+     */
+    EVERY_OCCURRENCE,
 
-	/**
-	 * Will only replace with placeholders if the it doesn't break a word (using
-	 * regex {@code \b} word boundary)
-	 */
-	WHOLE_WORD,
+    /**
+     * Will only replace with placeholders if the it doesn't break a word (using
+     * regex {@code \b} word boundary)
+     */
+    WHOLE_WORD,
 
-	/**
-	 * Will only replace if the complete string matches with one placeholder.
-	 */
-	FULL_MATCH,
+    /**
+     * Will only replace if the complete string matches with one placeholder.
+     */
+    FULL_MATCH,
 
-	/**
-	 * Won't change the string.
-	 */
-	NONE;
+    /**
+     * Won't change the string.
+     */
+    NONE;
 }

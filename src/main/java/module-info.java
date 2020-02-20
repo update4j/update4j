@@ -27,22 +27,22 @@
  */
 module org.update4j {
 
-	/*
-	 * Public API
-	 */
-	exports org.update4j;
-	exports org.update4j.inject;
-	exports org.update4j.service;
-	exports org.update4j.mapper;
+    /*
+     * Public API
+     */
+    exports org.update4j;
+    exports org.update4j.inject;
+    exports org.update4j.service;
+    exports org.update4j.mapper;
 
-	requires transitive java.xml;
-	
-	uses org.update4j.service.Delegate;
-	uses org.update4j.service.UpdateHandler;
-	uses org.update4j.service.Launcher;
+    requires transitive java.xml;
 
-	provides org.update4j.service.Delegate with org.update4j.service.DefaultBootstrap;
-	provides org.update4j.service.UpdateHandler with org.update4j.service.DefaultUpdateHandler;
-	provides org.update4j.service.Launcher with org.update4j.service.DefaultLauncher;
+    uses org.update4j.service.Delegate;
+    uses org.update4j.service.UpdateHandler;
+    uses org.update4j.service.Launcher;
+
+    provides org.update4j.service.Delegate with org.update4j.service.DefaultBootstrap;
+    provides org.update4j.service.UpdateHandler with org.update4j.service.DefaultUpdateHandler;
+    provides org.update4j.service.Launcher with org.update4j.service.DefaultLauncher;
 
 }

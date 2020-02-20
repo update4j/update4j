@@ -27,27 +27,27 @@ import org.update4j.service.Launcher;
  */
 public class LaunchContext {
 
-	private ModuleLayer layer;
-	private ClassLoader classLoader;
-	private Configuration config;
+    private ModuleLayer layer;
+    private ClassLoader classLoader;
+    private Configuration config;
 
-	LaunchContext(ModuleLayer layer, ClassLoader classLoader, Configuration config) {
-		this.layer = Objects.requireNonNull(layer);
-		this.classLoader = Objects.requireNonNull(classLoader);
-		this.config = Objects.requireNonNull(config);
-	}
+    LaunchContext(ModuleLayer layer, ClassLoader classLoader, Configuration config) {
+        this.layer = Objects.requireNonNull(layer);
+        this.classLoader = Objects.requireNonNull(classLoader);
+        this.config = Objects.requireNonNull(config);
+    }
 
-	/**
-	 * Returns the {@link ModuleLayer} where modules in the config that were marked
-	 * with {@code modulepath} are dynamically loaded.
-	 * 
-	 * @return The dynamic module layer.
-	 */
-	public ModuleLayer getModuleLayer() {
-		return layer;
-	}
+    /**
+     * Returns the {@link ModuleLayer} where modules in the config that were marked
+     * with {@code modulepath} are dynamically loaded.
+     * 
+     * @return The dynamic module layer.
+     */
+    public ModuleLayer getModuleLayer() {
+        return layer;
+    }
 
-	/**
+    /**
      * Returns the class loader that classes in the dynamic classpath or modulepath
      * are loaded with. Use this to access dynamic classes in the bootstrap:
      * 
@@ -92,17 +92,17 @@ public class LaunchContext {
      * 
      * @return The dynamic class loader.
      */
-	public ClassLoader getClassLoader() {
-		return classLoader;
-	}
+    public ClassLoader getClassLoader() {
+        return classLoader;
+    }
 
-	/**
-	 * Returns the configuration used for this launch.
-	 * 
-	 * @return The configuration used for this launch.
-	 */
-	public Configuration getConfiguration() {
-		return config;
-	}
+    /**
+     * Returns the configuration used for this launch.
+     * 
+     * @return The configuration used for this launch.
+     */
+    public Configuration getConfiguration() {
+        return config;
+    }
 
 }

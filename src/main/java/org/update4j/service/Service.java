@@ -26,108 +26,108 @@ import org.update4j.util.StringUtils;
 
 public interface Service extends Injectable {
 
-	default long version() {
-		return 0L;
-	}
+    default long version() {
+        return 0L;
+    }
 
-	public static <T extends Service> T loadService(ModuleLayer layer, ClassLoader classLoader, Class<T> type,
-					String classname) {
-		if (classname != null && !StringUtils.isClassName(classname)) {
-			throw new IllegalArgumentException(classname + " is not a valid Java class name.");
-		}
+    public static <T extends Service> T loadService(ModuleLayer layer, ClassLoader classLoader, Class<T> type,
+                    String classname) {
+        if (classname != null && !StringUtils.isClassName(classname)) {
+            throw new IllegalArgumentException(classname + " is not a valid Java class name.");
+        }
 
-		if (classLoader == null) {
-			classLoader = Thread.currentThread().getContextClassLoader();
-		}
+        if (classLoader == null) {
+            classLoader = Thread.currentThread().getContextClassLoader();
+        }
 
-		ServiceLoader<T> loader;
-		List<Provider<T>> providers = new ArrayList<>();
+        ServiceLoader<T> loader;
+        List<Provider<T>> providers = new ArrayList<>();
 
-		if (layer != null) {
-			loader = ServiceLoader.load(layer, type);
-			providers.addAll(loader.stream().collect(Collectors.toList()));
-		}
+        if (layer != null) {
+            loader = ServiceLoader.load(layer, type);
+            providers.addAll(loader.stream().collect(Collectors.toList()));
+        }
 
-		loader = ServiceLoader.load(type, classLoader);
-		providers.addAll(loader.stream().collect(Collectors.toList()));
+        loader = ServiceLoader.load(type, classLoader);
+        providers.addAll(loader.stream().collect(Collectors.toList()));
 
-		if (classname != null) {
-			// an explicit class name is used
-			// first lets look at providers, to locate in closed modules
-			for (Provider<T> p : providers) {
-				if (p.type().getName().equals(classname))
-					return p.get();
-			}
+        if (classname != null) {
+            // an explicit class name is used
+            // first lets look at providers, to locate in closed modules
+            for (Provider<T> p : providers) {
+                if (p.type().getName().equals(classname))
+                    return p.get();
+            }
 
-			// nothing found, lets load with reflection
-			try {
-				Class<?> clazz = classLoader.loadClass(classname);
+            // nothing found, lets load with reflection
+            try {
+                Class<?> clazz = classLoader.loadClass(classname);
 
-				if (type.isAssignableFrom(clazz)) {
-					
-					// What do you mean?? look 1 line above
-					@SuppressWarnings("unchecked")
-					T value = (T) clazz.getConstructor().newInstance();
-					return value;
+                if (type.isAssignableFrom(clazz)) {
 
-				} else {
-					// wrong type
-					throw new IllegalArgumentException(classname + " is not of type " + type.getCanonicalName());
-				}
-			} catch (RuntimeException e) {
-				throw e; // avoid unnecessary wrapping
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+                    // What do you mean?? look 1 line above
+                    @SuppressWarnings("unchecked")
+                    T value = (T) clazz.getConstructor().newInstance();
+                    return value;
 
-		} else {
+                } else {
+                    // wrong type
+                    throw new IllegalArgumentException(classname + " is not of type " + type.getCanonicalName());
+                }
+            } catch (RuntimeException e) {
+                throw e; // avoid unnecessary wrapping
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
-			if (providers.isEmpty()) {
-				throw new IllegalStateException("No provider found for " + type.getCanonicalName());
-			}
+        } else {
 
-			List<T> values = providers.stream().map(Provider::get).collect(Collectors.toList());
+            if (providers.isEmpty()) {
+                throw new IllegalStateException("No provider found for " + type.getCanonicalName());
+            }
 
-			long maxVersion = Long.MIN_VALUE;
-			T maxValue = null;
-			for (T t : values) {
-				long version = t.version();
-				if (maxVersion <= version) {
-					maxVersion = version;
-					maxValue = t;
-				}
-			}
+            List<T> values = providers.stream().map(Provider::get).collect(Collectors.toList());
 
-			return maxValue;
-		}
-	}
+            long maxVersion = Long.MIN_VALUE;
+            T maxValue = null;
+            for (T t : values) {
+                long version = t.version();
+                if (maxVersion <= version) {
+                    maxVersion = version;
+                    maxValue = t;
+                }
+            }
 
-	public static <T extends Service> T loadService(ModuleLayer layer, ClassLoader classLoader, Class<T> type) {
-		return loadService(layer, classLoader, type, null);
-	}
+            return maxValue;
+        }
+    }
 
-	public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type, String classname) {
-		return loadService(layer, null, type, classname);
-	}
+    public static <T extends Service> T loadService(ModuleLayer layer, ClassLoader classLoader, Class<T> type) {
+        return loadService(layer, classLoader, type, null);
+    }
 
-	public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type) {
-		return loadService(layer, null, type, null);
-	}
+    public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type, String classname) {
+        return loadService(layer, null, type, classname);
+    }
 
-	public static <T extends Service> T loadService(ClassLoader classLoader, Class<T> type, String classname) {
-		return loadService(null, classLoader, type, classname);
-	}
+    public static <T extends Service> T loadService(ModuleLayer layer, Class<T> type) {
+        return loadService(layer, null, type, null);
+    }
 
-	public static <T extends Service> T loadService(ClassLoader classLoader, Class<T> type) {
-		return loadService(null, classLoader, type, null);
-	}
+    public static <T extends Service> T loadService(ClassLoader classLoader, Class<T> type, String classname) {
+        return loadService(null, classLoader, type, classname);
+    }
 
-	public static <T extends Service> T loadService(Class<T> type, String classname) {
-		return loadService(null, null, type, classname);
-	}
+    public static <T extends Service> T loadService(ClassLoader classLoader, Class<T> type) {
+        return loadService(null, classLoader, type, null);
+    }
 
-	public static <T extends Service> T loadService(Class<T> type) {
-		return loadService(type, null);
-	}
+    public static <T extends Service> T loadService(Class<T> type, String classname) {
+        return loadService(null, null, type, classname);
+    }
+
+    public static <T extends Service> T loadService(Class<T> type) {
+        return loadService(type, null);
+    }
 
 }

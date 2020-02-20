@@ -24,44 +24,44 @@ package org.update4j;
  */
 public class AddPackage {
 
-	private String packageName;
-	private String targetModule;
+    private String packageName;
+    private String targetModule;
 
-	/**
-	 * Constructs a new {@link AddPackage} with the given source package name to be
-	 * added to the given target module.
-	 * 
-	 * @throws IllegalArgumentException
-	 *             If either package name or target module name are either
-	 *             {@code null} or an empty string.
-	 */
-	public AddPackage(String pkg, String mod) {
-		if (pkg == null || pkg.isEmpty()) {
-			throw new IllegalArgumentException("Missing package name.");
-		}
-		if (mod == null || mod.isEmpty()) {
-			throw new IllegalArgumentException("Missing target module name.");
-		}
+    /**
+     * Constructs a new {@link AddPackage} with the given source package name to be
+     * added to the given target module.
+     * 
+     * @throws IllegalArgumentException
+     *             If either package name or target module name are either
+     *             {@code null} or an empty string.
+     */
+    public AddPackage(String pkg, String mod) {
+        if (pkg == null || pkg.isEmpty()) {
+            throw new IllegalArgumentException("Missing package name.");
+        }
+        if (mod == null || mod.isEmpty()) {
+            throw new IllegalArgumentException("Missing target module name.");
+        }
 
-		packageName = pkg;
-		targetModule = mod;
-	}
+        packageName = pkg;
+        targetModule = mod;
+    }
 
-	/**
-	 * Returns the package name that is being added.
-	 * 
-	 * @return The package name that is being added.
-	 */
-	public String getPackageName() {
-		return packageName;
-	}
+    /**
+     * Returns the package name that is being added.
+     * 
+     * @return The package name that is being added.
+     */
+    public String getPackageName() {
+        return packageName;
+    }
 
-	/**
-	 * Returns the target module name that the package is added to.
-	 * 
-	 * @return The target module name that the package is added to.
-	 */
-	public String getTargetModule() {
-		return targetModule;
-	}
+    /**
+     * Returns the target module name that the package is added to.
+     * 
+     * @return The target module name that the package is added to.
+     */
+    public String getTargetModule() {
+        return targetModule;
+    }
 }

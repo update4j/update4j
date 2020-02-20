@@ -40,292 +40,292 @@ import org.update4j.util.ArgUtils;
 
 public class DefaultBootstrap implements Delegate {
 
-	private String remote;
-	private String local;
-	private String cert;
+    private String remote;
+    private String local;
+    private String cert;
 
-	private boolean syncLocal;
-	private boolean launchFirst;
-	private boolean stopOnUpdateError;
-	private boolean singleInstance;
+    private boolean syncLocal;
+    private boolean launchFirst;
+    private boolean stopOnUpdateError;
+    private boolean singleInstance;
 
-	private PublicKey pk = null;
+    private PublicKey pk = null;
 
-	@InjectSource(target = "args")
-	private List<String> businessArgs;
+    @InjectSource(target = "args")
+    private List<String> businessArgs;
 
-	@Override
-	public long version() {
-		return Long.MIN_VALUE;
-	}
+    @Override
+    public long version() {
+        return Long.MIN_VALUE;
+    }
 
-	@Override
-	public void main(List<String> args) throws Throwable {
-		if (args.isEmpty()) {
-			welcome();
-			return;
-		}
+    @Override
+    public void main(List<String> args) throws Throwable {
+        if (args.isEmpty()) {
+            welcome();
+            return;
+        }
 
-		parseArgs(ArgUtils.beforeSeparator(args));
+        parseArgs(ArgUtils.beforeSeparator(args));
 
-		if (remote == null && local == null) {
-			throw new IllegalArgumentException("One of --remote or --local must be supplied.");
-		}
+        if (remote == null && local == null) {
+            throw new IllegalArgumentException("One of --remote or --local must be supplied.");
+        }
 
-		if (launchFirst && local == null) {
-			throw new IllegalArgumentException("--launchFirst requires a local configuration.");
-		}
+        if (launchFirst && local == null) {
+            throw new IllegalArgumentException("--launchFirst requires a local configuration.");
+        }
 
-		if (syncLocal && remote == null) {
-			throw new IllegalArgumentException("--syncLocal requires a remote configuration.");
-		}
+        if (syncLocal && remote == null) {
+            throw new IllegalArgumentException("--syncLocal requires a remote configuration.");
+        }
 
-		if (syncLocal && local == null) {
-			throw new IllegalArgumentException("--syncLocal requires a local configuration.");
-		}
+        if (syncLocal && local == null) {
+            throw new IllegalArgumentException("--syncLocal requires a local configuration.");
+        }
 
-		if (singleInstance) {
-			SingleInstanceManager.execute();
-		}
+        if (singleInstance) {
+            SingleInstanceManager.execute();
+        }
 
-		if (cert != null) {
-			CertificateFactory cf = CertificateFactory.getInstance("X.509");
-			try (InputStream in = Files.newInputStream(Paths.get(cert))) {
-				pk = cf.generateCertificate(in).getPublicKey();
-			}
-		}
+        if (cert != null) {
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            try (InputStream in = Files.newInputStream(Paths.get(cert))) {
+                pk = cf.generateCertificate(in).getPublicKey();
+            }
+        }
 
-		businessArgs = ArgUtils.afterSeparator(args);
+        businessArgs = ArgUtils.afterSeparator(args);
 
-		if (launchFirst) {
-			launchFirst();
-		} else {
-			updateFirst();
-		}
-	}
+        if (launchFirst) {
+            launchFirst();
+        } else {
+            updateFirst();
+        }
+    }
 
-	private void parseArgs(List<String> bootArgs) {
+    private void parseArgs(List<String> bootArgs) {
 
-		Map<String, String> parsed = ArgUtils.parseArgs(bootArgs);
-		for (Map.Entry<String, String> e : parsed.entrySet()) {
-			String arg = e.getKey();
+        Map<String, String> parsed = ArgUtils.parseArgs(bootArgs);
+        for (Map.Entry<String, String> e : parsed.entrySet()) {
+            String arg = e.getKey();
 
-			if ("syncLocal".equals(arg)) {
-				ArgUtils.validateNoValue(e);
-				syncLocal = true;
-			} else if ("launchFirst".equals(arg)) {
-				ArgUtils.validateNoValue(e);
-				launchFirst = true;
-			} else if ("stopOnUpdateError".equals(arg)) {
-				ArgUtils.validateNoValue(e);
-				stopOnUpdateError = true;
-			} else if ("singleInstance".equals(arg)) {
-				ArgUtils.validateNoValue(e);
-				singleInstance = true;
-			} else if ("remote".equals(arg)) {
-				ArgUtils.validateHasValue(e);
-				remote = e.getValue();
-			} else if ("local".equals(arg)) {
-				ArgUtils.validateHasValue(e);
-				local = e.getValue();
-			} else if ("cert".equals(arg)) {
-				ArgUtils.validateHasValue(e);
-				cert = e.getValue();
-			} else if ("delegate".equals(arg)) {
-				throw new IllegalArgumentException("--delegate must be passed as first argument.");
-			} else {
-				throw new IllegalArgumentException(
-								"Unknown option \"" + arg + "\". Separate business app arguments with '--'.");
-			}
-		}
-	}
+            if ("syncLocal".equals(arg)) {
+                ArgUtils.validateNoValue(e);
+                syncLocal = true;
+            } else if ("launchFirst".equals(arg)) {
+                ArgUtils.validateNoValue(e);
+                launchFirst = true;
+            } else if ("stopOnUpdateError".equals(arg)) {
+                ArgUtils.validateNoValue(e);
+                stopOnUpdateError = true;
+            } else if ("singleInstance".equals(arg)) {
+                ArgUtils.validateNoValue(e);
+                singleInstance = true;
+            } else if ("remote".equals(arg)) {
+                ArgUtils.validateHasValue(e);
+                remote = e.getValue();
+            } else if ("local".equals(arg)) {
+                ArgUtils.validateHasValue(e);
+                local = e.getValue();
+            } else if ("cert".equals(arg)) {
+                ArgUtils.validateHasValue(e);
+                cert = e.getValue();
+            } else if ("delegate".equals(arg)) {
+                throw new IllegalArgumentException("--delegate must be passed as first argument.");
+            } else {
+                throw new IllegalArgumentException(
+                                "Unknown option \"" + arg + "\". Separate business app arguments with '--'.");
+            }
+        }
+    }
 
-	private void updateFirst() throws Throwable {
-		Configuration remoteConfig = null;
-		Configuration localConfig = null;
+    private void updateFirst() throws Throwable {
+        Configuration remoteConfig = null;
+        Configuration localConfig = null;
 
-		if (remote != null) {
-			remoteConfig = getRemoteConfig();
-		}
+        if (remote != null) {
+            remoteConfig = getRemoteConfig();
+        }
 
-		if (local != null) {
-			localConfig = getLocalConfig(remoteConfig != null && syncLocal);
-		}
+        if (local != null) {
+            localConfig = getLocalConfig(remoteConfig != null && syncLocal);
+        }
 
-		if (remoteConfig == null && localConfig == null) {
-			return;
-		}
+        if (remoteConfig == null && localConfig == null) {
+            return;
+        }
 
-		Configuration config = remoteConfig != null ? remoteConfig : localConfig;
-		boolean failedRemoteUpdate = false;
+        Configuration config = remoteConfig != null ? remoteConfig : localConfig;
+        boolean failedRemoteUpdate = false;
 
-		if (config.requiresUpdate()) {
-			boolean success = config.update(pk);
-			if (config == remoteConfig)
-				failedRemoteUpdate = !success;
+        if (config.requiresUpdate()) {
+            boolean success = config.update(pk);
+            if (config == remoteConfig)
+                failedRemoteUpdate = !success;
 
-			if (!success && stopOnUpdateError) {
-				return;
-			}
-		}
+            if (!success && stopOnUpdateError) {
+                return;
+            }
+        }
 
-		if (syncLocal && !failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
-			syncLocal(remoteConfig);
+        if (syncLocal && !failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
+            syncLocal(remoteConfig);
 
-			if (localConfig != null) {
-				try {
-					remoteConfig.deleteOldFiles(localConfig);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
+            if (localConfig != null) {
+                try {
+                    remoteConfig.deleteOldFiles(localConfig);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
-		config.launch(this);
+        config.launch(this);
 
-	}
+    }
 
-	private void launchFirst() throws Throwable {
-		Path tempDir = Paths.get("update");
-		// used for deleting old files
-		Path old = tempDir.resolve(local + ".old");
+    private void launchFirst() throws Throwable {
+        Path tempDir = Paths.get("update");
+        // used for deleting old files
+        Path old = tempDir.resolve(local + ".old");
 
-		Configuration localConfig = getLocalConfig(false);
+        Configuration localConfig = getLocalConfig(false);
 
-		if (Update.containsUpdate(tempDir)) {
-			Configuration oldConfig = null;
-			if (Files.exists(old)) {
-				try {
-					try (Reader in = Files.newBufferedReader(old)) {
-						oldConfig = Configuration.read(in);
-					}
-					Files.deleteIfExists(old);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			boolean finalized = Update.finalizeUpdate(tempDir);
-			if (finalized && oldConfig != null && localConfig != null) {
-				localConfig.deleteOldFiles(oldConfig);
-			}
-		}
+        if (Update.containsUpdate(tempDir)) {
+            Configuration oldConfig = null;
+            if (Files.exists(old)) {
+                try {
+                    try (Reader in = Files.newBufferedReader(old)) {
+                        oldConfig = Configuration.read(in);
+                    }
+                    Files.deleteIfExists(old);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            boolean finalized = Update.finalizeUpdate(tempDir);
+            if (finalized && oldConfig != null && localConfig != null) {
+                localConfig.deleteOldFiles(oldConfig);
+            }
+        }
 
-		boolean localNotReady = localConfig == null || localConfig.requiresUpdate();
+        boolean localNotReady = localConfig == null || localConfig.requiresUpdate();
 
-		if (!localNotReady) {
-			Configuration finalConfig = localConfig;
-			Thread localApp = new Thread(() -> finalConfig.launch(this));
-			localApp.run();
-		}
+        if (!localNotReady) {
+            Configuration finalConfig = localConfig;
+            Thread localApp = new Thread(() -> finalConfig.launch(this));
+            localApp.run();
+        }
 
-		Configuration remoteConfig = null;
-		if (remote != null) {
-			remoteConfig = getRemoteConfig();
-		}
+        Configuration remoteConfig = null;
+        if (remote != null) {
+            remoteConfig = getRemoteConfig();
+        }
 
-		boolean failedRemoteUpdate = false;
+        boolean failedRemoteUpdate = false;
 
-		if (localNotReady) {
-			Configuration config = remoteConfig != null ? remoteConfig : localConfig;
+        if (localNotReady) {
+            Configuration config = remoteConfig != null ? remoteConfig : localConfig;
 
-			if (config != null) {
-				boolean success = !config.update(pk);
-				if (config == remoteConfig)
-					failedRemoteUpdate = !success;
+            if (config != null) {
+                boolean success = !config.update(pk);
+                if (config == remoteConfig)
+                    failedRemoteUpdate = !success;
 
-				if (!success && stopOnUpdateError) {
-					return;
-				}
+                if (!success && stopOnUpdateError) {
+                    return;
+                }
 
-				config.launch(this);
-			}
-		} else if (remoteConfig != null) {
-			if (remoteConfig.requiresUpdate()) {
-				failedRemoteUpdate = !remoteConfig.updateTemp(tempDir, pk);
-			}
-		}
+                config.launch(this);
+            }
+        } else if (remoteConfig != null) {
+            if (remoteConfig.requiresUpdate()) {
+                failedRemoteUpdate = !remoteConfig.updateTemp(tempDir, pk);
+            }
+        }
 
-		if (!failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
-			syncLocal(remoteConfig);
+        if (!failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
+            syncLocal(remoteConfig);
 
-			if (localNotReady && localConfig != null) {
-				remoteConfig.deleteOldFiles(localConfig);
-			} else if (Update.containsUpdate(tempDir)) {
-				try (Writer out = Files.newBufferedWriter(old)) {
-					localConfig.write(out);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
+            if (localNotReady && localConfig != null) {
+                remoteConfig.deleteOldFiles(localConfig);
+            } else if (Update.containsUpdate(tempDir)) {
+                try (Writer out = Files.newBufferedWriter(old)) {
+                    localConfig.write(out);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
-	}
+    }
 
-	protected Reader openConnection(URL url) throws IOException {
+    protected Reader openConnection(URL url) throws IOException {
 
-		URLConnection connection = url.openConnection();
+        URLConnection connection = url.openConnection();
 
-		// Some downloads may fail with HTTP/403, this may solve it
-		connection.addRequestProperty("User-Agent", "Mozilla/5.0");
-		// Set a connection timeout of 10 seconds
-		connection.setConnectTimeout(10 * 1000);
-		// Set a read timeout of 10 seconds
-		connection.setReadTimeout(10 * 1000);
+        // Some downloads may fail with HTTP/403, this may solve it
+        connection.addRequestProperty("User-Agent", "Mozilla/5.0");
+        // Set a connection timeout of 10 seconds
+        connection.setConnectTimeout(10 * 1000);
+        // Set a read timeout of 10 seconds
+        connection.setReadTimeout(10 * 1000);
 
-		return new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8);
-	}
+        return new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8);
+    }
 
-	private Configuration getLocalConfig(boolean ignoreFileNotFound) {
-		try (Reader in = Files.newBufferedReader(Paths.get(local))) {
-			if (pk == null) {
-				return Configuration.read(in);
-			} else {
-				return Configuration.read(in, pk);
+    private Configuration getLocalConfig(boolean ignoreFileNotFound) {
+        try (Reader in = Files.newBufferedReader(Paths.get(local))) {
+            if (pk == null) {
+                return Configuration.read(in);
+            } else {
+                return Configuration.read(in, pk);
 
-			}
-		} catch (NoSuchFileException e) {
-			if (!ignoreFileNotFound) {
-				e.printStackTrace();
-			}
-		} catch (Exception e) {
-			// All exceptions just returns null, never fail
-			e.printStackTrace();
-		}
+            }
+        } catch (NoSuchFileException e) {
+            if (!ignoreFileNotFound) {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            // All exceptions just returns null, never fail
+            e.printStackTrace();
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	private Configuration getRemoteConfig() {
-		try (Reader in = openConnection(new URL(remote))) {
-			if (pk == null) {
-				return Configuration.read(in);
-			} else {
-				return Configuration.read(in, pk);
+    private Configuration getRemoteConfig() {
+        try (Reader in = openConnection(new URL(remote))) {
+            if (pk == null) {
+                return Configuration.read(in);
+            } else {
+                return Configuration.read(in, pk);
 
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
 
-		}
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	private void syncLocal(Configuration remoteConfig) {
-		Path localPath = Paths.get(local);
-		try {
-			if (localPath.getParent() != null)
-				Files.createDirectories(localPath.getParent());
+    private void syncLocal(Configuration remoteConfig) {
+        Path localPath = Paths.get(local);
+        try {
+            if (localPath.getParent() != null)
+                Files.createDirectories(localPath.getParent());
 
-			try (Writer out = Files.newBufferedWriter(localPath)) {
-				remoteConfig.write(out);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+            try (Writer out = Files.newBufferedWriter(localPath)) {
+                remoteConfig.write(out);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-	// @formatter:off
+    // @formatter:off
 	private static void welcome() {
 
 		System.out.println(getLogo() + "\tWelcome to update4j, where you create your own auto-update lifecycle.\n\n"

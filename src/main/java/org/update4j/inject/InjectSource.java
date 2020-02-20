@@ -34,10 +34,10 @@ import java.lang.annotation.Target;
 @Documented
 public @interface InjectSource {
 
-	/**
-	 * The target field name. If empty, the source field name will be used.
-	 * 
-	 * @return The target field name, or empty.
-	 */
-	String target() default "";
+    /**
+     * The target field name. If empty, the source field name will be used.
+     * 
+     * @return The target field name, or empty.
+     */
+    String target() default "";
 }
