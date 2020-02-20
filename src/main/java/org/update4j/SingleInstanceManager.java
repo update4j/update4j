@@ -172,6 +172,141 @@ public class SingleInstanceManager {
 	 *             If this method is called more than once on the same JVM.
 	 */
 	public static void execute(List<String> args, Consumer<? super List<String>> onNewInstance, Path lockFileDir) {
+		try {
+			tryExecute(args, onNewInstance, lockFileDir);
+		} catch (SingleInstanceException e) {
+			System.exit(1);
+		}
+	}
+
+	/**
+	 * A call to this method will try to create a single instance barrier. The first instance
+	 * will pass, but all others will throw a {@link SingleInstanceException}.
+	 * 
+	 * <p>
+	 * The lock files (special files that this method uses to know that there is a
+	 * running instance) will be placed in the current directory. It is highly
+	 * discouraged to use the current directory, as one may start the application
+	 * from a different directory and circumvent the single instance mechanism. Use
+	 * {@link #execute(Path)} instead, for applications that the user may move
+	 * around.
+	 * 
+	 * <p>
+	 * You must never call this more than once in the whole application.
+	 * 
+	 * @throws SingleInstanceException 
+	 *             If this method is called when there's already a running instance.
+	 * @throws OverlappingFileLockException
+	 *             If this method is called more than once on the same JVM.
+	 */
+	public static void tryExecute() throws SingleInstanceException {
+		tryExecute(null);
+	}
+
+	
+	/**
+	 * A call to this method will try to create a single instance barrier. The first instance
+	 * will pass, but all others will throw a {@link SingleInstanceException}.
+	 * 
+	 * <p>
+	 * You can specify the location where to place the lock files (special files
+	 * that this method uses to know that there is a running instance). It is highly
+	 * discouraged to use the current directory, as one may start the application
+	 * from a different directory and circumvent the single instance mechanism.
+	 * 
+	 * <p>
+	 * You must never call this more than once in the whole application.
+	 * 
+	 * @param lockFileDir
+	 *            The location where to place the lock files. If {@code null}, it
+	 *            will use the current directory.
+	 * 
+	 * @throws SingleInstanceException 
+	 *             If this method is called when there's already a running instance
+	 *             sharing the same {@code lockFileDir}.
+	 * @throws OverlappingFileLockException
+	 *             If this method is called more than once on the same JVM.
+	 */
+	public static void tryExecute(Path lockFileDir) throws SingleInstanceException {
+		tryExecute(null, null, lockFileDir);
+	}
+
+	
+	/**
+	 * A call to this method will try to create a single instance barrier. The first instance
+	 * will pass, but all others will throw a {@link SingleInstanceException}.
+	 * 
+	 * <p>
+	 * The first instance will receive the {@code args} list of strings of the new
+	 * instance in the {@code onNewInstance} consumer (called in special instance
+	 * message dispatching thread) whenever a new instance is created and
+	 * successfully shut down.
+	 * 
+	 * <p>
+	 * The lock files (special files that this method uses to know that there is a
+	 * running instance) will be placed in the current directory. It is highly
+	 * discouraged to use the current directory, as one may start the application
+	 * from a different directory and circumvent the single instance mechanism. Use
+	 * {@link #execute(List, Consumer, Path)} instead, for applications that the
+	 * user may move around.
+	 * 
+	 * <p>
+	 * You must never call this more than once in the whole application.
+	 * 
+	 * 
+	 * @param args
+	 *            The list of strings to pass to the single instance, if this is a
+	 *            subsequent instance. {@code null} will be passed as an empty list.
+	 * 
+	 * @param onNewInstance
+	 *            The receiver consumer of the passed list of strings, if this is
+	 *            the initial instance. May be {@code null}.
+	 * 
+	 * @throws SingleInstanceException 
+	 *             If this method is called when there's already a running instance.
+	 * @throws OverlappingFileLockException
+	 *             If this method is called more than once on the same JVM.
+	 */
+	public static void tryExecute(List<String> args, Consumer<? super List<String>> onNewInstance) throws SingleInstanceException {
+		tryExecute(args, onNewInstance, null);
+	}
+
+	/**
+	 * A call to this method will try to create a single instance barrier. The first instance
+	 * will pass, but all others will throw a {@link SingleInstanceException}.
+	 * 
+	 * <p>
+	 * The first instance will receive the {@code args} list of strings of the new
+	 * instance in the {@code onNewInstance} consumer (called in special instance
+	 * message dispatching thread) whenever a new instance is created and
+	 * successfully shut down.
+	 * 
+	 * <p>
+	 * You can specify the location where to place the lock files (special files
+	 * that this method uses to know that there is a running instance). It is highly
+	 * discouraged to use the current directory, as one may start the application
+	 * from a different directory and circumvent the single instance mechanism.
+	 * 
+	 * <p>
+	 * You must never call this more than once in the whole application.
+	 * 
+	 * 
+	 * @param args
+	 *            The list of strings to pass to the single instance, if this is a
+	 *            subsequent instance. {@code null} will be passed as an empty list.
+	 * @param onNewInstance
+	 *            The receiver consumer of the passed list of strings, if this is
+	 *            the initial instance. May be {@code null}.
+	 * @param lockFileDir
+	 *            The location where to place the lock files. If {@code null}, it
+	 *            will use the current directory.
+	 * @throws SingleInstanceException 
+	 *             If this method is called when there's already a running instance
+	 *             sharing the same {@code lockFileDir}.
+	 * @throws OverlappingFileLockException
+	 *             If this method is called more than once on the same JVM.
+	 */
+	public static void tryExecute(List<String> args, Consumer<? super List<String>> onNewInstance, Path lockFileDir) throws SingleInstanceException {
 
 		if (args == null) {
 			args = List.of();
@@ -260,7 +395,7 @@ public class SingleInstanceManager {
 					e1.printStackTrace();
 				}
 
-				System.exit(0);
+				throw new SingleInstanceException();
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
