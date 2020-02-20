@@ -259,69 +259,6 @@ public class ConfigMapper extends XmlMapper {
         }
     }
 
-    // @Override
-    // public Node toNode(Document doc) {
-    // Element e = doc.createElement("configuration");
-    //
-    // if (timestamp != null)
-    // e.setAttribute("timestamp", timestamp);
-    //
-    // if (baseUri != null && basePath != null) {
-    // Element base = doc.createElement("base");
-    //
-    // if (baseUri != null)
-    // base.setAttribute("uri", baseUri);
-    // if (basePath != null)
-    // base.setAttribute("path", basePath);
-    //
-    // e.appendChild(base);
-    // }
-    //
-    // if (updateHandler != null && launcher != null) {
-    // Element provider = doc.createElement("provider");
-    //
-    // if (updateHandler != null)
-    // provider.setAttribute("updateHandler", updateHandler);
-    // if (launcher != null)
-    // provider.setAttribute("launcher", launcher);
-    //
-    // e.appendChild(provider);
-    // }
-    //
-    // if (properties != null && properties.size() > 0) {
-    //
-    // Element props = doc.createElement("properties");
-    //
-    // for (Property p : properties) {
-    // Element prop = doc.createElement("property");
-    // prop.setAttribute("key", p.getKey());
-    // prop.setAttribute("value", p.getValue());
-    //
-    // if (p.getOs() != null) {
-    // prop.setAttribute("os", p.getOs()
-    // .getShortName());
-    // }
-    //
-    // props.appendChild(prop);
-    // }
-    //
-    // e.appendChild(props);
-    // }
-    //
-    // if (files != null && files.size() > 0) {
-    //
-    // Element f = doc.createElement("files");
-    //
-    // for (FileMapper fm : files) {
-    // f.appendChild(fm.toNode(doc));
-    // }
-    //
-    // e.appendChild(f);
-    // }
-    //
-    // return e;
-    // }
-
     public static ConfigMapper read(Reader reader) throws IOException {
         try {
             Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new InputSource(reader));

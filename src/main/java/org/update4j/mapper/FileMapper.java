@@ -15,10 +15,14 @@
  */
 package org.update4j.mapper;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.List;
 import org.update4j.AddPackage;
 import org.update4j.OS;
+import org.update4j.util.FileUtils;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -239,71 +243,19 @@ public class FileMapper extends XmlMapper {
         return builder.toString();
     }
 
-    //	@Override
-    //	public Node toNode(Document doc) {
-    //		Element e = doc.createElement("file");
-    //
-    //		if (uri != null)
-    //			e.setAttribute("uri", uri);
-    //		if (path != null)
-    //			e.setAttribute("path", path);
-    //		if (checksum != null)
-    //			e.setAttribute("checksum", checksum);
-    //		if (size != null)
-    //			e.setAttribute("size", size.toString());
-    //		if (os != null)
-    //			e.setAttribute("os", os.getShortName());
-    //		if (classpath != null && classpath)
-    //			e.setAttribute("classpath", classpath.toString());
-    //		if (modulepath != null && modulepath)
-    //			e.setAttribute("modulepath", modulepath.toString());
-    //		if (comment != null)
-    //			e.setAttribute("comment", comment);
-    //		if (ignoreBootConflict != null && ignoreBootConflict)
-    //			e.setAttribute("ignoreBootConflict", ignoreBootConflict.toString());
-    //		if (signature != null)
-    //			e.setAttribute("signature", signature);
-    //
-    //		if (addExports != null && addExports.size() > 0) {
-    //			Element exports = doc.createElement("addExports");
-    //
-    //			for (AddPackage a : addExports) {
-    //				Element export = doc.createElement("exports");
-    //				export.setAttribute("package", a.getPackageName());
-    //				export.setAttribute("target", a.getTargetModule());
-    //
-    //				exports.appendChild(export);
-    //			}
-    //
-    //			e.appendChild(exports);
-    //		}
-    //
-    //		if (addOpens != null && addOpens.size() > 0) {
-    //			Element opens = doc.createElement("addOpens");
-    //
-    //			for (AddPackage a : addOpens) {
-    //				Element open = doc.createElement("opens");
-    //				open.setAttribute("package", a.getPackageName());
-    //				open.setAttribute("target", a.getTargetModule());
-    //
-    //				opens.appendChild(open);
-    //			}
-    //
-    //			e.appendChild(opens);
-    //		}
-    //
-    //		if (addReads != null && addReads.size() > 0) {
-    //			Element reads = doc.createElement("addReads");
-    //
-    //			for (String a : addReads) {
-    //				Element read = doc.createElement("reads");
-    //				read.setAttribute("module", a);
-    //				reads.appendChild(read);
-    //			}
-    //
-    //			e.appendChild(reads);
-    //		}
-    //
-    //		return e;
-    //	}
+    public static long getChecksum(Path path) throws IOException {
+        return FileUtils.getChecksum(path);
+    }
+
+    public static String getChecksumHex(Path path) throws IOException {
+        return FileUtils.getChecksumString(path);
+    }
+
+    public static byte[] sign(Path path, PrivateKey key) throws IOException {
+        return FileUtils.sign(path, key);
+    }
+
+    public static String signAndEncode(Path path, PrivateKey key) throws IOException {
+        return FileUtils.signAndEncode(path, key);
+    }
 }
