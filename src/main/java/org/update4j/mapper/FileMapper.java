@@ -251,11 +251,11 @@ public class FileMapper extends XmlMapper {
         return FileUtils.getChecksumString(path);
     }
 
-    public static byte[] sign(Path path, PrivateKey key) throws IOException {
+    public static byte[] getSignature(Path path, PrivateKey key) throws IOException {
         return FileUtils.sign(path, key);
     }
 
-    public static String signAndEncode(Path path, PrivateKey key) throws IOException {
+    public static String getSignatureEncoded(Path path, PrivateKey key) throws IOException {
         return FileUtils.signAndEncode(path, key);
     }
 }
