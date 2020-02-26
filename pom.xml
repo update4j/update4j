@@ -5,9 +5,9 @@
 
 	<groupId>org.update4j</groupId>
 	<artifactId>update4j</artifactId>
-	<version>1.4.4</version>
+	<version>1.4.5</version>
 	<name>update4j</name>
-	<description>Updates and launches Java 9+ Applications</description>
+	<description>Update and launch Java 9+ Applications</description>
 	<url>https://github.com/update4j/update4j</url>
 
 	<licenses>
@@ -32,16 +32,28 @@
 		<developerConnection>scm:git:https://github.com:update4j/update4j.git</developerConnection>
 	</scm>
 
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+
+	<distributionManagement>
+		<snapshotRepository>
+			<id>sonatype-nexus-snapshots</id>
+			<name>Sonatype Nexus snapshot repository</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+		<repository>
+			<id>sonatype-nexus-staging</id>
+			<name>Sonatype Nexus release repository</name>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
 
 	<build>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.7.0</version>
+				<version>3.8.1</version>
 				<configuration>
 					<release>9</release>
 				</configuration>
@@ -49,33 +61,14 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.1.0</version>
-			</plugin>
-			<plugin>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.8</version>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<configuration>
-							<target>
-								<exec executable="${java.home}/bin/jar" failonerror="true">
-									<arg value="--main-class" />
-									<arg value="org.update4j.Bootstrap" />
-									<arg value="--module-version" />
-									<arg value="${project.version}" />
-									<arg value="--update" />
-									<arg value="--file" />
-									<arg
-										value="${project.build.directory}/${project.artifactId}-${project.version}.jar" />
-								</exec>
-							</target>
-						</configuration>
-						<goals>
-							<goal>run</goal>
-						</goals>
-					</execution>
-				</executions>
+				<version>3.2.0</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>org.update4j.Bootstrap</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -84,7 +77,21 @@
 				<configuration>
 					<noqualifier>all</noqualifier>
 					<failOnError>false</failOnError>
-					<additionalOptions>-html5</additionalOptions>
+					<additionalOptions>-html5,--allow-script-in-comments</additionalOptions>
+					<header>
+						<!-- Google Analytics for JavaDoc -->
+					<![CDATA[
+						<!-- Global site tag (gtag.js) - Google Analytics -->
+						<script async src="https://www.googletagmanager.com/gtag/js?id=UA-153757199-1"></script>
+						<script>
+  							window.dataLayer = window.dataLayer || [];
+  							function gtag(){dataLayer.push(arguments);}
+  							gtag('js', new Date());
+
+  							gtag('config', 'UA-153757199-1');
+						</script>
+					]]>
+					</header>
 				</configuration>
 				<executions>
 					<execution>

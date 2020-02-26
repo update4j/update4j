@@ -1,6 +1,6 @@
 # [![update4j-logo][3]][3]
 
-[![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.4.4-yellow.svg)](https://search.maven.org/search?q=org.update4j)    [![Gitter](https://badges.gitter.im/update4j/update4j.svg)](https://gitter.im/update4j/update4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Build Status](https://travis-ci.org/update4j/update4j.svg?branch=master)](https://travis-ci.org/update4j/update4j)   [![Apache License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)   ![Java-9+](https://img.shields.io/badge/java-9%2B-orange.svg)   [![Maven Release](https://img.shields.io/badge/maven%20central-v1.4.5-yellow.svg)](https://search.maven.org/search?q=org.update4j)    [![Gitter](https://badges.gitter.im/update4j/update4j.svg)](https://gitter.im/update4j/update4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 
 **Read the [documentation](https://github.com/update4j/update4j/wiki/Documentation), explore the [JavaDoc](http://docs.update4j.org/javadoc/update4j/index.html), or [see it in action](https://github.com/update4j/update4j/wiki/Demo-Application)**
@@ -32,13 +32,13 @@ In update4j _you_ have ultimate control of every process, from startup - update 
 
 ## Installation & Usage
 
-You can [download](https://repo1.maven.org/maven2/org/update4j/update4j/1.4.4/update4j-1.4.4.jar) or install using Maven:
+You can [download](https://repo1.maven.org/maven2/org/update4j/update4j/1.4.5/update4j-1.4.5.jar) or install using Maven:
 
 ```xml
 <dependency>
     <groupId>org.update4j</groupId>
     <artifactId>update4j</artifactId>
-    <version>1.4.4</version>
+    <version>1.4.5</version>
 </dependency>
 ```
 
@@ -47,7 +47,7 @@ You can use it as a regular dependency, or you may run it as a runnable JAR file
 To run it in the modulepath, use either of:
 
 ```shell
-$ java -p update4j-1.4.4.jar -m org.update4j
+$ java -p update4j-1.4.5.jar -m org.update4j
 $ java -p . -m org.update4j
 
 ```
@@ -55,29 +55,21 @@ $ java -p . -m org.update4j
 To run it in the classpath, use either of:
 
 ```shell
-$ java -jar update4j-1.4.4.jar
+$ java -jar update4j-1.4.5.jar
 $ java -cp * org.update4j.Bootstrap
 ```
 
 For more information refer to [Starting the Application](https://github.com/update4j/update4j/wiki/Documentation#starting-the-application) in the wiki.
 
 
-## What's New in 1.4.x &mdash; [Migration Guide](https://github.com/update4j/update4j/wiki/Migration-to-1.4.x)
-  * Changed warning suppression system property key from `suppress.warning` to `update4j.suppress.warning`.
-  * Restricted passing the same command to `DefaultBootstrap` twice.
-  * Increased download byte buffer to 8kb. _`UpdateHandler.updateDownloadFileProgress()` will be called less frequently._
-  * Added `UpdateHandler.shouldCheckForUpdate()`. Returning `false` will skip that file from being updated.
-  * Pass arguments and system properties from the config when using the `DefaultLauncher`.
-  * `DefaultLauncher` is now aware of JavaFX and will start `javafx.application.Application` even if missing a main method in class defined in `default.launcher.main.class`.
-  * Reduced system dependencies to `java.xml` and added warnings if system module is not properly resolved. _(breaking change in some cases)_.
-  * Added dependency injection framework to communicate between the bootstrap and service provider.
-  * Consequently, removed provider consumers at update and launch, and passing args at launch.
-  * Removed many confusing `getXxxProperty()` methods in `Configuration` class.
-  * You can now add properties to a config dynamically at runtime.
-  * Locate explicit service providers even if not properly registered as required by `ServiceLoader`.
-  * Made many service methods `default`.
-  * Added `osFromFilename()` method in `FileMetadata` builder.
-  * Changed how `--delegate` argument in `Bootstrap` works.
+## What's New in 1.4.5
+  * Added `DynamicClassLoader` and the new [Classloading Model](https://github.com/update4j/update4j/wiki/Documentation#classloading-model).
+  * New design reporting download progress in `DefaultUpdateHandler`.
+  * Added `SingleInstanceManager::tryExecute` to handle second instance instead of automatic shutdown.
+  * Added `FileMapper::getChecksum` and `FileMapper::getSignature`
+  * `user.home` and `user.dir` will only be automatically replaced when matched in the beginning or a path.
+  * Improved file accessibility check when copying new files in its final location.
+  * Use `System.Logger` instead of `System.err.println()` for warnings.
 
 
 ## Contributors
