@@ -67,8 +67,8 @@ For more information refer to [Starting the Application](https://github.com/upda
   * New design reporting download progress in `DefaultUpdateHandler`.
   * Added `SingleInstanceManager::tryExecute` to handle second instance instead of automatic shutdown.
   * Added `FileMapper::getChecksum` and `FileMapper::getSignature`
-  * `user.home` and `user.dir` will only be automatically replaced when matched in the beginning or a path.
-  * Improved file accessibility check when copying new files in its final location.
+  * `user.home` and `user.dir` will only be automatically replaced when matched to the beginning of a path.
+  * Improved file accessibility check when copying new files to its final location.
   * Use `System.Logger` instead of `System.err.println()` for warnings.
 
 
