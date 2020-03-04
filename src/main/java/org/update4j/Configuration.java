@@ -50,6 +50,9 @@ import org.update4j.util.FileUtils;
 import org.update4j.util.PropertyManager;
 import org.update4j.util.StringUtils;
 
+import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.WARNING;
+
 /**
  * This class is the heart of the framework. It contains all the logic required
  * to draft new releases at the development side, or start the application at
@@ -424,6 +427,8 @@ import org.update4j.util.StringUtils;
  *
  */
 public class Configuration {
+    
+    private static final System.Logger logger = System.getLogger(Configuration.class.getName());
 
     private Instant timestamp;
     private String signature;
@@ -1897,8 +1902,7 @@ public class Configuration {
             }
 
             if (Files.notExists(path)) {
-                System.err.println("[WARNING] File '" + path + "' is missing; skipped.");
-
+                logger.log(WARNING, "File '" + path + "' is missing; skipped.");
                 continue;
             }
 
@@ -1915,7 +1919,7 @@ public class Configuration {
             }
 
             if (fm.getSize() != fileMapper.size || fm.getChecksum() != checksum) {
-                System.out.println("[INFO] Synced '" + path.getFileName() + "'.");
+                logger.log(INFO, "Synced '" + path.getFileName() + "'.");
                 changed = true;
             }
 

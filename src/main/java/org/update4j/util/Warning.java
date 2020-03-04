@@ -21,9 +21,12 @@ import java.util.stream.Collectors;
 
 import org.update4j.service.Launcher;
 
+import static java.lang.System.Logger.Level.WARNING;
+
 public class Warning {
 
     private static final String PREFIX = "update4j.suppress.warning";
+    private static final System.Logger logger = System.getLogger(Warning.class.getName());
 
     public static void lock(Throwable t) {
         if (!(t instanceof FileSystemException))
@@ -38,7 +41,7 @@ public class Warning {
         if (!shouldWarn("lock"))
             return;
 
-        System.err.println("WARNING: '" + fse.getFile()
+        logger.log(WARNING, fse.getFile()
                         + "' is locked by another process, there are a few common causes for this:\n"
                         + "\t- Another application accesses this file:\n"
                         + "\t\tNothing you can do about it, it's out of your control.\n"
@@ -69,7 +72,7 @@ public class Warning {
         if (!shouldWarn("lock"))
             return;
 
-        System.err.println("WARNING: '" + fse.getFile()
+        logger.log(WARNING, fse.getFile()
                         + "' is locked by another process, there are a few common causes for this:\n"
                         + "\t- Another application accesses this file:\n"
                         + "\t\tNothing you can do about it, it's out of your control.\n"
@@ -91,7 +94,7 @@ public class Warning {
         if (!shouldWarn("access"))
             return;
 
-        System.err.println("WARNING: '" + launcher.getClass().getCanonicalName()
+        logger.log(WARNING, launcher.getClass().getCanonicalName()
                         + "' was loaded with the boot class loader.\n"
                         + "\tThis may prevent accessing classes in the business application, and will\n"
                         + "\tthrow NoClassDefFoundErrors.\n"
@@ -108,7 +111,7 @@ public class Warning {
         if (!shouldWarn("access"))
             return;
 
-        System.err.println("WARNING: '" + launcher.getClass().getCanonicalName()
+        logger.log(WARNING, launcher.getClass().getCanonicalName()
                         + "' was not loaded using the Service Provider Interface.\n"
                         + "\tLaunchers like these only have reflective access to the business\n"
                         + "\tapplication. You must reflect using 'context.getClassLoader()' or\n"
@@ -122,7 +125,7 @@ public class Warning {
         if (!shouldWarn("path"))
             return;
 
-        System.err.println("WARNING: No files were found that are set with 'classpath' or 'modulepath' to true;\n"
+        logger.log(WARNING, "No files were found that are set with 'classpath' or 'modulepath' to true;\n"
                         + "\talthough perfectly valid it's rarely what you want.\n"
                         + "\tPlease refer to: https://github.com/update4j/update4j/wiki/Documentation#classpath-and-modulepath\n");
     }
@@ -131,7 +134,7 @@ public class Warning {
         if (!shouldWarn("bootConflict"))
             return;
 
-        System.err.println("WARNING: File '" + filename + "' has the \".jar\" file extension but is not a\n"
+        logger.log(WARNING, "File '" + filename + "' has the \".jar\" file extension but is not a\n"
                         + "\tvalid zip file and if present in the boot modulepath it will prevent JVM startup.\n"
                         + "\tIn order to prevent accidental breakage of your application among\n"
                         + "\tall your clients, the download was rejected.\n"
@@ -145,7 +148,7 @@ public class Warning {
         if (!shouldWarn("bootConflict"))
             return;
 
-        System.err.println("WARNING: Automatic module '" + moduleName + "' for file '" + filename
+        logger.log(WARNING, "Automatic module '" + moduleName + "' for file '" + filename
                         + "' is not a valid Java identifier.\n"
                         + "\tIn order to prevent accidental breakage of your application among\n"
                         + "\tall your clients, the download was rejected.\n"
@@ -159,7 +162,7 @@ public class Warning {
         if (!shouldWarn("bootConflict"))
             return;
 
-        System.err.println("WARNING: Module '" + moduleName + "' already exists in the boot modulepath.\n"
+        logger.log(WARNING, "Module '" + moduleName + "' already exists in the boot modulepath.\n"
                         + "\tIn order to prevent accidental breakage of your application among\n"
                         + "\tall your clients, the download was rejected.\n"
                         + "\tIf this is only loaded on the boot *classpath* or the *business* application,\n"
@@ -172,7 +175,7 @@ public class Warning {
         if (!shouldWarn("bootConflict"))
             return;
 
-        System.err.println("WARNING: Package '" + packageName + "' already exists in the boot modulepath.\n"
+        logger.log(WARNING, "Package '" + packageName + "' already exists in the boot modulepath.\n"
                         + "\tIn order to prevent accidental breakage of your application among\n"
                         + "\tall your clients, the download was rejected.\n"
                         + "\tIf this is only loaded on the boot *classpath* or the *business* application,\n"
@@ -185,7 +188,7 @@ public class Warning {
         if (!shouldWarn("bootConflict"))
             return;
 
-        System.err.println("WARNING: The system module '" + sysMod
+        logger.log(WARNING, "The system module '" + sysMod
                         + "' is not present in the boot JVM image, which likely\n"
                         + "\tmeans you are running in a minimized jlink image and was not included.\n"
                         + "\tIf the module will never really end up in the modulepath (but rather only in the classpath)\n"
@@ -197,7 +200,7 @@ public class Warning {
         if (!shouldWarn("signature"))
             return;
 
-        System.err.println("WARNING: Updating without signature validation is strongly discouraged.");
+        logger.log(WARNING, "Updating without signature validation is strongly discouraged.");
 
     }
 
@@ -209,7 +212,7 @@ public class Warning {
         String plural = sysMods.size() == 1 ? "it" : "them";
         String commaSeparated = sysMods.stream().collect(Collectors.joining(","));
 
-        System.out.println("WARNING: As a fundamental restriction to the Java Module System,\n"
+        logger.log(WARNING, "As a fundamental restriction to the Java Module System,\n"
                         + "\tdynamically loaded modules cannot resolve system modules\n"
                         + "\tthat were not already resolved in the boot modulepath. Currently your business\n"
                         + "\tapp requires " + humanReadable + " not been required anywhere in the bootstrap.\n"
