@@ -15,6 +15,7 @@
  */
 package org.update4j.service;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -55,16 +56,6 @@ public class DefaultLauncher implements Launcher {
         Configuration config = context.getConfiguration();
 
         String mainClass = config.getResolvedProperty(MAIN_CLASS_PROPERTY_KEY);
-        if (mainClass == null) {
-            usage();
-
-            throw new IllegalStateException("No main class property found at key '" + MAIN_CLASS_PROPERTY_KEY + "'.");
-        }
-
-        if (!StringUtils.isClassName(mainClass)) {
-            throw new IllegalStateException(
-                            "Main class at key '" + MAIN_CLASS_PROPERTY_KEY + "' is not a valid Java class name.");
-        }
 
         List<String> localArgs = new ArrayList<>();
         if (this.args != null)
@@ -82,7 +73,13 @@ public class DefaultLauncher implements Launcher {
         });
 
         localArgs.addAll(argMap.values());
-        String[] argsArray = localArgs.toArray(new String[localArgs.size()]);
+
+        if (mainClass == null && localArgs.isEmpty()) {
+            usage();
+
+            throw new IllegalStateException(
+                            "You must provide either a main class or arguments to be executed as commands.");
+        }
 
         context.getConfiguration().getResolvedProperties().forEach((k, v) -> {
             String pfx = SYSTEM_PROPERTY_KEY_PREFIX + ".";
@@ -95,66 +92,82 @@ public class DefaultLauncher implements Launcher {
         // if NoClassDefFoundError arises for any other reason
         System.setProperty("update4j.suppress.warning.access", "true");
 
-        try {
-            Class<?> clazz = context.getClassLoader().loadClass(mainClass);
+        if (mainClass != null) {
 
-            // first check for JavaFx start method
-            Class<?> javafx = null;
+            if (!StringUtils.isClassName(mainClass)) {
+                throw new IllegalStateException("Main class '" + mainClass + "' is not a valid Java class name.");
+            }
+
             try {
-                javafx = context.getClassLoader().loadClass("javafx.application.Application");
-            } catch (ClassNotFoundException e) {
-                // no JavaFx present, skip.
+                Class<?> clazz = context.getClassLoader().loadClass(mainClass);
+
+                // first check for JavaFx start method
+                Class<?> javafx = null;
+                try {
+                    javafx = context.getClassLoader().loadClass("javafx.application.Application");
+                } catch (ClassNotFoundException e) {
+                    // no JavaFx present, skip.
+                }
+
+                String[] argsArray = localArgs.toArray(new String[localArgs.size()]);
+                if (javafx != null && javafx.isAssignableFrom(clazz)) {
+                    Method launch = javafx.getMethod("launch", Class.class, String[].class);
+                    launch.invoke(null, clazz, argsArray);
+                } else {
+                    Method main = clazz.getMethod("main", String[].class);
+                    main.invoke(null, new Object[] { argsArray });
+                }
+
+            } catch (ClassNotFoundException | IllegalAccessException | InvocationTargetException
+                            | NoSuchMethodException e) {
+                throw new RuntimeException(e);
             }
 
-            if (javafx != null && javafx.isAssignableFrom(clazz)) {
-                Method launch = javafx.getMethod("launch", Class.class, String[].class);
-                launch.invoke(null, clazz, argsArray);
-            } else {
-                Method main = clazz.getMethod("main", String[].class);
-                main.invoke(null, new Object[] { argsArray });
+        } else {
+
+            try {
+                new ProcessBuilder(localArgs).inheritIO().start();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
 
-        } catch (ClassNotFoundException | IllegalAccessException | InvocationTargetException
-                        | NoSuchMethodException e) {
-            throw new RuntimeException(e);
         }
     }
 
     // @formatter:off
     private static void usage() {
-        System.err.println("Customize the setup of the default launcher by setting properties in the config\n"
-                        + "\taccording to the following table:\n\n" + table()
-
+        System.err.println("Customize the setup of the default launcher by setting properties in the config as following:\n\n\n"
+    
+                        
+                        + "\t\tdefault.launcher.main.class\n"
+                        + "\t\t\tThe main class of the business app having a main method or subclassing\n"
+                        + "\t\t\tjavafx.application.Application\n\n"
+                        
+                        + "\t\tdefault.launcher.argument.<num>\n"
+                        + "\t\t\tPass values in the args list, or if no main class is present, execute them;\n"
+                        + "\t\t\tordered by <num>. It will throw a  NumberFormatException if <num> is\n"
+                        + "\t\t\tnot a valid integer.\n"
+                        + "\t\t\tArguments passed from the bootstrap are always first in the list followed\n"
+                        + "\t\t\tby these property values.\n\n"
+                        
+                        + "\t\tdefault.launcher.system.<key>\n"
+                        + "\t\t\tPass system properties with the provided values using the <key> as the\n"
+                        + "\t\t\tsystem property key.\n\n\n"
+                        
+                        
+                        + "\tYou must provider either a main class, in which case all arguments will be passed\n"
+                        + "\tto the main method, or just arguments which will be executed as shell commands.\n"
+                        + "\tNote: You can also pass arguments directly from the default bootstrap after a double-dash --\n\n"
+                        
                         + "\tWhile the default behavior works for a majority of cases, you may even\n"
                         + "\tfurther customize the launch process by implementing your own Launcher\n"
                         + "\tand either register it as a service provider, or pass an instance directly\n"
                         + "\tto a call to Configuration.launch(). This allows you to leverage the dependency\n"
                         + "\tinjection feature by calling any overload of Configuration.launch() that accepts\n"
                         + "\tan Injectable.\n\n"
+                        
                         + "\tFor more details how to register service providers please refer to the Github wiki:\n"
                         + "\thttps://github.com/update4j/update4j/wiki/Documentation#dealing-with-providers\n");
     }
 
-    private static String table() {
-        return "\t\t+--------------------------------+------------------------------------+\n"
-             + "\t\t| default.launcher.main.class    | The main class of the business app |\n"
-             + "\t\t|                                | having a main method or subclassing|\n"
-             + "\t\t|                                | javafx.application.Application     |\n"
-             + "\t\t|                                |                                    |\n"
-             + "\t\t|                                | Required.                          |\n"
-             + "\t\t+--------------------------------+------------------------------------+\n"
-             + "\t\t| default.launcher.argument.<num>| Pass values in the args list,      |\n"
-             + "\t\t|                                | ordered by <num>. It will throw a  |\n"
-             + "\t\t|                                | NumberFormatException if <num> is  |\n"
-             + "\t\t|                                | not a valid integer.               |\n"
-             + "\t\t|                                |                                    |\n"
-             + "\t\t|                                | Arguments passed from the bootstrap|\n"
-             + "\t\t|                                | are always first in the list       |\n"
-             + "\t\t|                                | followed by these property values. |\n"
-             + "\t\t+--------------------------------+------------------------------------+\n"
-             + "\t\t| default.launcher.system.<key>  | Pass system properties with the    |\n"
-             + "\t\t|                                | provided values using the <key> as |\n"
-             + "\t\t|                                | the system property key.           |\n"
-             + "\t\t+--------------------------------+------------------------------------+\n\n";
-    }
 }
