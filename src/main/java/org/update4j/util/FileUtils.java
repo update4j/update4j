@@ -97,7 +97,8 @@ public class FileUtils {
 
     public static byte[] sign(Path path, PrivateKey key) throws IOException {
         try {
-            Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
+            String alg = key.getAlgorithm().equals("EC") ? "ECDSA" : key.getAlgorithm();
+            Signature sign = Signature.getInstance("SHA256with" + alg);
             sign.initSign(key);
 
             try (InputStream input = Files.newInputStream(path)) {
