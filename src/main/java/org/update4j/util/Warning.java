@@ -144,12 +144,12 @@ public class Warning {
                         + "\tthe configuration.\n");
     }
 
-    public static void illegalAutomaticModule(String moduleName, String filename) {
+    public static void illegalModule(String filename) {
         if (!shouldWarn("bootConflict"))
             return;
 
-        logger.log(WARNING, "Automatic module '" + moduleName + "' for file '" + filename
-                        + "' is not a valid Java identifier.\n"
+        logger.log(WARNING, "Module in file '" + filename
+                        + "' is not valid.\n"
                         + "\tIn order to prevent accidental breakage of your application among\n"
                         + "\tall your clients, the download was rejected.\n"
                         + "\tIf this is only loaded on the boot *classpath* or the *business* application,\n"

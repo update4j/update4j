@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.lang.module.FindException;
+import java.lang.module.InvalidModuleDescriptorException;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleFinder;
@@ -31,7 +33,6 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -309,54 +310,29 @@ class ConfigImpl {
     }
 
     private static void checkBootConflicts(FileMetadata file, Path download) throws IOException {
+        String filename = file.getPath().getFileName().toString();
+        
         if (!FileUtils.isZipFile(download)) {
-            Warning.nonZip(file.getPath().getFileName().toString());
+            Warning.nonZip(filename);
             throw new IllegalStateException(
-                            "File '" + file.getPath().getFileName().toString() + "' is not a valid zip file.");
+                            "File '" + filename + "' is not a valid zip file.");
         }
 
         Set<Module> modules = ModuleLayer.boot().modules();
         Set<String> moduleNames = modules.stream().map(Module::getName).collect(Collectors.toSet());
 
         ModuleDescriptor newMod = null;
-
-        // ModuleFinder will not cooperate otherwise
-        String newFilename = "a" + download.getFileName().toString();
-        Path newPath = download.getParent().resolve(newFilename + ".jar");
-
         try {
-            Files.move(download, newPath);
-            newMod = ModuleFinder.of(newPath)
-                            .findAll()
-                            .stream()
-                            .map(ModuleReference::descriptor)
-                            .findAny()
-                            .orElse(null);
-        } finally {
-            Files.move(newPath, download, StandardCopyOption.REPLACE_EXISTING);
+            newMod = FileUtils.deriveModuleDescriptor(download, filename);
+        } catch (IllegalArgumentException | InvalidModuleDescriptorException | FindException e) {
+            Warning.illegalModule(filename);
+            throw e;
         }
 
-        if (newMod == null)
-            return;
-
-        // non-modular and no Automatic-Module-Name
-        // use real filename as module name
-        String newModuleName;
-        if (newFilename.equals(newMod.name())) {
-            newModuleName = StringUtils.deriveModuleName(file.getPath().getFileName().toString());
-            if (!StringUtils.isModuleName(newModuleName)) {
-                Warning.illegalAutomaticModule(newModuleName, file.getPath().getFileName().toString());
-                throw new IllegalStateException("Automatic module name '" + newModuleName + "' for file '"
-                                + file.getPath().getFileName() + "' is not valid.");
-            }
-        } else {
-            newModuleName = newMod.name();
-        }
-
-        if (moduleNames.contains(newModuleName)) {
-            Warning.moduleConflict(newModuleName);
+        if (moduleNames.contains(newMod.name())) {
+            Warning.moduleConflict(newMod.name());
             throw new IllegalStateException(
-                            "Module '" + newModuleName + "' conflicts with a module in the boot modulepath");
+                            "Module '" + newMod.name() + "' conflicts with a module in the boot modulepath");
         }
 
         Set<String> packages = modules.stream().flatMap(m -> m.getPackages().stream()).collect(Collectors.toSet());
