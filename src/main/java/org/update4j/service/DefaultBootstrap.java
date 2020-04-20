@@ -395,7 +395,7 @@ public class DefaultBootstrap implements Delegate {
                 + "\t\tconfiguration file. If it fails to download or command is missing, it will\n"
                 + "\t\tfall back to local.\n\n"
                 + "\t--local [path] - The path of a local configuration to use if the remote failed to download\n"
-                + "\t\tor was not passed. If both remote and local fail, startup fails.\n\n"
+                + "\t\tor was not passed. If both remote and local are missing, startup fails.\n\n"
                 + "\t--syncLocal - Sync the local configuration with the remote if it downloaded, loaded and\n"
                 + "\t\tupdated files successfully. Useful to still allow launching without Internet connection.\n"
                 + "\t\tDefault will not sync unless --launchFirst was specified.\n\n"
