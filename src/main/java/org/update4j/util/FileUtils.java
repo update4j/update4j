@@ -278,12 +278,14 @@ public class FileUtils {
             }
         }));
     }
-    
-    
+
     public static ModuleDescriptor deriveModuleDescriptor(Path jar, String filename) throws IOException {
-        try (FileSystem zip = FileSystems.newFileSystem(jar, ClassLoader.getSystemClassLoader())) {
-            try {
-                Path moduleInfo = zip.getPath("/module-info.class");
+        URI uri = URI.create("jar:" + jar.toUri());
+        try (FileSystem zip = FileSystems.newFileSystem(uri, Map.of())) {
+            
+            Path moduleInfo = zip.getPath("/module-info.class");
+            if (Files.exists(moduleInfo)) {
+                
                 try (InputStream in = Files.newInputStream(moduleInfo)) {
                     return ModuleDescriptor.read(in, () -> {
                         try {
@@ -300,23 +302,22 @@ public class FileUtils {
                         }
                     });
                 }
-            } catch (NoSuchFileException e) {
-                return automaticModule(zip, filename);
+                
             }
+            return automaticModule(zip, filename);
         }
     }
 
-    
     /*
      *  https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/jdk/internal/module/ModulePath.java#L459
      */
-    
+
     private static final String SERVICES_PREFIX = "META-INF/services/";
     private static final Attributes.Name AUTOMATIC_MODULE_NAME = new Attributes.Name("Automatic-Module-Name");
 
     private static ModuleDescriptor automaticModule(FileSystem zip, String filename) throws IOException {
         // I stripped elements that I don't currently care, as main class and version
-        
+
         Manifest man = null;
         try (InputStream in = Files.newInputStream(zip.getPath("/META-INF/MANIFEST.MF"))) {
             man = new Manifest(in);
