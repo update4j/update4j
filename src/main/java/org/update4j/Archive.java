@@ -26,10 +26,7 @@ public class Archive {
 
     public static Archive read(Path location) throws IOException {
         Archive archive = new Archive(location);
-
-        archive.loadConfiguration();
-        archive.loadFileList();
-        archive.verifyFileList();
+        archive.load();
 
         return archive;
     }
@@ -46,24 +43,17 @@ public class Archive {
         return config;
     }
 
-    private void loadConfiguration() throws IOException {
-        try (FileSystem zip = openConnection()) {
-            Path path = zip.getPath("/.reserved/config");
-            try (BufferedReader in = Files.newBufferedReader(path)) {
-                config = Configuration.read(in);
-            } catch (NoSuchFileException e) {
-                throw new NoSuchFileException(e.getFile(), e.getOtherFile(), "Configuration file is missing");
-            }
-        }
-    }
-
-    public List<FileMetadata> getFiles() {
-        return files;
-    }
-
-    private void loadFileList() throws IOException {
+    private void load() throws IOException {
         try (FileSystem zip = openConnection()) {
             Path root = zip.getPath("/");
+            Path configPath = zip.getPath("/.reserved/config");
+
+            if (Files.notExists(configPath))
+                throw new NoSuchFileException(configPath.toString(), null, "Configuration file is missing");
+
+            try (BufferedReader in = Files.newBufferedReader(configPath)) {
+                config = Configuration.read(in);
+            }
 
             files = Files.walk(root)
                             .filter(p -> !Files.isDirectory(p))
@@ -71,18 +61,16 @@ public class Archive {
                             .map(p -> OS.CURRENT == OS.WINDOWS ? root.relativize(p) : p)
                             .map(path -> getConfiguration().getFiles()
                                             .stream()
-                                            .filter(file -> zip.getPath(file.getPath().toString()).equals(path))
+                                            .filter(file -> zip.getPath(file.getNormalizedPath().toString())
+                                                            .equals(path))
                                             .findAny()
                                             .orElseThrow(() -> new IllegalStateException(path
                                                             + ": Archive entry cannot be linked to a file in the configuration")))
                             .collect(Collectors.toList());
-        }
 
-        files = Collections.unmodifiableList(files);
-    }
+            // Collectors.toUnmodifiableList() was added in JDK 10
+            files = Collections.unmodifiableList(files);
 
-    private void verifyFileList() throws IOException {
-        try (FileSystem zip = openConnection()) {
             for (FileMetadata file : getFiles()) {
                 Path p = zip.getPath(file.getPath().toString());
                 if (FileMapper.getChecksum(p) != file.getChecksum()) {
@@ -92,19 +80,22 @@ public class Archive {
         }
     }
 
+    public List<FileMetadata> getFiles() {
+        return files;
+    }
+
     public Path getLocation() {
         return location;
     }
 
     public FileSystem openConnection() throws IOException {
         if (Files.notExists(getLocation())) {
-            // I can't use Map.of("create", "true") since the overloading taking a path was only added in JDK 13
+            // I can't use Map.of("create", "true") since the overload taking a path was only added in JDK 13
             // and using URI overload doesn't support nested zip files
             try (OutputStream out = Files.newOutputStream(getLocation(), StandardOpenOption.CREATE_NEW)) {
-                // zip magic and END
-            // @formatter:off
-            out.write(new byte[] { 0x50,0x4b,0x05,0x06,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 });
-            // @formatter:on
+                // End of Central Directory Record (EOCD)
+                out.write(new byte[] { 0x50, 0x4b, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
             }
         }
 
@@ -112,14 +103,10 @@ public class Archive {
             return FileSystems.newFileSystem(getLocation(), (ClassLoader) null);
         } catch (ProviderNotFoundException e) {
             ModuleFinder.ofSystem()
-                            .findAll()
-                            .stream()
-                            .map(mr -> mr.descriptor().name())
-                            .filter(name -> name.equals("jdk.zipfs"))
-                            .findAny()
+                            .find("jdk.zipfs")
                             .orElseThrow(() -> new ProviderNotFoundException(
                                             "Accessing the archive depends on the jdk.zipfs module which is missing from the JRE image"));
-            
+
             throw e;
         }
     }
