@@ -3,8 +3,8 @@ package org.update4j;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -19,7 +19,6 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -123,7 +122,15 @@ public class Archive {
         private FileSystem zip;
 
         private ArchiveConnection(Archive archive) throws IOException {
-            zip = FileSystems.newFileSystem(URI.create("jar:" + archive.getLocation().toUri()), Map.of("create", "true"));
+            if (Files.notExists(archive.getLocation())) {
+                // I can't use Map.of("create", "true") since the overloading taking a path was only added in JDK 13
+                // and using URI overload doesn't support nested zip files
+                try (OutputStream out = Files.newOutputStream(archive.getLocation(), StandardOpenOption.CREATE_NEW)) {
+                    out.write(new byte[] { 0x50, 0x4b, 0x05, 0x06 });
+                }
+            }
+
+            zip = FileSystems.newFileSystem(archive.getLocation(), (ClassLoader) null);
         }
 
         @Override

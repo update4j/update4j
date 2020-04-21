@@ -34,7 +34,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -280,9 +279,8 @@ public class FileUtils {
     }
 
     public static ModuleDescriptor deriveModuleDescriptor(Path jar, String filename) throws IOException {
-        URI uri = URI.create("jar:" + jar.toUri());
-        try (FileSystem zip = FileSystems.newFileSystem(uri, Map.of())) {
-            
+        try (FileSystem zip = FileSystems.newFileSystem(jar, ClassLoader.getSystemClassLoader())) {
+
             Path moduleInfo = zip.getPath("/module-info.class");
             if (Files.exists(moduleInfo)) {
                 
@@ -302,12 +300,11 @@ public class FileUtils {
                         }
                     });
                 }
-                
             }
+            
             return automaticModule(zip, filename);
         }
     }
-
     /*
      *  https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/jdk/internal/module/ModulePath.java#L459
      */
