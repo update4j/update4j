@@ -321,9 +321,15 @@ class ConfigImpl {
         Set<Module> modules = ModuleLayer.boot().modules();
         Set<String> moduleNames = modules.stream().map(Module::getName).collect(Collectors.toSet());
 
+        Set<String> sysMods = ModuleFinder.ofSystem()
+                        .findAll()
+                        .stream()
+                        .map(mr -> mr.descriptor().name())
+                        .collect(Collectors.toSet());
+        
         ModuleDescriptor newMod = null;
         try {
-            newMod = FileUtils.deriveModuleDescriptor(download, filename);
+            newMod = FileUtils.deriveModuleDescriptor(download, filename, sysMods.contains("jdk.zipfs"));
         } catch (IllegalArgumentException | InvalidModuleDescriptorException | FindException e) {
             Warning.illegalModule(filename);
             throw e;
@@ -344,12 +350,6 @@ class ConfigImpl {
 
             }
         }
-
-        Set<String> sysMods = ModuleFinder.ofSystem()
-                        .findAll()
-                        .stream()
-                        .map(mr -> mr.descriptor().name())
-                        .collect(Collectors.toSet());
 
         for (Requires require : newMod.requires()) {
 

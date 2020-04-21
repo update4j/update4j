@@ -26,6 +26,8 @@ import java.io.Writer;
 import java.lang.module.FindException;
 import java.lang.module.InvalidModuleDescriptorException;
 import java.lang.module.ModuleDescriptor;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -278,12 +280,16 @@ public class FileUtils {
         }));
     }
 
-    public static ModuleDescriptor deriveModuleDescriptor(Path jar, String filename) throws IOException {
+    public static ModuleDescriptor deriveModuleDescriptor(Path jar, String filename, boolean readZip)
+                    throws IOException {
+        if (!readZip)
+            return primitiveModuleDescriptor(jar, filename);
+
         try (FileSystem zip = FileSystems.newFileSystem(jar, ClassLoader.getSystemClassLoader())) {
 
             Path moduleInfo = zip.getPath("/module-info.class");
             if (Files.exists(moduleInfo)) {
-                
+
                 try (InputStream in = Files.newInputStream(moduleInfo)) {
                     return ModuleDescriptor.read(in, () -> {
                         try {
@@ -301,10 +307,43 @@ public class FileUtils {
                     });
                 }
             }
-            
+
             return automaticModule(zip, filename);
         }
     }
+
+    private static ModuleDescriptor primitiveModuleDescriptor(Path jar, String filename) throws IOException {
+        String tempName = "a" + jar.getFileName();
+        Path temp = Paths.get(System.getProperty("user.home"), tempName + ".jar");
+        ModuleDescriptor mod;
+        try {
+            Files.copy(jar, temp);
+            mod = ModuleFinder.of(temp) //
+                            .findAll()
+                            .stream()
+                            .map(ModuleReference::descriptor)
+                            .findAny()
+                            .orElseThrow(IllegalStateException::new);
+
+        } finally {
+            Files.deleteIfExists(temp);
+        }
+
+        if (tempName.equals(mod.name())) {
+            String newModuleName = StringUtils.deriveModuleName(filename);
+            if (!StringUtils.isModuleName(newModuleName)) {
+                Warning.illegalModule(jar.getFileName().toString());
+                throw new IllegalStateException("Automatic module name '" + newModuleName + "' for file '"
+                                + jar.getFileName() + "' is not valid.");
+            }
+
+            return ModuleDescriptor.newAutomaticModule(newModuleName).packages(mod.packages()).build();
+
+        }
+
+        return mod;
+    }
+
     /*
      *  https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/jdk/internal/module/ModulePath.java#L459
      */

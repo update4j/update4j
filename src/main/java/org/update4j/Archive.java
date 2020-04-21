@@ -5,6 +5,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.lang.module.ModuleFinder;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -13,6 +14,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
+import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.UserPrincipalLookupService;
@@ -126,11 +128,25 @@ public class Archive {
                 // I can't use Map.of("create", "true") since the overloading taking a path was only added in JDK 13
                 // and using URI overload doesn't support nested zip files
                 try (OutputStream out = Files.newOutputStream(archive.getLocation(), StandardOpenOption.CREATE_NEW)) {
-                    out.write(new byte[] { 0x50, 0x4b, 0x05, 0x06 });
+                    // zip magic and END
+                    // @formatter:off
+                    out.write(new byte[] { 0x50,0x4b,0x05,0x06,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 });
+                    // @formatter:on
                 }
             }
 
-            zip = FileSystems.newFileSystem(archive.getLocation(), (ClassLoader) null);
+            try {
+                zip = FileSystems.newFileSystem(archive.getLocation(), (ClassLoader) null);
+            } catch (ProviderNotFoundException e) {
+                ModuleFinder.ofSystem()
+                                .findAll()
+                                .stream()
+                                .map(mr -> mr.descriptor().name())
+                                .filter(name -> name.equals("jdk.zipfs"))
+                                .findAny()
+                                .orElseThrow(() -> new ProviderNotFoundException(
+                                                "Accessing the archive depends on the jdk.zipfs module which is missing from the JRE image"));
+            }
         }
 
         @Override
