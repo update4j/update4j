@@ -399,6 +399,11 @@ import static java.lang.System.Logger.Level.WARNING;
  * launcher provider.
  * 
  * <p>
+ * Accessing business classes in the bootstrap depends on the classloader configuration. Please consult the
+ * <a href="https://github.com/update4j/update4j/wiki/Documentation#classloading-model">
+ * GitHub wiki</a> for a thorough walkthrough of possible options.
+ * 
+ * <p>
  * When launch is called without explicitly passing a {@link Launcher} instance
  * and {@link #getLauncher()} returns {@code null}, the framework will try to
  * locate one between the registered service providers and will use the one with
@@ -406,9 +411,9 @@ import static java.lang.System.Logger.Level.WARNING;
  * class name, it will load that class instead.
  * 
  * <p>
- * If an explicit launcher instance was passed, it only has reflective access to
+ * If an explicit launcher instance was passed, the instance only has reflective access to
  * the Business Application by reflecting against
- * {@link LaunchContext#getClassLoader()}.
+ * {@link LaunchContext#getClassLoader()} unless you used the {@link DynamicClassLoader}.
  * 
  * 
  * <pre>
@@ -421,6 +426,19 @@ import static java.lang.System.Logger.Level.WARNING;
  * 
  * // launch with passed launcher, *only reflective access*
  * config.launch(new MyLauncher());
+ * 
+ * // using DynamicClassLoader as context class loader
+ * ClassLoader loader = new DynamicClassLoader();
+ * Thread.currentThread().setContextClassLoader(loader);
+ * 
+ * config.launch(new MyLauncher());
+ * Class&lt?&gt; loader.loadClass("com.example.BusinessClass");
+ * 
+ * // starting the application with the flag -Djava.system.class.loader=org.update4j.DynamicClassLoader
+ * BusinessClass business = new BusinessClass() // Boom, NoClassDefFoundError
+ * 
+ * config.launch();
+ * BusinessClass business = new BusinessClass() // Works flawlessly
  * </pre>
  * 
  * @author Mordechai Meisels
