@@ -15,6 +15,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.update4j.mapper.FileMapper;
 
@@ -23,6 +24,10 @@ public class Archive {
     private Path location;
     private Configuration config;
     private List<FileMetadata> files;
+
+    private static final String RESERVED_DIR = "reserved";
+    private static final String CONFIG_PATH = "config";
+    private static final String FILES_DIR = "files";
 
     public static Archive read(Path location) throws IOException {
         Archive archive = new Archive(location);
@@ -45,9 +50,10 @@ public class Archive {
 
     private void load() throws IOException {
         try (FileSystem zip = openConnection()) {
-            Path root = zip.getPath("/");
-            Path configPath = zip.getPath("/.reserved/config");
-
+            Path filesPath = zip.getPath(FILES_DIR);
+            Path reservedPath = zip.getPath(RESERVED_DIR);
+            Path configPath = reservedPath.resolve(CONFIG_PATH);
+            
             if (Files.notExists(configPath))
                 throw new NoSuchFileException(configPath.toString(), null, "Configuration file is missing");
 
@@ -55,26 +61,32 @@ public class Archive {
                 config = Configuration.read(in);
             }
 
-            files = Files.walk(root)
-                            .filter(p -> !Files.isDirectory(p))
-                            .filter(p -> !p.toString().startsWith("/.reserved"))
-                            .map(p -> OS.CURRENT == OS.WINDOWS ? root.relativize(p) : p)
-                            .map(path -> getConfiguration().getFiles()
-                                            .stream()
-                                            .filter(file -> zip.getPath(file.getNormalizedPath().toString())
-                                                            .equals(path))
-                                            .findAny()
-                                            .orElseThrow(() -> new IllegalStateException(path
-                                                            + ": Archive entry cannot be linked to a file in the configuration")))
-                            .collect(Collectors.toList());
+            try (Stream<Path> stream = Files.walk(filesPath)) {
+                files = stream.filter(p -> !Files.isDirectory(p))
+                                .map(p -> filesPath.relativize(p))
+                                .peek(System.out::println)
+                                .map(Path::toString)
+                                .map(p -> OS.CURRENT != OS.WINDOWS ? "/" + p : p)
+                                .map(p -> getConfiguration()
+                                                .getFiles()
+                                                .stream()
+                                                .filter(file -> file.getNormalizedPath()
+                                                                .toString()
+                                                                .replace("\\", "/")
+                                                                .equals(p.toString()))
+                                                .findAny()
+                                                .orElseThrow(() -> new IllegalStateException(p
+                                                                + ": Archive entry cannot be linked to a file in the configuration")))
+                                .collect(Collectors.toList());
 
-            // Collectors.toUnmodifiableList() was added in JDK 10
-            files = Collections.unmodifiableList(files);
+                // Collectors.toUnmodifiableList() was added in JDK 10
+                files = Collections.unmodifiableList(files);
+            }
 
             for (FileMetadata file : getFiles()) {
-                Path p = zip.getPath(file.getPath().toString());
+                Path p = filesPath.resolve(file.getNormalizedPath().toString());
                 if (FileMapper.getChecksum(p) != file.getChecksum()) {
-                    throw new IOException(file.getPath() + ": File has been tampered with");
+                    throw new IOException(p + ": File has been tampered with");
                 }
             }
         }
