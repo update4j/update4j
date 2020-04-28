@@ -15,11 +15,8 @@
  */
 package org.update4j.service;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.Writer;
+import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -31,12 +28,19 @@ import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.update4j.Bootstrap;
 import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
 import org.update4j.Update;
+import org.update4j.exc.ConnectionException;
+import org.update4j.exc.ExceptionUtils;
+import org.update4j.exc.InvalidXmlException;
 import org.update4j.inject.InjectSource;
 import org.update4j.util.ArgUtils;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 public class DefaultBootstrap implements Delegate {
 
@@ -51,12 +55,22 @@ public class DefaultBootstrap implements Delegate {
 
     private PublicKey pk = null;
 
+    final private PrintStream out;
+
     @InjectSource(target = "args")
     private List<String> businessArgs;
 
     @Override
     public long version() {
         return Long.MIN_VALUE;
+    }
+
+    public DefaultBootstrap() {
+        this.out=null;
+    }
+
+    public DefaultBootstrap(PrintStream out) {
+        this.out = out;
     }
 
     @Override
@@ -98,13 +112,15 @@ public class DefaultBootstrap implements Delegate {
         businessArgs = ArgUtils.afterSeparator(args);
 
         if (launchFirst) {
+			log("launching application...");
             launchFirst();
         } else {
+			log("will update application...");
             updateFirst();
         }
     }
 
-    private void parseArgs(List<String> bootArgs) {
+    protected void parseArgs(List<String> bootArgs) {
 
         Map<String, String> parsed = ArgUtils.parseArgs(bootArgs);
         for (Map.Entry<String, String> e : parsed.entrySet()) {
@@ -140,15 +156,17 @@ public class DefaultBootstrap implements Delegate {
         }
     }
 
-    private void updateFirst() throws Throwable {
+    protected void updateFirst() throws Throwable {
         Configuration remoteConfig = null;
         Configuration localConfig = null;
 
         if (remote != null) {
+			log("getting remote config ...");
             remoteConfig = getRemoteConfig();
         }
 
         if (local != null) {
+			log("getting local config ...");
             localConfig = getLocalConfig(remoteConfig != null && syncLocal);
         }
 
@@ -160,10 +178,16 @@ public class DefaultBootstrap implements Delegate {
         boolean failedRemoteUpdate = false;
 
         if (config.requiresUpdate()) {
+			log("requires update ...");
             boolean success = config.update(pk);
-            if (config == remoteConfig)
+            if (config == remoteConfig){
                 failedRemoteUpdate = !success;
-
+            }
+			if (!success){
+				log("remote update failed ...");
+			}else {
+				log("remote update succeeded ...");
+			}
             if (!success && stopOnUpdateError) {
                 return;
             }
@@ -181,11 +205,19 @@ public class DefaultBootstrap implements Delegate {
             }
         }
 
+		log("launching application from "+config.getFiles().stream().map(f->f.getPath().toString()).collect(Collectors.joining(", "))+"...");
+		log("using bootstrapping from version %s",getVersion());
+		log("starting with properties: " + config.getProperties().stream().map(p-> "["+p.getKey()+","+p.getValue()+"]").collect(
+				Collectors.joining(";\n","{","}")));
         config.launch(this);
 
     }
 
-    private void launchFirst() throws Throwable {
+    protected String getVersion(){
+        return "1.4.5";
+    }
+
+    protected void launchFirst() throws Throwable {
         Path tempDir = Paths.get("update");
         // used for deleting old files
         Path old = tempDir.resolve(local + ".old");
@@ -230,13 +262,15 @@ public class DefaultBootstrap implements Delegate {
 
             if (config != null) {
                 boolean success = !config.update(pk);
-                if (config == remoteConfig)
+                if (config == remoteConfig){
                     failedRemoteUpdate = !success;
+                }
 
                 if (!success && stopOnUpdateError) {
                     return;
                 }
 
+				log("launching application ...");
                 config.launch(this);
             }
         } else if (remoteConfig != null) {
@@ -275,7 +309,8 @@ public class DefaultBootstrap implements Delegate {
         return new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8);
     }
 
-    private Configuration getLocalConfig(boolean ignoreFileNotFound) {
+    protected Configuration getLocalConfig(boolean ignoreFileNotFound) {
+		log("reading local config from "+local.toString());
         try (Reader in = Files.newBufferedReader(Paths.get(local))) {
             if (pk == null) {
                 return Configuration.read(in);
@@ -295,7 +330,7 @@ public class DefaultBootstrap implements Delegate {
         return null;
     }
 
-    private Configuration getRemoteConfig() {
+    protected Configuration getRemoteConfig() {
         try (Reader in = openConnection(new URL(remote))) {
             if (pk == null) {
                 return Configuration.read(in);
@@ -304,15 +339,22 @@ public class DefaultBootstrap implements Delegate {
 
             }
         } catch (Exception e) {
-            e.printStackTrace();
-
+            List<Throwable> throwableList = ExceptionUtils.getThrowableList(e);
+            if (ExceptionUtils.contains(throwableList, SAXException.class)){
+                throw new InvalidXmlException(remote, e);
+            }else if (ExceptionUtils.contains(throwableList, IOException.class)) {
+                throw new ConnectionException(e);
+            } else if (e instanceof RuntimeException){
+                throw (RuntimeException)e;
+            }else {
+                throw new RuntimeException(e);
+            }
         }
-
-        return null;
     }
 
-    private void syncLocal(Configuration remoteConfig) {
+    protected void syncLocal(Configuration remoteConfig) {
         Path localPath = Paths.get(local);
+		log("syncing local with remote config "+localPath.getParent().toString());
         try {
             if (localPath.getParent() != null)
                 Files.createDirectories(localPath.getParent());
@@ -326,7 +368,7 @@ public class DefaultBootstrap implements Delegate {
     }
 
     // @formatter:off
-    private static void welcome() {
+    protected static void welcome() {
 
         System.out.println(getLogo() + "\tWelcome to update4j, where you create your own auto-update lifecycle.\n\n"
                 + "\tYou started its default bootstrap -- the built-in lifecycle -- which does\n"
@@ -348,7 +390,7 @@ public class DefaultBootstrap implements Delegate {
         usage();
     }
 
-    private static String getLogo() {
+    protected static String getLogo() {
 
         return
 
@@ -417,4 +459,18 @@ public class DefaultBootstrap implements Delegate {
         
                 System.err.println(output.replace("$version$", Bootstrap.VERSION));
     }
+
+    protected void log(String str){
+        if (out!=null) {
+            out.println(str);
+        }
+    }
+
+    protected void log(String str,String... args){
+        if (out!=null) {
+            out.println(String.format(str, args));
+        }
+    }
+
+
 }

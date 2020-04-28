@@ -4,6 +4,7 @@
 **/*.iml
 # User-specific stuff:
 .idea/*
+*/.idea/*
 
 # Mongo Explorer plugin:
 .idea/mongoSettings.xml
