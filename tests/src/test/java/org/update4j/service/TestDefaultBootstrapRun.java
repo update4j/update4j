@@ -6,6 +6,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.update4j.Configuration;
 import org.update4j.FileMetadata;
+import org.update4j.util.Update4jVersion;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +43,7 @@ public class TestDefaultBootstrapRun {
         Path jarToDownloadPath = Paths.get(path.toAbsolutePath()
                                                .toString(),
                                            "../test-launch-classes/target",
-                                           "test-launch-classes-1.4.5.jar");
+                                           "test-launch-classes-"+Update4jVersion.VERSION+".jar");
 
 
         Configuration configuration = Configuration
@@ -53,13 +54,13 @@ public class TestDefaultBootstrapRun {
                 .launcher("a.b.c.TestMain")
                 .files(Stream.of(FileMetadata
                                          .readFrom(Paths.get("../test-launch-classes/target",
-                                                             "test-launch-classes-1.4.5.jar"))
-                                         .uri("jars/test-launch-classes-1.4.5.jar")
+                                                             "test-launch-classes-"+Update4jVersion.VERSION+".jar"))
+                                         .uri("jars/test-launch-classes-"+Update4jVersion.VERSION+".jar")
                                          .ignoreBootConflict(true)
                                          .classpath()))
                 .build();
 
-        stubFor(get(urlEqualTo("/jars/test-launch-classes-1.4.5.jar"))
+        stubFor(get(urlEqualTo("/jars/test-launch-classes-"+Update4jVersion.VERSION+".jar"))
                         .willReturn(aResponse()
                                             .withBody(Files.readAllBytes(jarToDownloadPath))));
 

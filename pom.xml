@@ -5,7 +5,7 @@
 
 	<groupId>org.update4j</groupId>
 	<artifactId>update4j</artifactId>
-	<version>1.4.5</version>
+	<version>1.4.5-SNAPSHOT</version>
 	<name>update4j</name>
 	<description>Update and launch Java 9+ Applications</description>
 	<url>https://github.com/update4j/update4j</url>
@@ -114,6 +114,75 @@
 							<goal>aggregate</goal>
 							<goal>jar</goal>
 						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!--sets property for ProjectInfo below-->
+			<plugin>
+				<groupId>pl.project13.maven</groupId>
+				<artifactId>git-commit-id-plugin</artifactId>
+				<version>2.2.6</version>
+				<executions>
+					<execution>
+						<id>get-the-git-infos</id>
+						<goals>
+							<goal>revision</goal>
+						</goals>
+						<phase>initialize</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<injectAllReactorProjects>false</injectAllReactorProjects>
+					<runOnlyOnce>false</runOnlyOnce>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.google.code.maven-replacer-plugin</groupId>
+				<artifactId>replacer</artifactId>
+				<version>1.5.3</version>
+				<executions>
+					<execution>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<ignoreMissingFile>false</ignoreMissingFile>
+					<file>${project.basedir}/src/main/resources/version/org/update4j/util/Update4jVersion.javatemplate</file>
+					<outputFile>
+						${project.basedir}/target/generated-sources/java/org/update4j/util/Update4jVersion.java
+					</outputFile>
+					<regex>false</regex>
+					<replacements>
+						<replacement>
+							<token>$PROJECT_VERSION$</token>
+							<value>${project.version}</value>
+						</replacement>
+						<replacement>
+							<token>$GIT_HASH$</token>
+							<value>${git.commit.id.abbrev}</value>
+						</replacement>
+					</replacements>
+				</configuration>
+			</plugin>
+			<plugin>
+				<!-- required for compiling the generated version info above-->
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.0.0</version>
+				<executions>
+					<execution>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.build.directory}/generated-sources/java</source>
+							</sources>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

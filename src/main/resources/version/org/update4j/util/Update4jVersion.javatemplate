@@ -1,0 +1,14 @@
+package org.update4j.util;
+
+/**
+ * class patched by maven and patched during build
+ */
+public class Update4jVersion {
+    public static final String VERSION="$PROJECT_VERSION$"; //don't edit this, patched by maven
+    public static final String GIT_HASH="$GIT_HASH$";
+
+    public static void main(String[] args) {
+        System.out.println("$PROJECT_VERSION$");
+    }
+
+}
