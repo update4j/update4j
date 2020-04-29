@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestDefaultBootstrapRun {
 
+    public static final String TEST_CLASS = "a.b.c.TestMain";
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().port(8888));
 
@@ -52,7 +53,7 @@ public class TestDefaultBootstrapRun {
                 .baseUri("http://localhost:8888/")
                 .basePath(path.toAbsolutePath()
                               .toString() + "/target/blaj")
-                .launcher("a.b.c.TestMain")
+                .launcher(TEST_CLASS)
                 .files(Stream.of(FileMetadata
                                          .readFrom(Paths.get("../test-launch-classes/target",
                                                              "test-launch-classes-"+Update4jVersion.VERSION+".jar"))
@@ -69,10 +70,10 @@ public class TestDefaultBootstrapRun {
                         .willReturn(aResponse()
                                             .withBody(configuration.toString())));
 
-        System.getProperties().setProperty("a.b.c.TestMain","false");
+        System.getProperties().setProperty(TEST_CLASS, "false");
         (new DefaultBootstrap(System.out)).main(Lists.newArrayList("--remote",
                                                                    "http://localhost:8888/update4j.xml"));
-        assertEquals(System.getProperty("a.b.c.TestMain"),"true");
+        assertEquals(System.getProperty(TEST_CLASS), "true");
     }
 
 }
