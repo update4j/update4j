@@ -122,7 +122,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
                 print(renderProgress());
                 lastFrac = currentFrac;
             }
-        }, 0, 1000);
+        }, 0, 10);
     }
 
     protected void resetProgress(long bytes) {

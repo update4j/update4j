@@ -46,6 +46,12 @@
             <version>29.0-jre</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.cbs.cbslink.update4j</groupId>
+            <artifactId>cbslink-update4j-bootstrap</artifactId>
+            <version>1.4.5-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
     <build>
