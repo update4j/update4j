@@ -59,6 +59,44 @@ public class DefaultBootstrap implements Delegate {
         return Long.MIN_VALUE;
     }
 
+    public DefaultBootstrap() {
+    }
+
+    public String getRemote() {
+        return remote;
+    }
+
+    public String getLocal() {
+        return local;
+    }
+
+    public String getCert() {
+        return cert;
+    }
+
+    public boolean isSyncLocal() {
+        return syncLocal;
+    }
+
+    public boolean isLaunchFirst() {
+        return launchFirst;
+    }
+
+    public boolean isStopOnUpdateError() {
+        return stopOnUpdateError;
+    }
+
+    public boolean isSingleInstance() {
+        return singleInstance;
+    }
+
+    public PublicKey getPk() {
+        return pk;
+    }
+
+    public List<String> getBusinessArgs() {
+        return businessArgs;
+    }
     @Override
     public void main(List<String> args) throws Throwable {
         if (args.isEmpty()) {
@@ -104,7 +142,7 @@ public class DefaultBootstrap implements Delegate {
         }
     }
 
-    private void parseArgs(List<String> bootArgs) {
+    protected void parseArgs(List<String> bootArgs) {
 
         Map<String, String> parsed = ArgUtils.parseArgs(bootArgs);
         for (Map.Entry<String, String> e : parsed.entrySet()) {
@@ -140,7 +178,7 @@ public class DefaultBootstrap implements Delegate {
         }
     }
 
-    private void updateFirst() throws Throwable {
+    protected void updateFirst() throws Throwable {
         Configuration remoteConfig = null;
         Configuration localConfig = null;
 
@@ -159,11 +197,12 @@ public class DefaultBootstrap implements Delegate {
         Configuration config = remoteConfig != null ? remoteConfig : localConfig;
         boolean failedRemoteUpdate = false;
 
-        if (config.requiresUpdate()) {
-            boolean success = config.update(pk);
-            if (config == remoteConfig)
+        if (configRequiresUpdate(config)) {
+            boolean success = configUpdate(config,pk);
+            if (config == remoteConfig){
                 failedRemoteUpdate = !success;
 
+            }
             if (!success && stopOnUpdateError) {
                 return;
             }
@@ -181,11 +220,11 @@ public class DefaultBootstrap implements Delegate {
             }
         }
 
-        config.launch(this);
+        configLaunch(config);
 
     }
 
-    private void launchFirst() throws Throwable {
+    protected void launchFirst() throws Throwable {
         Path tempDir = Paths.get("update");
         // used for deleting old files
         Path old = tempDir.resolve(local + ".old");
@@ -210,11 +249,11 @@ public class DefaultBootstrap implements Delegate {
             }
         }
 
-        boolean localNotReady = localConfig == null || localConfig.requiresUpdate();
+        boolean localNotReady = localConfig == null || configRequiresUpdate(localConfig);
 
         if (!localNotReady) {
             Configuration finalConfig = localConfig;
-            Thread localApp = new Thread(() -> finalConfig.launch(this));
+            Thread localApp = new Thread(() -> configLaunch(finalConfig));
             localApp.run();
         }
 
@@ -229,18 +268,19 @@ public class DefaultBootstrap implements Delegate {
             Configuration config = remoteConfig != null ? remoteConfig : localConfig;
 
             if (config != null) {
-                boolean success = !config.update(pk);
-                if (config == remoteConfig)
+                boolean success = !configUpdate(config, pk);
+                if (config == remoteConfig){
                     failedRemoteUpdate = !success;
+                }
 
                 if (!success && stopOnUpdateError) {
                     return;
                 }
 
-                config.launch(this);
+                configLaunch(config);
             }
         } else if (remoteConfig != null) {
-            if (remoteConfig.requiresUpdate()) {
+            if (configRequiresUpdate(remoteConfig)) {
                 failedRemoteUpdate = !remoteConfig.updateTemp(tempDir, pk);
             }
         }
@@ -275,7 +315,7 @@ public class DefaultBootstrap implements Delegate {
         return new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8);
     }
 
-    private Configuration getLocalConfig(boolean ignoreFileNotFound) {
+    protected Configuration getLocalConfig(boolean ignoreFileNotFound) {
         try (Reader in = Files.newBufferedReader(Paths.get(local))) {
             if (pk == null) {
                 return Configuration.read(in);
@@ -295,7 +335,7 @@ public class DefaultBootstrap implements Delegate {
         return null;
     }
 
-    private Configuration getRemoteConfig() {
+    protected Configuration getRemoteConfig() {
         try (Reader in = openConnection(new URL(remote))) {
             if (pk == null) {
                 return Configuration.read(in);
@@ -311,7 +351,7 @@ public class DefaultBootstrap implements Delegate {
         return null;
     }
 
-    private void syncLocal(Configuration remoteConfig) {
+    protected void syncLocal(Configuration remoteConfig) {
         Path localPath = Paths.get(local);
         try {
             if (localPath.getParent() != null)
@@ -416,5 +456,14 @@ public class DefaultBootstrap implements Delegate {
                 + "To pass arguments to the business application, separate them with '--' (w/o quotes).";
         
                 System.err.println(output.replace("$version$", Bootstrap.VERSION));
+    }
+    protected void configLaunch(Configuration config) {
+        config.launch(this);
+    }
+    protected boolean configUpdate(Configuration config, PublicKey publicKey) {
+        return config.update(publicKey);
+    }
+    protected boolean configRequiresUpdate(Configuration config) throws IOException {
+        return config.requiresUpdate();
     }
 }
