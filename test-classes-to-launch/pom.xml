@@ -5,9 +5,15 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.update4j</groupId>
+    <parent>
+        <groupId>org.update4j</groupId>
+        <artifactId>update4j-root</artifactId>
+        <relativePath>../pom.xml</relativePath>
+        <version>1.4.5</version>
+    </parent>
+
+
     <artifactId>test-classes-to-launch</artifactId>
-    <version>1.4.5</version>
     <dependencies>
         <dependency>
             <groupId>org.update4j</groupId>
@@ -20,15 +26,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
-                <configuration>
-                    <release>9</release>
-                </configuration>
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.3.0</version>
                 <configuration>
                     <finalName>${project.artifactId}</finalName>
                     <descriptors>assembly.xml</descriptors>
@@ -43,24 +45,6 @@
                     </execution>
                 </executions>
             </plugin>
-<!--            <plugin>-->
-<!--                &lt;!&ndash; run in compile phase to have a jar for the tests &ndash;&gt;-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-jar-plugin</artifactId>-->
-<!--                <version>3.2.0</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <configuration>-->
-<!--                            <classifier>launch</classifier>-->
-<!--                        </configuration>-->
-<!--                        <goals>-->
-<!--                            <goal>jar</goal>-->
-<!--                        </goals>-->
-<!--                        <phase>compile</phase>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
-
         </plugins>
     </build>
 
