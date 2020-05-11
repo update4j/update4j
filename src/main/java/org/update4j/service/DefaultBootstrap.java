@@ -59,9 +59,6 @@ public class DefaultBootstrap implements Delegate {
         return Long.MIN_VALUE;
     }
 
-    public DefaultBootstrap() {
-    }
-
     public String getRemote() {
         return remote;
     }
@@ -90,13 +87,14 @@ public class DefaultBootstrap implements Delegate {
         return singleInstance;
     }
 
-    public PublicKey getPk() {
+    public PublicKey getPublicKey() {
         return pk;
     }
 
     public List<String> getBusinessArgs() {
         return businessArgs;
     }
+
     @Override
     public void main(List<String> args) throws Throwable {
         if (args.isEmpty()) {
@@ -197,9 +195,9 @@ public class DefaultBootstrap implements Delegate {
         Configuration config = remoteConfig != null ? remoteConfig : localConfig;
         boolean failedRemoteUpdate = false;
 
-        if (configRequiresUpdate(config)) {
-            boolean success = configUpdate(config,pk);
-            if (config == remoteConfig){
+        if (config.requiresUpdate()) {
+            boolean success = config.update(pk);
+            if (config == remoteConfig) {
                 failedRemoteUpdate = !success;
 
             }
@@ -220,7 +218,7 @@ public class DefaultBootstrap implements Delegate {
             }
         }
 
-        configLaunch(config);
+        config.launch();
 
     }
 
@@ -249,11 +247,11 @@ public class DefaultBootstrap implements Delegate {
             }
         }
 
-        boolean localNotReady = localConfig == null || configRequiresUpdate(localConfig);
+        boolean localNotReady = localConfig == null || localConfig.requiresUpdate();
 
         if (!localNotReady) {
             Configuration finalConfig = localConfig;
-            Thread localApp = new Thread(() -> configLaunch(finalConfig));
+            Thread localApp = new Thread(() -> finalConfig.launch());
             localApp.run();
         }
 
@@ -268,8 +266,8 @@ public class DefaultBootstrap implements Delegate {
             Configuration config = remoteConfig != null ? remoteConfig : localConfig;
 
             if (config != null) {
-                boolean success = !configUpdate(config, pk);
-                if (config == remoteConfig){
+                boolean success = !config.update(pk);
+                if (config == remoteConfig) {
                     failedRemoteUpdate = !success;
                 }
 
@@ -277,10 +275,10 @@ public class DefaultBootstrap implements Delegate {
                     return;
                 }
 
-                configLaunch(config);
+                config.launch();
             }
         } else if (remoteConfig != null) {
-            if (configRequiresUpdate(remoteConfig)) {
+            if (remoteConfig.requiresUpdate()) {
                 failedRemoteUpdate = !remoteConfig.updateTemp(tempDir, pk);
             }
         }
@@ -456,14 +454,5 @@ public class DefaultBootstrap implements Delegate {
                 + "To pass arguments to the business application, separate them with '--' (w/o quotes).";
         
                 System.err.println(output.replace("$version$", Bootstrap.VERSION));
-    }
-    protected void configLaunch(Configuration config) {
-        config.launch(this);
-    }
-    protected boolean configUpdate(Configuration config, PublicKey publicKey) {
-        return config.update(publicKey);
-    }
-    protected boolean configRequiresUpdate(Configuration config) throws IOException {
-        return config.requiresUpdate();
     }
 }
