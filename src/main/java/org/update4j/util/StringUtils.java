@@ -15,8 +15,9 @@
  */
 package org.update4j.util;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
 import java.util.Collections;
 import java.util.Set;
 
@@ -143,22 +144,14 @@ public class StringUtils {
 
     // https://stackoverflow.com/a/3758880/1751640
     public static String humanReadableByteCount(long bytes) {
-        String s = bytes < 0 ? "-" : "";
-        long b = bytes == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(bytes);
-        return b < 1000L ? bytes + " B"
-                        : b < 999_950L ? String.format("%s%.1f kB", s, b / 1e3)
-                                        : (b /= 1000) < 999_950L ? String.format("%s%.1f MB", s, b / 1e3)
-                                                        : (b /= 1000) < 999_950L
-                                                                        ? String.format("%s%.1f GB", s, b / 1e3)
-                                                                        : (b /= 1000) < 999_950L
-                                                                                        ? String.format("%s%.1f TB", s,
-                                                                                                        b / 1e3)
-                                                                                        : (b /= 1000) < 999_950L
-                                                                                                        ? String.format("%s%.1f PB",
-                                                                                                                        s,
-                                                                                                                        b / 1e3)
-                                                                                                        : String.format("%s%.1f EB",
-                                                                                                                        s,
-                                                                                                                        b / 1e6);
+        if (-1000 < bytes && bytes < 1000) {
+            return bytes + " B";
+        }
+        CharacterIterator ci = new StringCharacterIterator("kMGTPE");
+        while (bytes <= -999_950 || bytes >= 999_950) {
+            bytes /= 1000;
+            ci.next();
+        }
+        return String.format("%.1f %cB", bytes / 1000.0, ci.current());
     }
 }
