@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.module.ModuleFinder;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -13,11 +14,15 @@ import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardOpenOption;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.update4j.mapper.FileMapper;
+import org.update4j.util.FileUtils;
+import org.update4j.util.Warning;
 
 public class Archive {
 
@@ -64,11 +69,9 @@ public class Archive {
             try (Stream<Path> stream = Files.walk(filesPath)) {
                 files = stream.filter(p -> !Files.isDirectory(p))
                                 .map(p -> filesPath.relativize(p))
-                                .peek(System.out::println)
                                 .map(Path::toString)
                                 .map(p -> OS.CURRENT != OS.WINDOWS ? "/" + p : p)
-                                .map(p -> getConfiguration()
-                                                .getFiles()
+                                .map(p -> getConfiguration().getFiles()
                                                 .stream()
                                                 .filter(file -> file.getNormalizedPath()
                                                                 .toString()
@@ -98,6 +101,32 @@ public class Archive {
 
     public Path getLocation() {
         return location;
+    }
+
+    public void install() throws IOException {
+        // we move out the files, so must be writable
+        FileUtils.verifyAccessible(getLocation());
+        
+        try (FileSystem zip = openConnection()) {
+            Path filesPath = zip.getPath(FILES_DIR);
+
+            Map<Path, Path> files = new HashMap<>();
+            for (FileMetadata file : getFiles()) {
+                Path path = filesPath.resolve(file.getNormalizedPath().toString());
+                if (!Files.isRegularFile(path))
+                    throw new IOException(path + ": File is missing or invalid");
+
+                FileUtils.verifyAccessible(file.getPath());
+                files.put(path, file.getNormalizedPath());
+            }
+
+            for (Map.Entry<Path, Path> e : files.entrySet()) {
+                if(e.getValue().getParent() != null)
+                    Files.createDirectories(e.getValue().getParent());
+                
+                FileUtils.secureMoveFile(e.getKey(), e.getValue());
+            }
+        }
     }
 
     public FileSystem openConnection() throws IOException {
