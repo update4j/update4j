@@ -222,6 +222,10 @@ public class FileUtils {
         if (exists && !Files.isWritable(path))
             throw new AccessDeniedException(path.toString());
 
+        if(path.getParent() != null) {
+            Files.createDirectories(path.getParent());
+        }
+        
         try (Writer out = Files.newBufferedWriter(path,
                         exists ? StandardOpenOption.APPEND : StandardOpenOption.CREATE)) {
         } finally {
