@@ -51,6 +51,7 @@ import org.update4j.service.Launcher;
 import org.update4j.service.Service;
 import org.update4j.service.UpdateHandler;
 import org.update4j.util.FileUtils;
+import org.update4j.util.ModuleUtils;
 import org.update4j.util.StringUtils;
 import org.update4j.util.Warning;
 
@@ -304,7 +305,9 @@ class ConfigImpl {
                 throw new SecurityException("Signature verification failed.");
         }
 
-        if (file.getPath().toString().endsWith(".jar") && !file.isIgnoreBootConflict()) {
+        if (file.getPath().toString().endsWith(".jar")
+                        && !file.isIgnoreBootConflict()
+                        && !ModuleUtils.userBootModules().isEmpty()) {
             checkBootConflicts(file, output);
         }
     }
@@ -329,7 +332,7 @@ class ConfigImpl {
         
         ModuleDescriptor newMod = null;
         try {
-            newMod = FileUtils.deriveModuleDescriptor(download, filename, sysMods.contains("jdk.zipfs"));
+            newMod = ModuleUtils.deriveModuleDescriptor(download, filename, sysMods.contains("jdk.zipfs"));
         } catch (IllegalArgumentException | InvalidModuleDescriptorException | FindException e) {
             Warning.illegalModule(filename);
             throw e;
