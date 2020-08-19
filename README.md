@@ -32,7 +32,7 @@ In update4j _you_ have ultimate control of every process, from startup - update 
 
 ## Installation & Usage
 
-You can [download](https://repo1.maven.org/maven2/org/update4j/update4j/1.4.5/update4j-1.4.5.jar) or install using Maven:
+You can [download](https://repo1.maven.org/maven2/org/update4j/update4j/1.5.0/update4j-1.5.0.jar) or install using Maven:
 
 ```xml
 <dependency>
@@ -63,6 +63,13 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 
 ## What's New in 1.5.0
+  * New update model `Configuration.Update(ArchiveUpdateOptions)`, using an `Archive` to store update files, it can then be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
+  * Deprecated previous update models, but still available for smooth migration.
+  * Improved update return value `UpdateResult`. [#87](https://github.com/update4j/update4j/issues/87)
+  * Not passing `default.launcher.main.class` will run the command-line arguments as a script. [#88](https://github.com/update4j/update4j/issues/88)
+  * `ignoreBootConflict` no longer required if there are no user modules on the boot module layer.
+  * `DefaultBootstrap::updateFirst` now performs update in parallel while launching the business app. [#104](https://github.com/update4j/update4j/issues/104)
+  * Support Elliptic Curve cipher. [#89](https://github.com/update4j/update4j/issues/89)
 
 ## Contributors
 

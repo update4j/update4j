@@ -1,5 +1,6 @@
-* *Upcoming Release*
-  * New update model, using an `Archive` to store update files, then can be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
+* **1.5.0**
+  * New update model `Configuration.Update(ArchiveUpdateOptions)`, using an `Archive` to store update files, it can then be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
+  * Deprecated previous update models, but still available for smooth migration
   * Improved update return value `UpdateResult`. [#87](https://github.com/update4j/update4j/issues/87)
   * Not passing `default.launcher.main.class` will run the command-line arguments as a script. [#88](https://github.com/update4j/update4j/issues/88)
   * `ignoreBootConflict` no longer required if there are no user modules on the boot module layer.
