@@ -31,14 +31,18 @@ import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.util.List;
 import java.util.Map;
+
+import org.update4j.Archive;
 import org.update4j.Bootstrap;
 import org.update4j.Configuration;
 import org.update4j.SingleInstanceManager;
-import org.update4j.Update;
+import org.update4j.UpdateOptions;
 import org.update4j.inject.InjectSource;
 import org.update4j.util.ArgUtils;
 
 public class DefaultBootstrap implements Delegate {
+
+    Path zip = Paths.get("update.zip");
 
     private String remote;
     private String local;
@@ -196,14 +200,17 @@ public class DefaultBootstrap implements Delegate {
         boolean failedRemoteUpdate = false;
 
         if (config.requiresUpdate()) {
-            boolean success = config.update(pk);
+            boolean success = config.update(UpdateOptions.archive(zip).publicKey(pk)).getException() == null;
+            
             if (config == remoteConfig) {
                 failedRemoteUpdate = !success;
-
             }
-            if (!success && stopOnUpdateError) {
+            if (success) {
+                Archive.read(zip).install();
+            } else if (stopOnUpdateError) {
                 return;
             }
+
         }
 
         if (syncLocal && !failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
@@ -212,7 +219,7 @@ public class DefaultBootstrap implements Delegate {
             if (localConfig != null) {
                 try {
                     remoteConfig.deleteOldFiles(localConfig);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -223,27 +230,15 @@ public class DefaultBootstrap implements Delegate {
     }
 
     protected void launchFirst() throws Throwable {
-        Path tempDir = Paths.get("update");
-        // used for deleting old files
-        Path old = tempDir.resolve(local + ".old");
-
         Configuration localConfig = getLocalConfig(false);
 
-        if (Update.containsUpdate(tempDir)) {
-            Configuration oldConfig = null;
-            if (Files.exists(old)) {
-                try {
-                    try (Reader in = Files.newBufferedReader(old)) {
-                        oldConfig = Configuration.read(in);
-                    }
-                    Files.deleteIfExists(old);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            boolean finalized = Update.finalizeUpdate(tempDir);
-            if (finalized && oldConfig != null && localConfig != null) {
-                localConfig.deleteOldFiles(oldConfig);
+        if (Files.exists(zip)) {
+            try {
+                Archive archive = Archive.read(zip);
+                archive.install();
+                localConfig.deleteOldFiles(archive.getConfiguration());
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
 
@@ -266,12 +261,15 @@ public class DefaultBootstrap implements Delegate {
             Configuration config = remoteConfig != null ? remoteConfig : localConfig;
 
             if (config != null) {
-                boolean success = !config.update(pk);
+                boolean success = config.update(UpdateOptions.archive(zip).publicKey(pk)).getException() == null;
+                
                 if (config == remoteConfig) {
                     failedRemoteUpdate = !success;
                 }
 
-                if (!success && stopOnUpdateError) {
+                if (success) {
+                    Archive.read(zip).install();
+                } else if (stopOnUpdateError) {
                     return;
                 }
 
@@ -279,7 +277,8 @@ public class DefaultBootstrap implements Delegate {
             }
         } else if (remoteConfig != null) {
             if (remoteConfig.requiresUpdate()) {
-                failedRemoteUpdate = !remoteConfig.updateTemp(tempDir, pk);
+                failedRemoteUpdate = remoteConfig.update(UpdateOptions.archive(zip).publicKey(pk))
+                                .getException() != null;
             }
         }
 
@@ -288,12 +287,6 @@ public class DefaultBootstrap implements Delegate {
 
             if (localNotReady && localConfig != null) {
                 remoteConfig.deleteOldFiles(localConfig);
-            } else if (Update.containsUpdate(tempDir)) {
-                try (Writer out = Files.newBufferedWriter(old)) {
-                    localConfig.write(out);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }
         }
 

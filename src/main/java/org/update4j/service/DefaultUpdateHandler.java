@@ -79,6 +79,11 @@ public class DefaultUpdateHandler implements UpdateHandler {
     public void stop() {
         stopTimer = true;
     }
+    
+    @Override
+    public UpdateContext getResult() {
+        return context;
+    }
 
     //------- Progress rendering, highly inspired by https://github.com/ctongfei/progressbar
 

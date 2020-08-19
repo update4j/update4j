@@ -15,6 +15,7 @@
  */
 package org.update4j;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -235,15 +236,13 @@ class ConfigImpl {
 
     }
 
-    ////////////////////////////////
-
     static UpdateResult doUpdate(Configuration config, ArchiveUpdateOptions options) {
-
         PublicKey key = options.getPublicKey();
         if (key == null) {
             Warning.signature();
         }
 
+        Throwable exception = null;
         boolean doneDownloads = false;
         boolean success;
 
@@ -260,14 +259,14 @@ class ConfigImpl {
                 throw new RuntimeException(e);
             }
         }
-////// im here
+
         try {
             List<FileMetadata> requiresUpdate = new ArrayList<>();
             List<FileMetadata> updated = new ArrayList<>();
 
             UpdateContext ctx = new UpdateContext(config, requiresUpdate, updated, null, options.getPublicKey(),
                             options.getArchiveLocation());
-            
+
             handler.init(ctx);
 
             handler.startCheckUpdates();
@@ -310,88 +309,77 @@ class ConfigImpl {
             double downloadJobCompleted = 0;
 
             if (!requiresUpdate.isEmpty()) {
-                handler.startDownloads();
+                Archive archive = new Archive(options.getArchiveLocation());
+                try (FileSystem zip = archive.openConnection()) {
 
-                for (FileMetadata file : requiresUpdate) {
-                    handler.startDownloadFile(file);
-
-                    int read = 0;
-                    double currentCompleted = 0;
-                    byte[] buffer = new byte[1024 * 8];
-
-                    Path output;
-                    if (!updateTemp) {
-                        Files.createDirectories(file.getNormalizedPath().getParent());
-                        output = Files.createTempFile(file.getNormalizedPath().getParent(), null, null);
-                    } else {
-                        Files.createDirectories(tempDir);
-                        output = Files.createTempFile(tempDir, null, null);
+                    // first save the config in the archive
+                    Path configPath = zip.getPath(Archive.RESERVED_DIR, Archive.CONFIG_PATH);
+                    Files.createDirectories(configPath.getParent());
+                    try (BufferedWriter out = Files.newBufferedWriter(configPath)) {
+                        config.write(out);
                     }
-                    downloadedCollection.put(file, output);
 
-                    try (InputStream in = handler.openDownloadStream(file);
-                                    OutputStream out = Files.newOutputStream(output)) {
+                    handler.startDownloads();
+                    for (FileMetadata file : requiresUpdate) {
+                        handler.startDownloadFile(file);
 
-                        // We should set download progress only AFTER the request has returned.
-                        // The delay can be monitored by the difference between calls from startDownload to this.
-                        if (downloadJobCompleted == 0) {
-                            handler.updateDownloadProgress(0f);
-                        }
-                        handler.updateDownloadFileProgress(file, 0f);
+                        Path output = zip.getPath(Archive.FILES_DIR).resolve(file.getNormalizedPath().toString());
+                        Files.createDirectories(output.getParent());
 
-                        while ((read = in.read(buffer, 0, buffer.length)) > -1) {
-                            out.write(buffer, 0, read);
+                        int read = 0;
+                        double currentCompleted = 0;
+                        byte[] buffer = new byte[1024 * 8];
 
-                            if (sig != null) {
-                                sig.update(buffer, 0, read);
+                        try (InputStream in = handler.openDownloadStream(file);
+                                        OutputStream out = Files.newOutputStream(output)) {
+
+                            // We should set download progress only AFTER the request has returned.
+                            // The delay can be monitored by the difference between calls from startDownload to this.
+                            if (downloadJobCompleted == 0) {
+                                handler.updateDownloadProgress(0f);
+                            }
+                            handler.updateDownloadFileProgress(file, 0f);
+
+                            while ((read = in.read(buffer, 0, buffer.length)) > -1) {
+                                out.write(buffer, 0, read);
+
+                                if (sig != null) {
+                                    sig.update(buffer, 0, read);
+                                }
+
+                                downloadJobCompleted += read;
+                                currentCompleted += read;
+
+                                handler.updateDownloadFileProgress(file, (float) (currentCompleted / file.getSize()));
+                                handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
                             }
 
-                            downloadJobCompleted += read;
-                            currentCompleted += read;
-
-                            handler.updateDownloadFileProgress(file, (float) (currentCompleted / file.getSize()));
-                            handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
                         }
-
+                        
                         handler.validatingFile(file, output);
                         validateFile(file, output, sig);
 
                         updated.add(file);
                         handler.doneDownloadFile(file, output);
-
                     }
+
+                    doneDownloads = true;
+                    handler.doneDownloads();
                 }
-
-                completeDownloads(downloadedCollection, tempDir, updateTemp);
-                doneDownloads = true;
-
-                handler.doneDownloads();
             }
 
             success = true;
         } catch (Throwable t) {
-            // clean-up as update failed
+            exception = t;
 
-            try {
-                // if an exception was thrown in handler.doneDownloads()
-                // done delete files, as they are now in their final location
-                if ((updateTemp || !doneDownloads) && !downloadedCollection.isEmpty()) {
-                    for (Path p : downloadedCollection.values()) {
-                        Files.deleteIfExists(p);
-                    }
-
-                    if (updateTemp) {
-                        Files.deleteIfExists(tempDir.resolve(Update.UPDATE_DATA));
-
-                        if (FileUtils.isEmptyDirectory(tempDir)) {
-                            Files.deleteIfExists(tempDir);
-                        }
-                    }
-
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (!doneDownloads) {
+                //                try {
+                ////                    Files.deleteIfExists(options.getArchiveLocation());
+                //                } catch (IOException e) {
+                //                    e.printStackTrace();
+                //                }
             }
+
             Warning.lock(t);
 
             success = false;
@@ -402,12 +390,11 @@ class ConfigImpl {
             handler.succeeded();
 
         handler.stop();
-
-        return success;
+        return new UpdateResult(handler, exception);
 
     }
-    ///////////////////////////////////////////////////////////////////////////
 
+    @Deprecated
     private static void completeDownloads(Map<FileMetadata, Path> files, Path tempDir, boolean isTemp)
                     throws IOException {
 

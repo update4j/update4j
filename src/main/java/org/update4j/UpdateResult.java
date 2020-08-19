@@ -4,19 +4,15 @@ import org.update4j.service.UpdateHandler;
 
 public class UpdateResult {
     
-    public UpdateHandler handler;
-    private UpdateContext context;
+    private UpdateHandler handler;
     private Throwable exception;
     
-    public UpdateHandler handler() {
-        return handler;
+    UpdateResult(UpdateHandler handler, Throwable exception) {
+        this.handler = handler;
+        this.exception = exception;
     }
     
-    public UpdateContext updateContext() {
-        return context;
-    }
-    
-    public Throwable exception() {
+    public Throwable getException() {
         return exception;
     }
     

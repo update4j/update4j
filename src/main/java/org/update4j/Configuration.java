@@ -858,6 +858,46 @@ public class Configuration {
         return false;
     }
 
+
+    /**
+     * Archive-based update: All files are saved in a zipped file passed to {@link UpdateOptions#archive(Path)}.
+     * Once the update is complete you are free to process the archive to your liking. When you wish to install
+     * the update, call {@link Archive#install()}.
+     * 
+     * <p>
+     * The update process starts by locating the class returned by
+     * {@link UpdateOptions#updateHandler()} or -- if it returns {@code null} -- the
+     * registered highest version {@link UpdateHandler} or
+     * {@link DefaultUpdateHandler} if non were found.
+     * 
+     * <p>
+     * If an {@link Injectable} was passed in the options, after loading the {@link UpdateHandler} class,
+     * it will call:
+     * 
+     * <pre>
+     * Injectable.injectBidirectional(injectable, updateHandler);
+     * </pre>
+     * 
+     * to exchange fields to and from both instances. When injection is complete it
+     * will call all methods of both instances, marked with {@link PostInject},
+     * following the behavior documented in {@link Injectable} documentation.
+     * 
+     * <p>
+     * If a {@link PublicKey} was passed to the options, it will use it to validate signatures of each
+     * individual file. It will <em>not</em> validate the config's own signature.
+     * 
+     * <p>
+     * Any error that arises once the update handler was loaded just get's passed to
+     * {@link UpdateHandler#failed(Throwable)}. An exception thrown in
+     * {@link UpdateHandler#failed(Throwable)}, {@link UpdateHandler#succeeded()} or
+     * {@link UpdateHandler#stop()} will be thrown back to the caller of this
+     * method.
+     * 
+     * <p>
+     * This method is intended to be used on the client machine only.
+     * 
+     * @param options 
+     */
     public UpdateResult update(ArchiveUpdateOptions options) {
         return ConfigImpl.doUpdate(this, options);
     }

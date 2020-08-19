@@ -320,35 +320,36 @@ public interface UpdateHandler extends Service {
      * 
      * @param file
      *            The file about to be passing through validations.
-     * @param tempFile
+     * @param path
      *            The actual file, only moved to its final location once all
-     *            downloads succeed.
+     *            downloads succeed. In archive-based updates, the path is inside the archive.
      * @throws Throwable
      *             Freely throw any exception, it will gracefully terminate the
      *             update process and revert any file changes.
      */
-    default void validatingFile(FileMetadata file, Path tempFile) throws Throwable {
+    default void validatingFile(FileMetadata file, Path path) throws Throwable {
     }
 
     /**
-     * The file was successfully downloaded to {@code tempFile} and
+     * The file was successfully downloaded to {@code path} and
      * {@link UpdateContext#getUpdated()} was already updated to reflect this.
      * 
      * <p>
      * The file will only be placed in its final location once all files
-     * successfully download.
+     * successfully download. In archive-based updates the path is inside the archive.
      * 
      * 
      * @param file
      *            The file that just completed download
-     * @param tempFile
+     * @param path
      *            The temporary location of the file, only moved to its final
      *            location once all downloads succeed.
+     *            In archive-based updates, the path is inside the archive.
      * @throws Throwable
      *             Freely throw any exception, it will gracefully terminate the
      *             update process and revert any file changes.
      */
-    default void doneDownloadFile(FileMetadata file, Path tempFile) throws Throwable {
+    default void doneDownloadFile(FileMetadata file, Path path) throws Throwable {
     }
 
     /**
@@ -362,6 +363,10 @@ public interface UpdateHandler extends Service {
      * their temporary location. If an exception is thrown in this method, it will
      * delete the update, revert any changes and {@link #failed(Throwable)} will be
      * called.
+     * 
+     * <p>
+     * <b>If the update was an archive-based update:</b> The archive is completed
+     * and ready to be installed.
      * 
      * <p>
      * This method will only be called if there were actually files that required
