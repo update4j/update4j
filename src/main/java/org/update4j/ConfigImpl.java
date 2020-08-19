@@ -15,6 +15,7 @@
  */
 package org.update4j;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +31,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -45,6 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.update4j.UpdateOptions.ArchiveUpdateOptions;
 import org.update4j.inject.Injectable;
 import org.update4j.inject.UnsatisfiedInjectionException;
 import org.update4j.service.Launcher;
@@ -60,7 +63,8 @@ class ConfigImpl {
     private ConfigImpl() {
     }
 
-    static boolean doUpdate(Configuration config, Path tempDir, PublicKey key, Injectable injectable,
+    @Deprecated
+    static boolean doLegacyUpdate(Configuration config, Path tempDir, PublicKey key, Injectable injectable,
                     UpdateHandler handler) {
 
         if (key == null) {
@@ -74,13 +78,13 @@ class ConfigImpl {
         // if no explicit handler were passed
         if (handler == null) {
             handler = Service.loadService(UpdateHandler.class, config.getUpdateHandler());
+        }
 
-            if (injectable != null) {
-                try {
-                    Injectable.injectBidirectional(injectable, handler);
-                } catch (IllegalAccessException | InvocationTargetException | UnsatisfiedInjectionException e) {
-                    throw new RuntimeException(e);
-                }
+        if (injectable != null) {
+            try {
+                Injectable.injectBidirectional(injectable, handler);
+            } catch (IllegalAccessException | InvocationTargetException | UnsatisfiedInjectionException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -92,7 +96,7 @@ class ConfigImpl {
             List<FileMetadata> requiresUpdate = new ArrayList<>();
             List<FileMetadata> updated = new ArrayList<>();
 
-            UpdateContext ctx = new UpdateContext(config, requiresUpdate, updated, tempDir, key);
+            UpdateContext ctx = new UpdateContext(config, requiresUpdate, updated, tempDir, key, null);
             handler.init(ctx);
 
             handler.startCheckUpdates();
@@ -232,6 +236,165 @@ class ConfigImpl {
 
     }
 
+    static UpdateResult doUpdate(Configuration config, ArchiveUpdateOptions options) {
+        PublicKey key = options.getPublicKey();
+        if (key == null) {
+            Warning.signature();
+        }
+
+        Throwable exception = null;
+        boolean doneDownloads = false;
+        boolean success;
+
+        UpdateHandler handler = options.getUpdateHandler();
+        // if no explicit handler were passed
+        if (handler == null) {
+            handler = Service.loadService(UpdateHandler.class, config.getUpdateHandler());
+        }
+
+        if (options.getInjectable() != null) {
+            try {
+                Injectable.injectBidirectional(options.getInjectable(), handler);
+            } catch (IllegalAccessException | InvocationTargetException | UnsatisfiedInjectionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        try {
+            List<FileMetadata> requiresUpdate = new ArrayList<>();
+            List<FileMetadata> updated = new ArrayList<>();
+
+            UpdateContext ctx = new UpdateContext(config, requiresUpdate, updated, null, options.getPublicKey(),
+                            options.getArchiveLocation());
+
+            handler.init(ctx);
+
+            handler.startCheckUpdates();
+            handler.updateCheckUpdatesProgress(0f);
+
+            List<FileMetadata> osFiles = config.getFiles()
+                            .stream()
+                            .filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
+                            .collect(Collectors.toList());
+
+            long updateJobSize = osFiles.stream().mapToLong(FileMetadata::getSize).sum();
+            double updateJobCompleted = 0;
+
+            for (FileMetadata file : osFiles) {
+                if (handler.shouldCheckForUpdate(file)) {
+                    handler.startCheckUpdateFile(file);
+
+                    boolean needsUpdate = file.requiresUpdate();
+
+                    if (needsUpdate)
+                        requiresUpdate.add(file);
+
+                    handler.doneCheckUpdateFile(file, needsUpdate);
+                }
+
+                updateJobCompleted += file.getSize();
+                handler.updateCheckUpdatesProgress((float) (updateJobCompleted / updateJobSize));
+            }
+
+            handler.doneCheckUpdates();
+
+            Signature sig = null;
+            if (key != null) {
+                String alg = key.getAlgorithm().equals("EC") ? "ECDSA" : key.getAlgorithm();
+                sig = Signature.getInstance("SHA256with" + alg);
+                sig.initVerify(key);
+            }
+
+            long downloadJobSize = requiresUpdate.stream().mapToLong(FileMetadata::getSize).sum();
+            double downloadJobCompleted = 0;
+
+            if (!requiresUpdate.isEmpty()) {
+                Archive archive = new Archive(options.getArchiveLocation());
+                try (FileSystem zip = archive.openConnection()) {
+
+                    // first save the config in the archive
+                    Path configPath = zip.getPath(Archive.RESERVED_DIR, Archive.CONFIG_PATH);
+                    Files.createDirectories(configPath.getParent());
+                    try (BufferedWriter out = Files.newBufferedWriter(configPath)) {
+                        config.write(out);
+                    }
+
+                    handler.startDownloads();
+                    for (FileMetadata file : requiresUpdate) {
+                        handler.startDownloadFile(file);
+
+                        Path output = zip.getPath(Archive.FILES_DIR).resolve(file.getNormalizedPath().toString());
+                        Files.createDirectories(output.getParent());
+
+                        int read = 0;
+                        double currentCompleted = 0;
+                        byte[] buffer = new byte[1024 * 8];
+
+                        try (InputStream in = handler.openDownloadStream(file);
+                                        OutputStream out = Files.newOutputStream(output)) {
+
+                            // We should set download progress only AFTER the request has returned.
+                            // The delay can be monitored by the difference between calls from startDownload to this.
+                            if (downloadJobCompleted == 0) {
+                                handler.updateDownloadProgress(0f);
+                            }
+                            handler.updateDownloadFileProgress(file, 0f);
+
+                            while ((read = in.read(buffer, 0, buffer.length)) > -1) {
+                                out.write(buffer, 0, read);
+
+                                if (sig != null) {
+                                    sig.update(buffer, 0, read);
+                                }
+
+                                downloadJobCompleted += read;
+                                currentCompleted += read;
+
+                                handler.updateDownloadFileProgress(file, (float) (currentCompleted / file.getSize()));
+                                handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
+                            }
+
+                        }
+                        
+                        handler.validatingFile(file, output);
+                        validateFile(file, output, sig);
+
+                        updated.add(file);
+                        handler.doneDownloadFile(file, output);
+                    }
+
+                    doneDownloads = true;
+                    handler.doneDownloads();
+                }
+            }
+
+            success = true;
+        } catch (Throwable t) {
+            exception = t;
+
+            if (!doneDownloads) {
+                //                try {
+                ////                    Files.deleteIfExists(options.getArchiveLocation());
+                //                } catch (IOException e) {
+                //                    e.printStackTrace();
+                //                }
+            }
+
+            Warning.lock(t);
+
+            success = false;
+            handler.failed(t);
+        }
+
+        if (success)
+            handler.succeeded();
+
+        handler.stop();
+        return new UpdateResult(handler, exception);
+
+    }
+
+    @Deprecated
     private static void completeDownloads(Map<FileMetadata, Path> files, Path tempDir, boolean isTemp)
                     throws IOException {
 
@@ -305,8 +468,7 @@ class ConfigImpl {
                 throw new SecurityException("Signature verification failed.");
         }
 
-        if (file.getPath().toString().endsWith(".jar")
-                        && !file.isIgnoreBootConflict()
+        if (file.getPath().toString().endsWith(".jar") && !file.isIgnoreBootConflict()
                         && !ModuleUtils.userBootModules().isEmpty()) {
             checkBootConflicts(file, output);
         }
@@ -314,11 +476,10 @@ class ConfigImpl {
 
     private static void checkBootConflicts(FileMetadata file, Path download) throws IOException {
         String filename = file.getPath().getFileName().toString();
-        
+
         if (!FileUtils.isZipFile(download)) {
             Warning.nonZip(filename);
-            throw new IllegalStateException(
-                            "File '" + filename + "' is not a valid zip file.");
+            throw new IllegalStateException("File '" + filename + "' is not a valid zip file.");
         }
 
         Set<Module> modules = ModuleLayer.boot().modules();
@@ -329,7 +490,7 @@ class ConfigImpl {
                         .stream()
                         .map(mr -> mr.descriptor().name())
                         .collect(Collectors.toSet());
-        
+
         ModuleDescriptor newMod = null;
         try {
             newMod = ModuleUtils.deriveModuleDescriptor(download, filename, sysMods.contains("jdk.zipfs"));

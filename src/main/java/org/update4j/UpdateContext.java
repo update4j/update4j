@@ -36,17 +36,19 @@ public class UpdateContext {
     private List<FileMetadata> requiresUpdate;
     private List<FileMetadata> updated;
     private Path tempDir;
+    private Path archive;
 
     private PublicKey key;
 
     UpdateContext(Configuration config, List<FileMetadata> requiresUpdate, List<FileMetadata> updated, Path tempDir,
-                    PublicKey key) {
+                    PublicKey key, Path archive) {
         configuration = Objects.requireNonNull(config);
 
         this.requiresUpdate = Collections.unmodifiableList(requiresUpdate);
         this.updated = Collections.unmodifiableList(updated);
         this.tempDir = tempDir;
         this.key = key;
+        this.archive = archive;
     }
 
     /**
@@ -97,10 +99,13 @@ public class UpdateContext {
      * {@link Configuration#updateTemp(Path)} or other any overload was used, or
      * {@code null} otherwise.
      * 
+     * @deprecated Use archive-based updates instead
+     * 
      * @return The temporary location of the update if
      *         {@link Configuration#updateTemp(Path)} was used, or {@code null}
      *         otherwise.
      */
+    @Deprecated
     public Path getTempDirectory() {
         return tempDir;
     }
@@ -116,5 +121,14 @@ public class UpdateContext {
      */
     public PublicKey getPublicKey() {
         return key;
+    }
+    
+    /**
+     * Returns the {@link Path} passed into {@link UpdateOptions#archive(Path)}.
+     * 
+     * @return The archive path
+     */
+    public Path getArchiveLocation() {
+        return archive;
     }
 }

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.module.ModuleFinder;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystemException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -22,7 +21,6 @@ import java.util.stream.Stream;
 
 import org.update4j.mapper.FileMapper;
 import org.update4j.util.FileUtils;
-import org.update4j.util.Warning;
 
 public class Archive {
 
@@ -30,9 +28,9 @@ public class Archive {
     private Configuration config;
     private List<FileMetadata> files;
 
-    private static final String RESERVED_DIR = "reserved";
-    private static final String CONFIG_PATH = "config";
-    private static final String FILES_DIR = "files";
+    static final String RESERVED_DIR = "reserved";
+    static final String CONFIG_PATH = "config";
+    static final String FILES_DIR = "files";
 
     public static Archive read(Path location) throws IOException {
         Archive archive = new Archive(location);
@@ -127,6 +125,8 @@ public class Archive {
                 FileUtils.secureMoveFile(e.getKey(), e.getValue());
             }
         }
+        
+        Files.deleteIfExists(getLocation());
     }
 
     public FileSystem openConnection() throws IOException {

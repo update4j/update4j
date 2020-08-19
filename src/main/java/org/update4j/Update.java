@@ -32,9 +32,11 @@ import org.update4j.util.Warning;
  * This class contains method to complete an update when
  * {@link Configuration#updateTemp(Path)} was used.
  * 
+ * @deprecated Superseded with the new archive-based update mechanism.
  * @author Mordechai Meisels
  *
  */
+@Deprecated
 public class Update {
 
     public static final Path UPDATE_DATA = Paths.get(".update");
