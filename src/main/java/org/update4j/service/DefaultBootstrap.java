@@ -252,7 +252,7 @@ public class DefaultBootstrap implements Delegate {
         if (!localNotReady) {
             Configuration finalConfig = localConfig;
             Thread localApp = new Thread(() -> finalConfig.launch());
-            localApp.run();
+            localApp.start();
         }
 
         Configuration remoteConfig = null;
