@@ -1,4 +1,4 @@
-* **1.5.0**
+* **1.5.1**
   * New update model `Configuration.Update(ArchiveUpdateOptions)`, using an `Archive` to store update files, it can then be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
   * Deprecated previous update models, but still available for smooth migration
   * Improved update return value `UpdateResult`. [#87](https://github.com/update4j/update4j/issues/87)

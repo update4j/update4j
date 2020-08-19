@@ -36,6 +36,7 @@ module org.update4j {
     exports org.update4j.mapper;
 
     requires transitive java.xml;
+    requires static jdk.zipfs;
 
     uses org.update4j.service.Delegate;
     uses org.update4j.service.UpdateHandler;
