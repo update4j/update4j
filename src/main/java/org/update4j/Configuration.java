@@ -40,6 +40,7 @@ import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.update4j.UpdateOptions.ArchiveUpdateOptions;
 import org.update4j.inject.Injectable;
 import org.update4j.inject.PostInject;
 import org.update4j.mapper.ConfigMapper;
@@ -399,8 +400,9 @@ import static java.lang.System.Logger.Level.WARNING;
  * launcher provider.
  * 
  * <p>
- * Accessing business classes in the bootstrap depends on the classloader configuration. Please consult the
- * <a href="https://github.com/update4j/update4j/wiki/Documentation#classloading-model">
+ * Accessing business classes in the bootstrap depends on the classloader
+ * configuration. Please consult the <a href=
+ * "https://github.com/update4j/update4j/wiki/Documentation#classloading-model">
  * GitHub wiki</a> for a thorough walkthrough of possible options.
  * 
  * <p>
@@ -411,9 +413,10 @@ import static java.lang.System.Logger.Level.WARNING;
  * class name, it will load that class instead.
  * 
  * <p>
- * If an explicit launcher instance was passed, the instance only has reflective access to
- * the Business Application by reflecting against
- * {@link LaunchContext#getClassLoader()} unless you used the {@link DynamicClassLoader}.
+ * If an explicit launcher instance was passed, the instance only has reflective
+ * access to the Business Application by reflecting against
+ * {@link LaunchContext#getClassLoader()} unless you used the
+ * {@link DynamicClassLoader}.
  * 
  * 
  * <pre>
@@ -445,7 +448,7 @@ import static java.lang.System.Logger.Level.WARNING;
  *
  */
 public class Configuration {
-    
+
     private static final System.Logger logger = System.getLogger(Configuration.class.getName());
 
     private Instant timestamp;
@@ -855,6 +858,10 @@ public class Configuration {
         return false;
     }
 
+    public UpdateResult update(ArchiveUpdateOptions options) {
+        return ConfigImpl.doUpdate(this, options);
+    }
+    
     /**
      * Starts the update process by locating the class returned by
      * {@link #getUpdateHandler()} or -- if it returns {@code null} -- the
@@ -873,7 +880,9 @@ public class Configuration {
      * This method is intended to be used on the client machine only.
      * 
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean update() {
         return update((PublicKey) null);
     }
@@ -896,7 +905,9 @@ public class Configuration {
      * @param handler
      *            The {@link UpdateHandler} to use for process callbacks.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean update(UpdateHandler handler) {
         return update((PublicKey) null, handler);
     }
@@ -933,7 +944,9 @@ public class Configuration {
      *            The object to use for field exchange between the bootstrap and the
      *            update handler.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean update(Injectable injectable) {
         return update(null, injectable);
     }
@@ -962,7 +975,9 @@ public class Configuration {
      * @param key
      *            The {@link PublicKey} to validate the files' signatures.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean update(PublicKey key) {
         return update(key, (UpdateHandler) null);
     }
@@ -1005,9 +1020,11 @@ public class Configuration {
      *            The object to use for field exchange between the bootstrap and the
      *            update handler.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean update(PublicKey key, Injectable injectable) {
-        return ConfigImpl.doUpdate(this, null, key, injectable, null);
+        return ConfigImpl.doLegacyUpdate(this, null, key, injectable, null);
     }
 
     /**
@@ -1034,9 +1051,11 @@ public class Configuration {
      * @param handler
      *            The {@link UpdateHandler} to use for process callbacks.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean update(PublicKey key, UpdateHandler handler) {
-        return ConfigImpl.doUpdate(this, null, key, null, handler);
+        return ConfigImpl.doLegacyUpdate(this, null, key, null, handler);
     }
 
     /**
@@ -1064,7 +1083,9 @@ public class Configuration {
      *            The location to temporarily store the downloaded files until
      *            {@link Update#finalizeUpdate(Path)} is called.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean updateTemp(Path tempDir) {
         return updateTemp(tempDir, (PublicKey) null);
     }
@@ -1108,7 +1129,9 @@ public class Configuration {
      *            The object to use for field exchange between the bootstrap and the
      *            update handler.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean updateTemp(Path tempDir, Injectable injectable) {
         return updateTemp(tempDir, (PublicKey) null, injectable);
     }
@@ -1138,7 +1161,9 @@ public class Configuration {
      * @param handler
      *            The {@link UpdateHandler} to use for process callbacks.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean updateTemp(Path tempDir, UpdateHandler handler) {
         return updateTemp(tempDir, (PublicKey) null, handler);
     }
@@ -1174,7 +1199,9 @@ public class Configuration {
      * @param key
      *            The {@link PublicKey} to validate the files' signatures.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean updateTemp(Path tempDir, PublicKey key) {
         return updateTemp(tempDir, key, (UpdateHandler) null);
     }
@@ -1224,9 +1251,11 @@ public class Configuration {
      *            The object to use for field exchange between the bootstrap and the
      *            update handler.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean updateTemp(Path tempDir, PublicKey key, Injectable injectable) {
-        return ConfigImpl.doUpdate(this, Objects.requireNonNull(tempDir), key, injectable, null);
+        return ConfigImpl.doLegacyUpdate(this, Objects.requireNonNull(tempDir), key, injectable, null);
     }
 
     /**
@@ -1260,9 +1289,11 @@ public class Configuration {
      * @param handler
      *            The {@link UpdateHandler} to use for process callbacks.
      * @return If no error was thrown in the whole process.
+     * @deprecated Superseded with the new archive-based update mechanism.
      */
+    @Deprecated
     public boolean updateTemp(Path tempDir, PublicKey key, UpdateHandler handler) {
-        return ConfigImpl.doUpdate(this, Objects.requireNonNull(tempDir), key, null, handler);
+        return ConfigImpl.doLegacyUpdate(this, Objects.requireNonNull(tempDir), key, null, handler);
     }
 
     /**

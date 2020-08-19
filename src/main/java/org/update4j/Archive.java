@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.module.ModuleFinder;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystemException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -22,7 +21,6 @@ import java.util.stream.Stream;
 
 import org.update4j.mapper.FileMapper;
 import org.update4j.util.FileUtils;
-import org.update4j.util.Warning;
 
 public class Archive {
 

@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import org.update4j.Configuration;
 import org.update4j.FileMetadata;
 import org.update4j.UpdateContext;
+import org.update4j.UpdateResult;
 import org.update4j.inject.Injectable;
 
 /**
@@ -408,5 +409,33 @@ public interface UpdateHandler extends Service {
      * {@link Configuration#update()} method.
      */
     default void stop() {
+    }
+
+    /**
+     * Called by {@link UpdateResult#result()}. If {@code result()} is never called,
+     * this will never get called either.
+     * 
+     * <p>
+     * You're free to use any return type, it will automatically be cast to the
+     * receiver type of the caller of {@link UpdateResult#result()}:
+     * 
+     * <pre>
+     * // When defining:
+     * public MyType getResult() {
+     *     return new MyType();
+     * }
+     * 
+     * 
+     * // You can do this without a cast:
+     * MyType myResult = update(...).result();
+     * 
+     * // But this fails with ClassCastException:
+     * String str = update(...).result();
+     * </pre>
+     * 
+     * @return
+     */
+    default Object getResult() {
+        return null;
     }
 }
