@@ -1,3 +1,17 @@
+* *Upcoming Release*
+  * New update model, using an `Archive` to store update files, then can be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
+  * Improved update return value `UpdateResult`. [#87](https://github.com/update4j/update4j/issues/87)
+  * Not passing `default.launcher.main.class` will run the command-line arguments as a script. [#88](https://github.com/update4j/update4j/issues/88)
+  * `ignoreBootConflict` no longer required if there are no user modules on the boot module layer.
+  * `DefaultBootstrap::updateFirst` now performs update in parallel while launching the business app. [#104](https://github.com/update4j/update4j/issues/104)
+  * Support Elliptic Curve cipher. [#89](https://github.com/update4j/update4j/issues/89)
+* **1.4.5**
+  * Added `DynamicClassLoader` and the new [Classloading Model](https://github.com/update4j/update4j/wiki/Documentation#classloading-model). [#75](https://github.com/update4j/update4j/issues/75)
+  * New design reporting download progress in `DefaultUpdateHandler`.
+  * Added `SingleInstanceManager::tryExecute` to handle second instance instead of automatic shutdown. [#85](https://github.com/update4j/update4j/issues/85)
+  * Added `FileMapper::getChecksum` and `FileMapper::getSignature`
+  * `user.home` and `user.dir` will only be automatically replaced when matched to the beginning of a path. [#73](https://github.com/update4j/update4j/issues/73)
+  * Improved file accessibility check when copying new files to its final location. [#76](https://github.com/update4j/update4j/issues/76)
 * **1.4.4**
   * Fixed fatal bug if an exception was thrown in `UpdateHander.doneDownloads()` or `UpdateHanlder.succeeded()`.
   * Changed warning suppression system property key from `suppress.warning` to `update4j.suppress.warning`.
