@@ -63,10 +63,10 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 
 ## What's New in 1.5.1
-  * New update model `Configuration.Update(ArchiveUpdateOptions)`, using an `Archive` to store update files, it can then be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
+  * New update model `Configuration.update(ArchiveUpdateOptions)`, using an `Archive` to store update files, it can then be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
   * Deprecated previous update models, but still available for smooth migration.
-  * Improved update return value `UpdateResult`. [#87](https://github.com/update4j/update4j/issues/87)
-  * Not passing `default.launcher.main.class` will run the command-line arguments as a script. [#88](https://github.com/update4j/update4j/issues/88)
+  * Improved update return value as `UpdateResult`. [#87](https://github.com/update4j/update4j/issues/87)
+  * Using the `DefaultLauncher`, not passing `default.launcher.main.class` will run the command-line arguments as a script. [#88](https://github.com/update4j/update4j/issues/88)
   * `ignoreBootConflict` no longer required if there are no user modules on the boot module layer.
   * `DefaultBootstrap::updateFirst` now performs update in parallel while launching the business app. [#104](https://github.com/update4j/update4j/issues/104)
   * Support Elliptic Curve cipher. [#89](https://github.com/update4j/update4j/issues/89)
