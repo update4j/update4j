@@ -62,7 +62,7 @@ $ java -cp * org.update4j.Bootstrap
 For more information refer to [Starting the Application](https://github.com/update4j/update4j/wiki/Documentation#starting-the-application) in the wiki.
 
 
-## What's New in 1.5.1
+## What's New in 1.5.1 — [Migration Guide](https://github.com/update4j/update4j/wiki/Migration-to-1.5.x)
   * New update model `Configuration.update(ArchiveUpdateOptions)`, using an `Archive` to store update files, it can then be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
   * Deprecated previous update models, but still available for smooth migration.
   * Improved update return value as `UpdateResult`. [#87](https://github.com/update4j/update4j/issues/87)
