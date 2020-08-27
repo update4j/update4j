@@ -26,7 +26,7 @@ Using a custom bootstrap implemented to report progress in JavaFX, downloads 4 f
 
 Update4j is the first auto-update and launcher library designed for Java 9+. Easily host your application files anywhere (even Google Drive, Dropbox, Amazon S3, or Maven Central) and you can synchronize them with all your distributed applications. You can use [any protocol you wish](https://gitter.im/update4j/update4j?at=5c7067c1a378ef11f6236c86) to retrieve those files and may be protected under authenticated API.
 
-In update4j _you_ have ultimate control of every process, from startup - update - launch - shutdown, since it's a library (you call the 3rd party code) not a framework (3rd party calls your code outside your control). In addition, every single piece of code is completely updatable; [even update4j itself](https://github.com/update4j/update4j/wiki/Documentation#updating-update4j-itself), once a new version is released! (Well, if you proply set up the environment.)
+In update4j _you_ have ultimate control of every process, from startup - update - launch - shutdown, since it's a library (you call the 3rd party code) not a framework (3rd party calls your code outside your control). In addition, every single piece of code is completely updatable; [even update4j itself](https://github.com/update4j/update4j/wiki/Documentation#updating-update4j-itself), once a new version is released! (Well, if you properly set up the environment.)
 
 
 
