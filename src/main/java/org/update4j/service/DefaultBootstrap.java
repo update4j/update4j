@@ -15,6 +15,8 @@
  */
 package org.update4j.service;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -23,6 +25,7 @@ import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -42,7 +45,8 @@ import org.update4j.util.ArgUtils;
 
 public class DefaultBootstrap implements Delegate {
 
-    Path zip = Paths.get("update.zip");
+    private static final String ZIP_LOCATION = "update.zip";
+    private static final String OLD_CONFIG = "config.old";
 
     private String remote;
     private String local;
@@ -197,99 +201,83 @@ public class DefaultBootstrap implements Delegate {
         }
 
         Configuration config = remoteConfig != null ? remoteConfig : localConfig;
-        boolean failedRemoteUpdate = false;
+        Path zip = Paths.get(ZIP_LOCATION);
 
-        if (config.requiresUpdate()) {
-            boolean success = config.update(UpdateOptions.archive(zip).publicKey(pk)).getException() == null;
-            
-            if (config == remoteConfig) {
-                failedRemoteUpdate = !success;
-            }
-            if (success) {
-                Archive.read(zip).install();
-            } else if (stopOnUpdateError) {
-                return;
-            }
+        boolean success = config.update(UpdateOptions.archive(zip).publicKey(pk)).getException() == null;
+        if (!success && stopOnUpdateError)
+            return;
 
+        if (Files.exists(zip)) {
+            Archive.read(zip).install();
         }
 
-        if (syncLocal && !failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
+        if (success && syncLocal && config == remoteConfig) {
             syncLocal(remoteConfig);
 
             if (localConfig != null) {
-                try {
-                    remoteConfig.deleteOldFiles(localConfig);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                remoteConfig.deleteOldFiles(localConfig);
             }
         }
 
         config.launch();
-
     }
 
     protected void launchFirst() throws Throwable {
-        Configuration localConfig = getLocalConfig(false);
+        Path zip = Paths.get(ZIP_LOCATION);
 
         if (Files.exists(zip)) {
             try {
                 Archive archive = Archive.read(zip);
+                Configuration oldConfig = null;
+                Configuration newConfig = archive.getConfiguration();
+
+                try (FileSystem fs = archive.openConnection()) {
+                    Path oldPath = fs.getPath(OLD_CONFIG);
+                    if (Files.exists(oldPath)) {
+                        try (BufferedReader in = Files.newBufferedReader(oldPath)) {
+                            oldConfig = Configuration.read(in);
+                        }
+                    }
+                }
+
                 archive.install();
-                localConfig.deleteOldFiles(archive.getConfiguration());
+                newConfig.deleteOldFiles(oldConfig);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
-        boolean localNotReady = localConfig == null || localConfig.requiresUpdate();
-
-        if (!localNotReady) {
+        Configuration localConfig = getLocalConfig(false);
+        if (localConfig != null && !localConfig.requiresUpdate()) {
             Configuration finalConfig = localConfig;
             Thread localApp = new Thread(() -> finalConfig.launch());
             localApp.start();
+        } else {
+            syncLocal = true;
+            updateFirst();
+            return;
         }
 
-        Configuration remoteConfig = null;
-        if (remote != null) {
-            remoteConfig = getRemoteConfig();
-        }
+        if (remote == null)
+            return;
 
-        boolean failedRemoteUpdate = false;
+        Configuration remoteConfig = getRemoteConfig();
+        if (remoteConfig.equals(localConfig))
+            return;
 
-        if (localNotReady) {
-            Configuration config = remoteConfig != null ? remoteConfig : localConfig;
+        boolean success = remoteConfig.update(UpdateOptions.archive(zip).publicKey(pk)).getException() == null;
 
-            if (config != null) {
-                boolean success = config.update(UpdateOptions.archive(zip).publicKey(pk)).getException() == null;
-                
-                if (config == remoteConfig) {
-                    failedRemoteUpdate = !success;
-                }
-
-                if (success) {
-                    Archive.read(zip).install();
-                } else if (stopOnUpdateError) {
-                    return;
-                }
-
-                config.launch();
-            }
-        } else if (remoteConfig != null) {
-            if (remoteConfig.requiresUpdate()) {
-                failedRemoteUpdate = remoteConfig.update(UpdateOptions.archive(zip).publicKey(pk))
-                                .getException() != null;
+        if (Files.exists(zip)) {
+            // persist old config to delete old files on next restart
+            Archive archive = Archive.read(zip);
+            try (FileSystem fs = archive.openConnection();
+                            BufferedWriter out = Files.newBufferedWriter(fs.getPath(OLD_CONFIG))) {
+                localConfig.write(out);
             }
         }
 
-        if (!failedRemoteUpdate && remoteConfig != null && !remoteConfig.equals(localConfig)) {
+        if (success)
             syncLocal(remoteConfig);
-
-            if (localNotReady && localConfig != null) {
-                remoteConfig.deleteOldFiles(localConfig);
-            }
-        }
-
     }
 
     protected Reader openConnection(URL url) throws IOException {

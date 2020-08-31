@@ -101,7 +101,7 @@ public class Archive {
         return location;
     }
 
-    public void install() throws IOException {
+    public void install(boolean deleteArchive) throws IOException {
         // we move out the files, so must be writable
         FileUtils.verifyAccessible(getLocation());
         
@@ -126,7 +126,12 @@ public class Archive {
             }
         }
         
-        Files.deleteIfExists(getLocation());
+        if(deleteArchive)
+            Files.deleteIfExists(getLocation());
+    }
+    
+    public void install() throws IOException {
+        install(true);
     }
 
     public FileSystem openConnection() throws IOException {

@@ -67,10 +67,6 @@ class ConfigImpl {
     static boolean doLegacyUpdate(Configuration config, Path tempDir, PublicKey key, Injectable injectable,
                     UpdateHandler handler) {
 
-        if (key == null) {
-            Warning.signature();
-        }
-
         boolean updateTemp = tempDir != null;
         boolean doneDownloads = false;
         boolean success;
@@ -139,6 +135,10 @@ class ConfigImpl {
             double downloadJobCompleted = 0;
 
             if (!requiresUpdate.isEmpty()) {
+                if (key == null) {
+                    Warning.signature();
+                }
+                
                 handler.startDownloads();
 
                 for (FileMetadata file : requiresUpdate) {
@@ -238,9 +238,6 @@ class ConfigImpl {
 
     static UpdateResult doUpdate(Configuration config, ArchiveUpdateOptions options) {
         PublicKey key = options.getPublicKey();
-        if (key == null) {
-            Warning.signature();
-        }
 
         Throwable exception = null;
         boolean doneDownloads = false;
@@ -309,6 +306,10 @@ class ConfigImpl {
             double downloadJobCompleted = 0;
 
             if (!requiresUpdate.isEmpty()) {
+                if (key == null) {
+                    Warning.signature();
+                }
+                
                 Archive archive = new Archive(options.getArchiveLocation());
                 try (FileSystem zip = archive.openConnection()) {
 
@@ -355,7 +356,7 @@ class ConfigImpl {
                             }
 
                         }
-                        
+
                         handler.validatingFile(file, output);
                         validateFile(file, output, sig);
 
@@ -373,11 +374,11 @@ class ConfigImpl {
             exception = t;
 
             if (!doneDownloads) {
-                //                try {
-                ////                    Files.deleteIfExists(options.getArchiveLocation());
-                //                } catch (IOException e) {
-                //                    e.printStackTrace();
-                //                }
+                try {
+                    Files.deleteIfExists(options.getArchiveLocation());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             Warning.lock(t);

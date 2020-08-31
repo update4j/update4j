@@ -25,4 +25,5 @@ package org.update4j;
  *
  */
 public class SingleInstanceException extends Exception {
+    private static final long serialVersionUID = -7232565848237883297L;
 }

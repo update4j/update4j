@@ -1,3 +1,5 @@
+* **1.5.2**
+  * Bug fixes in `DefaultBootstrap`. [#105](https://github.com/update4j/update4j/issues/105)
 * **1.5.1**
   * New update model `Configuration.Update(ArchiveUpdateOptions)`, using an `Archive` to store update files, it can then be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
   * Deprecated previous update models, but still available for smooth migration
