@@ -26,7 +26,7 @@ Using a custom bootstrap implemented to report progress in JavaFX, downloads 4 f
 
 Update4j is the first auto-update and launcher library designed for Java 9+. Easily host your application files anywhere (even Google Drive, Dropbox, Amazon S3, or Maven Central) and you can synchronize them with all your distributed applications. You can use [any protocol you wish](https://gitter.im/update4j/update4j?at=5c7067c1a378ef11f6236c86) to retrieve those files and may be protected under authenticated API.
 
-In update4j _you_ have ultimate control of every process, from startup - update - launch - shutdown, since it's a library (you call the 3rd party code) not a framework (3rd party calls your code outside your control). In addition, every single piece of code is completely updatable; [even update4j itself](https://github.com/update4j/update4j/wiki/Documentation#updating-update4j-itself), once a new version is released!
+In update4j _you_ have ultimate control of every process, from startup - update - launch - shutdown, since it's a library (you call the 3rd party code) not a framework (3rd party calls your code outside your control). In addition, every single piece of code is completely updatable; [even update4j itself](https://github.com/update4j/update4j/wiki/Documentation#updating-update4j-itself), once a new version is released! (Well, if you properly set up the environment.)
 
 
 
@@ -63,10 +63,10 @@ For more information refer to [Starting the Application](https://github.com/upda
 
 
 ## What's New in 1.5.2
-  * New update model `Configuration.Update(ArchiveUpdateOptions)`, using an `Archive` to store update files, it can then be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
+  * New update model `Configuration.update(ArchiveUpdateOptions)`, using an `Archive` to store update files, it can then be 'installed' (calling `Archive::install`). [#76](https://github.com/update4j/update4j/issues/76)
   * Deprecated previous update models, but still available for smooth migration.
-  * Improved update return value `UpdateResult`. [#87](https://github.com/update4j/update4j/issues/87)
-  * Not passing `default.launcher.main.class` will run the command-line arguments as a script. [#88](https://github.com/update4j/update4j/issues/88)
+  * Improved update return value as `UpdateResult`. [#87](https://github.com/update4j/update4j/issues/87)
+  * Using the `DefaultLauncher`, not passing `default.launcher.main.class` will run the command-line arguments as a script. [#88](https://github.com/update4j/update4j/issues/88)
   * `ignoreBootConflict` no longer required if there are no user modules on the boot module layer.
   * `DefaultBootstrap::updateFirst` now performs update in parallel while launching the business app. [#104](https://github.com/update4j/update4j/issues/104)
   * Support Elliptic Curve cipher. [#89](https://github.com/update4j/update4j/issues/89)
