@@ -119,7 +119,7 @@ class ConfigImpl {
                 }
 
                 updateJobCompleted += file.getSize();
-                handler.updateCheckUpdatesProgress((float) (updateJobCompleted / updateJobSize));
+                handler.updateCheckUpdatesProgress(clamp((float) (updateJobCompleted / updateJobSize)));
             }
 
             handler.doneCheckUpdates();
@@ -178,8 +178,8 @@ class ConfigImpl {
                             downloadJobCompleted += read;
                             currentCompleted += read;
 
-                            handler.updateDownloadFileProgress(file, (float) (currentCompleted / file.getSize()));
-                            handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
+                            handler.updateDownloadFileProgress(file, clamp((float) (currentCompleted / file.getSize())));
+                            handler.updateDownloadProgress(clamp((float) downloadJobCompleted / downloadJobSize));
                         }
 
                         handler.validatingFile(file, output);
@@ -290,7 +290,7 @@ class ConfigImpl {
                 }
 
                 updateJobCompleted += file.getSize();
-                handler.updateCheckUpdatesProgress((float) (updateJobCompleted / updateJobSize));
+                handler.updateCheckUpdatesProgress(clamp((float) (updateJobCompleted / updateJobSize)));
             }
 
             handler.doneCheckUpdates();
@@ -351,8 +351,8 @@ class ConfigImpl {
                                 downloadJobCompleted += read;
                                 currentCompleted += read;
 
-                                handler.updateDownloadFileProgress(file, (float) (currentCompleted / file.getSize()));
-                                handler.updateDownloadProgress((float) downloadJobCompleted / downloadJobSize);
+                                handler.updateDownloadFileProgress(file, clamp((float) (currentCompleted / file.getSize())));
+                                handler.updateDownloadProgress(clamp((float) downloadJobCompleted / downloadJobSize));
                             }
 
                         }
@@ -704,4 +704,9 @@ class ConfigImpl {
             }
         }
     }
+    
+    private static float clamp(float val) {
+        return Math.max(0,  Math.min(1, val));
+    }
+    
 }
