@@ -219,7 +219,7 @@ public class DefaultBootstrap implements Delegate {
             }
         }
 
-        config.launch();
+        config.launch(this);
     }
 
     protected void launchFirst() throws Throwable {
@@ -250,7 +250,7 @@ public class DefaultBootstrap implements Delegate {
         Configuration localConfig = getLocalConfig(false);
         if (localConfig != null && !localConfig.requiresUpdate()) {
             Configuration finalConfig = localConfig;
-            Thread localApp = new Thread(() -> finalConfig.launch());
+            Thread localApp = new Thread(() -> finalConfig.launch(this));
             localApp.start();
         } else {
             syncLocal = true;
