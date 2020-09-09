@@ -1,3 +1,6 @@
+* **1.5.3**
+  * Clamp update handler `frac` values between 0 and 1. [#106](https://github.com/update4j/update4j/issues/106)
+  * Bug fix in `DefaultBootstrap` causing command-line args not to be passed. [#107](https://github.com/update4j/update4j/issues/107)
 * **1.5.2**
   * Bug fixes in `DefaultBootstrap`. [#105](https://github.com/update4j/update4j/issues/105)
 * **1.5.1**
