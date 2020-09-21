@@ -48,6 +48,8 @@ import org.update4j.OS;
 
 public class FileUtils {
 
+    public static final Pattern OS_PATTERN = Pattern.compile(".+-(linux|win|mac)\\.[^.]+");
+
     private FileUtils() {
     }
 
@@ -170,8 +172,7 @@ public class FileUtils {
     }
 
     public static OS fromFilename(String filename) {
-        Pattern osPattern = Pattern.compile(".+-(linux|win|mac)\\.[^.]+");
-        Matcher osMatcher = osPattern.matcher(filename);
+        Matcher osMatcher = OS_PATTERN.matcher(filename);
 
         if (osMatcher.matches()) {
             return OS.fromShortName(osMatcher.group(1));
