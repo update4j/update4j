@@ -1,3 +1,5 @@
+* **1.5.4**
+  * Fix archive not properly resolving UNIX paths. [#109](https://github.com/update4j/update4j/issues/109)
 * **1.5.3**
   * Clamp update handler `frac` values between 0 and 1. [#106](https://github.com/update4j/update4j/issues/106)
   * Bug fix in `DefaultBootstrap` causing command-line args not to be passed. [#107](https://github.com/update4j/update4j/issues/107)
