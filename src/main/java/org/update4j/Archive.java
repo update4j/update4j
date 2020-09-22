@@ -85,7 +85,7 @@ public class Archive {
             }
 
             for (FileMetadata file : getFiles()) {
-                Path p = filesPath.resolve(file.getNormalizedPath().toString());
+                Path p = filesPath.resolve(file.getNormalizedPath().toString().replaceFirst("^\\/", ""));
                 if (FileMapper.getChecksum(p) != file.getChecksum()) {
                     throw new IOException(p + ": File has been tampered with");
                 }
@@ -110,7 +110,7 @@ public class Archive {
 
             Map<Path, Path> files = new HashMap<>();
             for (FileMetadata file : getFiles()) {
-                Path path = filesPath.resolve(file.getNormalizedPath().toString());
+                Path path = filesPath.resolve(file.getNormalizedPath().toString().replaceFirst("^\\/", ""));
                 if (!Files.isRegularFile(path))
                     throw new IOException(path + ": File is missing or invalid");
 
