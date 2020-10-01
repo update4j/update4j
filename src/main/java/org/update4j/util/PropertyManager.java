@@ -35,19 +35,18 @@ public class PropertyManager {
 
     public static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{([^}]+)\\}");
 
-    private List<Property> properties;
     private List<Property> unmodifiableProperties;
-
+    private Map<String, String> unmodifiableDynamicProperties;
     private Map<String, String> resolvedProperties;
     private Map<String, String> unmodifiableResolvedProperties;
 
     public PropertyManager(List<Property> properties, Map<String, String> dynamicProperties,
                     List<String> systemProperties) {
 
-        this.properties = properties == null ? new ArrayList<>() : properties;
-        this.unmodifiableProperties = Collections.unmodifiableList(this.properties);
+        this.unmodifiableProperties = Collections.unmodifiableList(properties != null ? properties : List.of());
+        this.unmodifiableDynamicProperties = Collections.unmodifiableMap(dynamicProperties != null ? dynamicProperties : Map.of());
 
-        for (int i = 1; i < this.properties.size(); i++) {
+        for (int i = 1; i < unmodifiableProperties.size(); i++) {
             for (int j = 0; j < i; j++) {
                 Property ip = properties.get(i);
                 Property jp = properties.get(j);
@@ -67,7 +66,7 @@ public class PropertyManager {
             }
         }
 
-        resolvedProperties = extractPropertiesForCurrentMachine(this.properties, systemProperties);
+        resolvedProperties = extractPropertiesForCurrentMachine(unmodifiableProperties, systemProperties);
 
         if (dynamicProperties != null)
             resolvedProperties.putAll(dynamicProperties);
@@ -130,6 +129,16 @@ public class PropertyManager {
      */
     public String getResolvedProperty(String key) {
         return resolvedProperties.get(key);
+    }
+    
+    /**
+     * Returns the dynamic properties passed in the constructor. If nothing was passed
+     * it returns an empty map.
+     * 
+     * @return Provided dynamic properties, or empty map.
+     */
+    public Map<String, String> getDynamicProperties() {
+        return unmodifiableDynamicProperties;
     }
 
     /**

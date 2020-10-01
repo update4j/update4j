@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 import org.update4j.UpdateOptions.ArchiveUpdateOptions;
 import org.update4j.inject.Injectable;
 import org.update4j.inject.UnsatisfiedInjectionException;
+import org.update4j.mapper.MapMapper;
 import org.update4j.service.Launcher;
 import org.update4j.service.Service;
 import org.update4j.service.UpdateHandler;
@@ -319,6 +320,15 @@ class ConfigImpl {
                     try (BufferedWriter out = Files.newBufferedWriter(configPath)) {
                         config.write(out);
                     }
+                    
+                    // Save dynamic properties, if any. #110
+                    if(!config.getDynamicProperties().isEmpty()) {
+                        Path dynamicPath = zip.getPath(Archive.RESERVED_DIR,  Archive.DYNAMIC_PATH);
+                        try(BufferedWriter out = Files.newBufferedWriter(dynamicPath)) {
+                            MapMapper.write(out, config.getDynamicProperties(), Archive.DYNAMIC_NODE);
+                        }
+                    }
+                    
 
                     handler.startDownloads();
                     for (FileMetadata file : requiresUpdate) {

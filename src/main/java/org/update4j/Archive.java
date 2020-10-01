@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.update4j.mapper.FileMapper;
+import org.update4j.mapper.MapMapper;
 import org.update4j.util.FileUtils;
 
 public class Archive {
@@ -30,7 +31,9 @@ public class Archive {
 
     static final String RESERVED_DIR = "reserved";
     static final String CONFIG_PATH = "config";
+    static final String DYNAMIC_PATH = "dynamic";
     static final String FILES_DIR = "files";
+    static final String DYNAMIC_NODE = "dynamic-properties";
 
     public static Archive read(Path location) throws IOException {
         Archive archive = new Archive(location);
@@ -56,12 +59,20 @@ public class Archive {
             Path filesPath = zip.getPath(FILES_DIR);
             Path reservedPath = zip.getPath(RESERVED_DIR);
             Path configPath = reservedPath.resolve(CONFIG_PATH);
-            
+            Path dynamicPath = configPath.resolveSibling(DYNAMIC_PATH);
+
             if (Files.notExists(configPath))
                 throw new NoSuchFileException(configPath.toString(), null, "Configuration file is missing");
 
+            Map<String, String> dynamicProperties = null;
+            if (Files.exists(dynamicPath)) {
+                try (BufferedReader in = Files.newBufferedReader(dynamicPath)) {
+                    dynamicProperties = MapMapper.read(in, DYNAMIC_NODE);
+                }
+            }
+
             try (BufferedReader in = Files.newBufferedReader(configPath)) {
-                config = Configuration.read(in);
+                config = Configuration.read(in, dynamicProperties);
             }
 
             try (Stream<Path> stream = Files.walk(filesPath)) {
@@ -104,7 +115,7 @@ public class Archive {
     public void install(boolean deleteArchive) throws IOException {
         // we move out the files, so must be writable
         FileUtils.verifyAccessible(getLocation());
-        
+
         try (FileSystem zip = openConnection()) {
             Path filesPath = zip.getPath(FILES_DIR);
 
@@ -119,17 +130,17 @@ public class Archive {
             }
 
             for (Map.Entry<Path, Path> e : files.entrySet()) {
-                if(e.getValue().getParent() != null)
+                if (e.getValue().getParent() != null)
                     Files.createDirectories(e.getValue().getParent());
-                
+
                 FileUtils.secureMoveFile(e.getKey(), e.getValue());
             }
         }
-        
-        if(deleteArchive)
+
+        if (deleteArchive)
             Files.deleteIfExists(getLocation());
     }
-    
+
     public void install() throws IOException {
         install(true);
     }

@@ -670,6 +670,18 @@ public class Configuration {
     }
 
     /**
+     * Returns the dynamic properties passed in {@link #read(Reader, Map)}.
+     * 
+     * <p>
+     * If dynamic properties were not passed, it will return an empty map.
+     * 
+     * @return Provided dynamic properties, or empty map.
+     */
+    public Map<String, String> getDynamicProperties() {
+        return propertyManager.getDynamicProperties();
+    }
+
+    /**
      * Returns a string where all placeholders are replaced with the real values. If
      * the given string is {@code null}, the same value will be returned.
      * 
@@ -858,11 +870,11 @@ public class Configuration {
         return false;
     }
 
-
     /**
-     * Archive-based update: All files are saved in a zipped file passed to {@link UpdateOptions#archive(Path)}.
-     * Once the update is complete you are free to process the archive to your liking. When you wish to install
-     * the update, call {@link Archive#install()}.
+     * Archive-based update: All files are saved in a zipped file passed to
+     * {@link UpdateOptions#archive(Path)}. Once the update is complete you are free
+     * to process the archive to your liking. When you wish to install the update,
+     * call {@link Archive#install()}.
      * 
      * <p>
      * The update process starts by locating the class returned by
@@ -871,8 +883,8 @@ public class Configuration {
      * {@link DefaultUpdateHandler} if non were found.
      * 
      * <p>
-     * If an {@link Injectable} was passed in the options, after loading the {@link UpdateHandler} class,
-     * it will call:
+     * If an {@link Injectable} was passed in the options, after loading the
+     * {@link UpdateHandler} class, it will call:
      * 
      * <pre>
      * Injectable.injectBidirectional(injectable, updateHandler);
@@ -883,8 +895,9 @@ public class Configuration {
      * following the behavior documented in {@link Injectable} documentation.
      * 
      * <p>
-     * If a {@link PublicKey} was passed to the options, it will use it to validate signatures of each
-     * individual file. It will <em>not</em> validate the config's own signature.
+     * If a {@link PublicKey} was passed to the options, it will use it to validate
+     * signatures of each individual file. It will <em>not</em> validate the
+     * config's own signature.
      * 
      * <p>
      * Any error that arises once the update handler was loaded just get's passed to
@@ -896,12 +909,12 @@ public class Configuration {
      * <p>
      * This method is intended to be used on the client machine only.
      * 
-     * @param options 
+     * @param options
      */
     public UpdateResult update(ArchiveUpdateOptions options) {
         return ConfigImpl.doUpdate(this, options);
     }
-    
+
     /**
      * Starts the update process by locating the class returned by
      * {@link #getUpdateHandler()} or -- if it returns {@code null} -- the
