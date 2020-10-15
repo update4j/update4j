@@ -1,4 +1,4 @@
-* *Upcoming Release*
+* **1.5.5**
   * Fix dynamic properties not working with archive installations. [#110](https://github.com/update4j/update4j/issues/110)
 * **1.5.4**
   * Fix archive not properly resolving UNIX paths. [#109](https://github.com/update4j/update4j/issues/109)
