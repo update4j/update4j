@@ -127,8 +127,7 @@ class ConfigImpl {
 
             Signature sig = null;
             if (key != null) {
-                String alg = key.getAlgorithm().equals("EC") ? "ECDSA" : key.getAlgorithm();
-                sig = Signature.getInstance("SHA256with" + alg);
+                sig = FileUtils.getSignature(key);
                 sig.initVerify(key);
             }
 
@@ -298,8 +297,7 @@ class ConfigImpl {
 
             Signature sig = null;
             if (key != null) {
-                String alg = key.getAlgorithm().equals("EC") ? "ECDSA" : key.getAlgorithm();
-                sig = Signature.getInstance("SHA256with" + alg);
+                sig = FileUtils.getSignature(key);
                 sig.initVerify(key);
             }
 

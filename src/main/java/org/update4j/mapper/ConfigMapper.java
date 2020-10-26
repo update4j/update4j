@@ -34,6 +34,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.update4j.OS;
 import org.update4j.Property;
+import org.update4j.util.FileUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -229,14 +230,12 @@ public class ConfigMapper extends XmlMapper {
 
     public String sign(PrivateKey key) {
         try {
-            Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
+            Signature sign = FileUtils.getSignature(key);
             sign.initSign(key);
             sign.update(getChildrenXml().getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(sign.sign());
         } catch (InvalidKeyException | SignatureException e) {
             throw new RuntimeException(e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new AssertionError(e);
         }
     }
 
@@ -246,7 +245,7 @@ public class ConfigMapper extends XmlMapper {
         }
 
         try {
-            Signature sign = Signature.getInstance("SHA256with" + key.getAlgorithm());
+            Signature sign = FileUtils.getSignature(key);
             sign.initVerify(key);
             sign.update(getChildrenXml().getBytes(StandardCharsets.UTF_8));
 
@@ -254,7 +253,7 @@ public class ConfigMapper extends XmlMapper {
                 throw new SecurityException("Signature verification failed.");
             }
 
-        } catch (InvalidKeyException | SignatureException | NoSuchAlgorithmException e) {
+        } catch (InvalidKeyException | SignatureException e) {
             throw new SecurityException(e);
         }
     }

@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
@@ -99,8 +100,7 @@ public class FileUtils {
 
     public static byte[] sign(Path path, PrivateKey key) throws IOException {
         try {
-            String alg = key.getAlgorithm().equals("EC") ? "ECDSA" : key.getAlgorithm();
-            Signature sign = Signature.getInstance("SHA256with" + alg);
+            Signature sign = getSignature(key);
             sign.initSign(key);
 
             try (InputStream input = Files.newInputStream(path)) {
@@ -113,13 +113,20 @@ public class FileUtils {
             return sign.sign();
         } catch (InvalidKeyException | SignatureException e) {
             throw new IOException(e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new AssertionError(e);
-        }
+        } 
     }
 
     public static String signAndEncode(Path path, PrivateKey key) throws IOException {
         return Base64.getEncoder().encodeToString(sign(path, key));
+    }
+    
+    public static Signature getSignature(Key key) {
+        String alg = key.getAlgorithm().equals("EC") ? "ECDSA" : key.getAlgorithm();
+        try {
+            return Signature.getInstance("SHA256with" + alg);
+        } catch (NoSuchAlgorithmException e) {
+            throw new AssertionError(e);
+        }
     }
 
     public static Path fromUri(URI uri) {
