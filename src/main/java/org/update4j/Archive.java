@@ -77,9 +77,7 @@ public class Archive {
 
             try (Stream<Path> stream = Files.walk(filesPath)) {
                 files = stream.filter(p -> !Files.isDirectory(p))
-                                .map(p -> filesPath.relativize(p))
-                                .map(Path::toString)
-                                .map(p -> OS.CURRENT != OS.WINDOWS ? "/" + p : p)
+                                .map(Archive::toRelativeFileString)
                                 .map(p -> getConfiguration().getFiles()
                                                 .stream()
                                                 .filter(file -> file.getNormalizedPath()
@@ -96,7 +94,7 @@ public class Archive {
             }
 
             for (FileMetadata file : getFiles()) {
-                Path p = filesPath.resolve(file.getNormalizedPath().toString().replaceFirst("^\\/", ""));
+                Path p = FileUtils.resolve(filesPath, file.getNormalizedPath());
                 if (FileMapper.getChecksum(p) != file.getChecksum()) {
                     throw new IOException(p + ": File has been tampered with");
                 }
@@ -121,7 +119,7 @@ public class Archive {
 
             Map<Path, Path> files = new HashMap<>();
             for (FileMetadata file : getFiles()) {
-                Path path = filesPath.resolve(file.getNormalizedPath().toString().replaceFirst("^\\/", ""));
+                Path path = FileUtils.resolve(filesPath, file.getNormalizedPath());
                 if (!Files.isRegularFile(path))
                     throw new IOException(path + ": File is missing or invalid");
 
@@ -166,5 +164,15 @@ public class Archive {
 
             throw e;
         }
+    }
+    
+    private static String toRelativeFileString(Path path) {
+        String str = path.toString();
+        
+        String pattern = "^(:?\\\\|/)?" + FILES_DIR;
+        if(OS.CURRENT == OS.WINDOWS)
+            pattern += "(:?\\\\|/)";
+        
+        return str.replaceFirst(pattern, "");
     }
 }

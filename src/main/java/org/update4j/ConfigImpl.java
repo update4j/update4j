@@ -332,8 +332,7 @@ class ConfigImpl {
                     for (FileMetadata file : requiresUpdate) {
                         handler.startDownloadFile(file);
 
-                        Path output = zip.getPath(Archive.FILES_DIR).resolve(file.getNormalizedPath().toString()
-                                .replaceFirst("^\\/", ""));
+                        Path output = FileUtils.resolve(zip.getPath(Archive.FILES_DIR), file.getNormalizedPath());
                         Files.createDirectories(output.getParent());
 
                         int read = 0;

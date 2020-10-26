@@ -177,6 +177,10 @@ public class FileUtils {
 
         return other;
     }
+    
+    public static Path resolve(Path base, Path child) {
+        return base.resolve(child.toString().replaceFirst("^\\\\|/", ""));
+    }
 
     public static OS fromFilename(String filename) {
         Matcher osMatcher = OS_PATTERN.matcher(filename);
