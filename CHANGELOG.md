@@ -1,3 +1,6 @@
+* **1.5.6**
+  * Fix Elliptic Curve cipher missed in [#89](https://github.com/update4j/update4j/issues/89).
+  * Workaround JDK bug where `Files.walk` would enumerate absolute paths. [#113](https://github.com/update4j/update4j/issues/113), [#116](https://github.com/update4j/update4j/issues/116)
 * **1.5.5**
   * Fix dynamic properties not working with archive installations. [#110](https://github.com/update4j/update4j/issues/110)
 * **1.5.4**
