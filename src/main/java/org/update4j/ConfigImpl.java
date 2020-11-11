@@ -373,8 +373,9 @@ class ConfigImpl {
                     }
 
                     doneDownloads = true;
-                    handler.doneDownloads();
                 }
+
+                handler.doneDownloads();
             }
 
             success = true;
