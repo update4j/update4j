@@ -1,3 +1,5 @@
+* **1.5.7**
+  * Close zip resource before calling `doneDownloads()`. [#120](https://github.com/update4j/update4j/issues/120)
 * **1.5.6**
   * Fix Elliptic Curve cipher missed in [#89](https://github.com/update4j/update4j/issues/89).
   * Workaround JDK bug where `Files.walk` would enumerate absolute paths. [#113](https://github.com/update4j/update4j/issues/113), [#116](https://github.com/update4j/update4j/issues/116)
