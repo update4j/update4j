@@ -72,11 +72,9 @@ For more information refer to [Starting the Application](https://github.com/upda
   * Support Elliptic Curve cipher. [#89](https://github.com/update4j/update4j/issues/89)
   * Clamp update handler `frac` values between 0 and 1. [#106](https://github.com/update4j/update4j/issues/106)
 
-## Contributors
+## Sponsers
 
-  * [@mordechaim](https://github.com/mordechaim) — lead contributor.
-  * [@ChristianCiach](https://github.com/ChristianCiach) — tested and inspired many features and bugfixes.
-  * [@edvin](https://github.com/edvin) — original author of [edvin/FXLauncher](https://github.com/edvin/fxlauncher) which highly influenced the design of update4j.
+[![docsolver](https://avatars.githubusercontent.com/u/1634032?s=75)](https://github.com/docsolver)
 
 ## License
 
