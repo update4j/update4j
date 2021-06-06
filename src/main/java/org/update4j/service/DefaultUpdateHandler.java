@@ -53,11 +53,11 @@ public class DefaultUpdateHandler implements UpdateHandler {
     }
     
     private PrintStream getOutputStream() {
-		if (out == null) {
-			out = out();
-		}
-		return out;
-	}
+        if (out == null) {
+            out = out();
+        }
+        return out;
+    }
 
     @Override
     public void startDownloadFile(FileMetadata file) throws Throwable {
@@ -153,20 +153,20 @@ public class DefaultUpdateHandler implements UpdateHandler {
     }
 
     private void clear() {
-    	getOutputStream().print(clear);
+        getOutputStream().print(clear);
     }
 
     private void clearln() {
-    	getOutputStream().println(clear);
+        getOutputStream().println(clear);
     }
 
     private void print(String str) {
-    	getOutputStream().print("\r");
+        getOutputStream().print("\r");
         getOutputStream().print(padRight(totalWidth, str));
     }
 
     private void println(String str) {
-    	getOutputStream().print("\r");
+        getOutputStream().print("\r");
         getOutputStream().println(padRight(totalWidth, str));
     }
 
