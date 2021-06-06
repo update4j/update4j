@@ -51,6 +51,13 @@ public class DefaultUpdateHandler implements UpdateHandler {
         ordinalWidth = String.valueOf(total).length() * 2 + 1;
         initProgress();
     }
+    
+    private PrintStream getOutputStream() {
+        if (out == null) {
+            out = out();
+        }
+        return out;
+    }
 
     @Override
     public void startDownloadFile(FileMetadata file) throws Throwable {
@@ -146,21 +153,21 @@ public class DefaultUpdateHandler implements UpdateHandler {
     }
 
     private void clear() {
-        out.print(clear);
+        getOutputStream().print(clear);
     }
 
     private void clearln() {
-        out.println(clear);
+        getOutputStream().println(clear);
     }
 
     private void print(String str) {
-        out.print("\r");
-        out.print(padRight(totalWidth, str));
+        getOutputStream().print("\r");
+        getOutputStream().print(padRight(totalWidth, str));
     }
 
     private void println(String str) {
-        out.print("\r");
-        out.println(padRight(totalWidth, str));
+        getOutputStream().print("\r");
+        getOutputStream().println(padRight(totalWidth, str));
     }
 
     protected String renderProgress() {
