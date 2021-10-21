@@ -43,6 +43,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
     @Override
     public void init(UpdateContext context) {
         this.context = context;
+        out = out();
     }
 
     @Override
@@ -52,13 +53,6 @@ public class DefaultUpdateHandler implements UpdateHandler {
         initProgress();
     }
     
-    private PrintStream getOutputStream() {
-        if (out == null) {
-            out = out();
-        }
-        return out;
-    }
-
     @Override
     public void startDownloadFile(FileMetadata file) throws Throwable {
         index++;
@@ -79,7 +73,7 @@ public class DefaultUpdateHandler implements UpdateHandler {
     @Override
     public void failed(Throwable t) {
         clearln();
-        t.printStackTrace();
+        t.printStackTrace(out);
     }
 
     @Override
@@ -115,7 +109,6 @@ public class DefaultUpdateHandler implements UpdateHandler {
     private boolean stopTimer;
 
     protected void initProgress() {
-        out = out();
         totalWidth = consoleWidth();
         msgWidth = "Downloading".length();
         rateWidth = "@ 100.0 kB/s".length();
@@ -153,21 +146,21 @@ public class DefaultUpdateHandler implements UpdateHandler {
     }
 
     private void clear() {
-        getOutputStream().print(clear);
+        out.print(clear);
     }
 
     private void clearln() {
-        getOutputStream().println(clear);
+        out.println(clear);
     }
 
     private void print(String str) {
-        getOutputStream().print("\r");
-        getOutputStream().print(padRight(totalWidth, str));
+        out.print("\r");
+        out.print(padRight(totalWidth, str));
     }
 
     private void println(String str) {
-        getOutputStream().print("\r");
-        getOutputStream().println(padRight(totalWidth, str));
+        out.print("\r");
+        out.println(padRight(totalWidth, str));
     }
 
     protected String renderProgress() {
