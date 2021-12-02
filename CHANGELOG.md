@@ -1,3 +1,5 @@
+* **1.5.8**
+  * Fix `DefaultUpdateHandler` NPE when printing before starting downloads. [#142](https://github.com/update4j/update4j/issues/142)
 * **1.5.7**
   * Close zip resource before calling `doneDownloads()`. [#120](https://github.com/update4j/update4j/issues/120)
 * **1.5.6**
