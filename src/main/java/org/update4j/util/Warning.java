@@ -200,7 +200,7 @@ public class Warning {
         if (!shouldWarn("signature"))
             return;
 
-        logger.log(WARNING, "Updating without signature validation is strongly discouraged.");
+        logger.log(WARNING, "Updating without signature validation");
 
     }
 

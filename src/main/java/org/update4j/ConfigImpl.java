@@ -135,7 +135,7 @@ class ConfigImpl {
             double downloadJobCompleted = 0;
 
             if (!requiresUpdate.isEmpty()) {
-                if (key == null) {
+                if (key == null && config.getSignature() != null) {
                     Warning.signature();
                 }
                 
@@ -305,7 +305,7 @@ class ConfigImpl {
             double downloadJobCompleted = 0;
 
             if (!requiresUpdate.isEmpty()) {
-                if (key == null) {
+                if (key == null && config.getSignature() != null) {
                     Warning.signature();
                 }
                 
