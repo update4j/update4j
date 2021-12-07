@@ -42,11 +42,12 @@ import org.update4j.SingleInstanceManager;
 import org.update4j.UpdateOptions;
 import org.update4j.inject.InjectSource;
 import org.update4j.util.ArgUtils;
+import org.update4j.util.FileUtils;
 
 public class DefaultBootstrap implements Delegate {
 
-    private static final String ZIP_LOCATION = "update.zip";
-    private static final String OLD_CONFIG = "config.old";
+    private static final Path ZIP_FILE_PATH = FileUtils.getTempPath().resolve("update4j.zip");
+    private static final Path OLD_CONFIG_PATH = FileUtils.getTempPath().resolve("config.old");
 
     private String remote;
     private String local;
@@ -201,14 +202,13 @@ public class DefaultBootstrap implements Delegate {
         }
 
         Configuration config = remoteConfig != null ? remoteConfig : localConfig;
-        Path zip = Paths.get(ZIP_LOCATION);
 
-        boolean success = config.update(UpdateOptions.archive(zip).publicKey(pk)).getException() == null;
+        boolean success = config.update(UpdateOptions.archive(ZIP_FILE_PATH).publicKey(pk)).getException() == null;
         if (!success && stopOnUpdateError)
             return;
 
-        if (Files.exists(zip)) {
-            Archive.read(zip).install();
+        if (Files.exists(ZIP_FILE_PATH)) {
+            Archive.read(ZIP_FILE_PATH).install();
         }
 
         if (success && syncLocal && config == remoteConfig) {
@@ -223,16 +223,15 @@ public class DefaultBootstrap implements Delegate {
     }
 
     protected void launchFirst() throws Throwable {
-        Path zip = Paths.get(ZIP_LOCATION);
 
-        if (Files.exists(zip)) {
+        if (Files.exists(ZIP_FILE_PATH)) {
             try {
-                Archive archive = Archive.read(zip);
+                Archive archive = Archive.read(ZIP_FILE_PATH);
                 Configuration oldConfig = null;
                 Configuration newConfig = archive.getConfiguration();
 
                 try (FileSystem fs = archive.openConnection()) {
-                    Path oldPath = fs.getPath(OLD_CONFIG);
+                    Path oldPath = OLD_CONFIG_PATH;
                     if (Files.exists(oldPath)) {
                         try (BufferedReader in = Files.newBufferedReader(oldPath)) {
                             oldConfig = Configuration.read(in);
@@ -265,13 +264,13 @@ public class DefaultBootstrap implements Delegate {
         if (remoteConfig.equals(localConfig))
             return;
 
-        boolean success = remoteConfig.update(UpdateOptions.archive(zip).publicKey(pk)).getException() == null;
+        boolean success = remoteConfig.update(UpdateOptions.archive(ZIP_FILE_PATH).publicKey(pk)).getException() == null;
 
-        if (Files.exists(zip)) {
+        if (Files.exists(ZIP_FILE_PATH)) {
             // persist old config to delete old files on next restart
-            Archive archive = Archive.read(zip);
+            Archive archive = Archive.read(ZIP_FILE_PATH);
             try (FileSystem fs = archive.openConnection();
-                            BufferedWriter out = Files.newBufferedWriter(fs.getPath(OLD_CONFIG))) {
+                            BufferedWriter out = Files.newBufferedWriter(OLD_CONFIG_PATH)) {
                 localConfig.write(out);
             }
         }
@@ -342,8 +341,8 @@ public class DefaultBootstrap implements Delegate {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
+    }    
+    
     // @formatter:off
     private static void welcome() {
 

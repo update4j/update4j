@@ -50,7 +50,8 @@ import org.update4j.OS;
 public class FileUtils {
 
     public static final Pattern OS_PATTERN = Pattern.compile(".+-(linux|win|mac)\\.[^.]+");
-
+    private static final String JAVA_IO_TMPDIR_KEY = "java.io.tmpdir";
+    
     private FileUtils() {
     }
 
@@ -278,6 +279,10 @@ public class FileUtils {
                 e.printStackTrace();
             }
         }));
+    }
+    
+    public static Path getTempPath() {
+    	return Paths.get(System.getProperty(JAVA_IO_TMPDIR_KEY));
     }
 
 }
