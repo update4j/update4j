@@ -47,7 +47,7 @@ import org.update4j.util.FileUtils;
 public class DefaultBootstrap implements Delegate {
 
     private static final Path ZIP_FILE_PATH = FileUtils.getTempPath().resolve("update4j.zip");
-    private static final Path OLD_CONFIG_PATH = FileUtils.getTempPath().resolve("config.old");
+    private static final String OLD_CONFIG = "config.old";
 
     private String remote;
     private String local;
@@ -231,7 +231,7 @@ public class DefaultBootstrap implements Delegate {
                 Configuration newConfig = archive.getConfiguration();
 
                 try (FileSystem fs = archive.openConnection()) {
-                    Path oldPath = OLD_CONFIG_PATH;
+                    Path oldPath = fs.getPath(OLD_CONFIG);
                     if (Files.exists(oldPath)) {
                         try (BufferedReader in = Files.newBufferedReader(oldPath)) {
                             oldConfig = Configuration.read(in);
@@ -270,7 +270,7 @@ public class DefaultBootstrap implements Delegate {
             // persist old config to delete old files on next restart
             Archive archive = Archive.read(ZIP_FILE_PATH);
             try (FileSystem fs = archive.openConnection();
-                            BufferedWriter out = Files.newBufferedWriter(OLD_CONFIG_PATH)) {
+                            BufferedWriter out = Files.newBufferedWriter(fs.getPath(OLD_CONFIG))) {
                 localConfig.write(out);
             }
         }
