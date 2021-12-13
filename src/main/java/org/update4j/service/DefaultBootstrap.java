@@ -45,11 +45,11 @@ import org.update4j.util.ArgUtils;
 
 public class DefaultBootstrap implements Delegate {
 
-    private static final String ZIP_LOCATION = "update.zip";
     private static final String OLD_CONFIG = "config.old";
 
     private String remote;
     private String local;
+    private String archivePath = "./update.zip";
     private String cert;
 
     private boolean syncLocal;
@@ -73,6 +73,10 @@ public class DefaultBootstrap implements Delegate {
 
     public String getLocal() {
         return local;
+    }
+
+    public String getArchivePath() {
+        return archivePath;
     }
 
     public String getCert() {
@@ -175,6 +179,9 @@ public class DefaultBootstrap implements Delegate {
             } else if ("cert".equals(arg)) {
                 ArgUtils.validateHasValue(e);
                 cert = e.getValue();
+            } else if ("archive".equals(arg)) {
+                ArgUtils.validateHasValue(e);
+                archivePath = e.getValue();
             } else if ("delegate".equals(arg)) {
                 throw new IllegalArgumentException("--delegate must be passed as first argument.");
             } else {
@@ -201,7 +208,7 @@ public class DefaultBootstrap implements Delegate {
         }
 
         Configuration config = remoteConfig != null ? remoteConfig : localConfig;
-        Path zip = Paths.get(ZIP_LOCATION);
+        Path zip = Paths.get(archivePath);
 
         boolean success = config.update(UpdateOptions.archive(zip).publicKey(pk)).getException() == null;
         if (!success && stopOnUpdateError)
@@ -223,7 +230,7 @@ public class DefaultBootstrap implements Delegate {
     }
 
     protected void launchFirst() throws Throwable {
-        Path zip = Paths.get(ZIP_LOCATION);
+        Path zip = Paths.get(archivePath);
 
         if (Files.exists(zip)) {
             try {
@@ -415,6 +422,8 @@ public class DefaultBootstrap implements Delegate {
                 + "\t\tfall back to local.\n\n"
                 + "\t--local [path] - The path of a local configuration to use if the remote failed to download\n"
                 + "\t\tor was not passed. If both remote and local are missing, startup fails.\n\n"
+                + "\t--archive [path] - The archive location where to temporarily persist the downloaded files.\n"
+                + "\t\tIf not specified, the default value is './update.zip'.\n\n"
                 + "\t--syncLocal - Sync the local configuration with the remote if it downloaded, loaded and\n"
                 + "\t\tupdated files successfully. Useful to still allow launching without Internet connection.\n"
                 + "\t\tDefault will not sync unless --launchFirst was specified.\n\n"
