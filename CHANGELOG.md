@@ -1,3 +1,6 @@
+* **1.5.9**
+  * Allow specifying zip location in `DefaultBootstrap` with the `--archive` option. [#159](https://github.com/update4j/update4j/issues/159)
+  * Speed up `deleteOldFiles` by first comparing raw path strings, and only then query the OS. [#163](https://github.com/update4j/update4j/issues/163)
 * **1.5.8**
   * Fix `DefaultUpdateHandler` NPE when printing before starting downloads. [#142](https://github.com/update4j/update4j/issues/142)
 * **1.5.7**
