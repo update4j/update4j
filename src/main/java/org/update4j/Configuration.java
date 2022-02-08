@@ -1640,7 +1640,12 @@ public class Configuration {
             if (!Files.exists(file.getPath())) {
                 continue;
             }
+            
+            if(getFiles().stream().anyMatch(f -> (f.getOs() == null || f.getOs() == OS.CURRENT) && f.getPath().equals(file.getPath()))) {
+                continue;
+            }
 
+            // at this point this path isn't present in the new config, let's rule out symlinks
             for (FileMetadata newFile : getFiles()) {
                 if (newFile.getOs() == null || newFile.getOs() == OS.CURRENT) {
                     if (Files.isSameFile(newFile.getPath(), file.getPath())) {

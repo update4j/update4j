@@ -221,7 +221,7 @@ public class DefaultBootstrap implements Delegate {
         if (success && syncLocal && config == remoteConfig) {
             syncLocal(remoteConfig);
 
-            if (localConfig != null) {
+            if (localConfig != null && !localConfig.equals(remoteConfig)) {
                 remoteConfig.deleteOldFiles(localConfig);
             }
         }
