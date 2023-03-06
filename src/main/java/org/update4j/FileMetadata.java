@@ -35,6 +35,7 @@ import org.update4j.mapper.ConfigMapper;
 import org.update4j.mapper.FileMapper;
 import org.update4j.service.UpdateHandler;
 import org.update4j.util.FileUtils;
+import org.update4j.util.FilenameMatch;
 import org.update4j.util.PropertyManager;
 
 /**
@@ -69,6 +70,7 @@ public class FileMetadata {
     private final Path path;
     private Path normalizedPath;
     private final OS os;
+    private final String arch;
     private final long checksum;
     private final long size;
     private final boolean classpath;
@@ -81,7 +83,7 @@ public class FileMetadata {
     private final List<AddPackage> addOpens;
     private final List<String> addReads;
 
-    private FileMetadata(URI uri, Path path, OS os, long checksum, long size, boolean classpath, boolean modulepath,
+    private FileMetadata(URI uri, Path path, OS os, String arch, long checksum, long size, boolean classpath, boolean modulepath,
                     String comment, boolean ignoreBootConflict, String signature, List<AddPackage> addExports,
                     List<AddPackage> addOpens, List<String> addReads) {
 
@@ -106,7 +108,12 @@ public class FileMetadata {
             }
         }
 
+        if (arch != null && os == null)
+            throw new IllegalArgumentException("You must set the OS to use 'arch'");
+
         this.os = os;
+        this.arch = arch;
+
 
         if (checksum < 0)
             throw new IllegalArgumentException("Negative checksum: " + checksum);
@@ -198,6 +205,20 @@ public class FileMetadata {
      */
     public OS getOs() {
         return os;
+    }
+
+    /**
+     * Returns the CPU architecture expressed in the {@code arch} attribute, or
+     * {@code null} if non.
+     * 
+     * <p>
+     * This field is used for both updating and launching.
+     * 
+     * @return The CPU architecture expressed in the {@code arch} attribute, or
+     *         {@code null} if non.
+     */
+    public String getArch() {
+        return arch;
     }
 
     /**
@@ -375,7 +396,7 @@ public class FileMetadata {
      *             If any exception arises while reading the file content.
      */
     public boolean requiresUpdate() throws IOException {
-        if (getOs() != null && getOs() != OS.CURRENT)
+        if (getOs() != null && (getOs() != OS.CURRENT || (getArch() != null && !System.getProperty("os.arch").equals(getArch()))))
             return false;
 
         return Files.notExists(getPath()) || Files.size(getPath()) != getSize()
@@ -495,6 +516,7 @@ public class FileMetadata {
         private String path;
         private String uri;
         private OS os;
+        private String arch;
         private Boolean classpath;
         private Boolean modulepath;
         private String comment;
@@ -629,14 +651,28 @@ public class FileMetadata {
         }
 
         /**
-         * Sets the os by parsing the filename. The os is detected if it matches this
+         * Sets the arch of this file to exclude it from other architectures when
+         * updating and launching. You must also set the OS to a non-null value to use this attribute.
+         * 
+         * @param os
+         *            The architecture to associate this file with.
+         * @return This instance for chaining.
+         */
+        public Reference arch(String arch) {
+            this.arch = arch;
+
+            return this;
+        }
+
+        /**
+         * Sets the os (and optionally, the arch) by parsing the filename. The os and arch are detected if it matches this
          * pattern:
          * 
          * <pre>
-         * filename-<b>os</b>.extension
+         * filename-<b>os-arch</b>.extension
          * </pre>
          * 
-         * where {@code os} can be {@code win}, {@code mac} or {@code linux}.
+         * where {@code os} can be {@code win}, {@code mac} or {@code linux}, and {@code arch} can be any freeform string.
          * 
          * <p>
          * Examples include:
@@ -646,9 +682,9 @@ public class FileMetadata {
          * appicon-mac.icns
          * appicon-linux.png
          * 
-         * javafx-base-11.0.1-win.jar
+         * javafx-base-11.0.1-win-x86.jar
          * javafx-base-11.0.1-mac.jar
-         * javafx-base-11.0.1-linux.jar
+         * javafx-base-11.0.1-linux-armv7.jar
          * </pre>
          * 
          * <p>
@@ -657,9 +693,11 @@ public class FileMetadata {
          * @return This instance for chaining.
          */
         public Reference osFromFilename() {
-            OS os = FileUtils.fromFilename(source.toString());
-            if (os != null)
-                os(os);
+            FilenameMatch match = FileUtils.fromFilename(source.toString());
+            if (match.getOs() != null)
+                os(match.getOs());
+            if (match.getArch() != null)
+                arch(match.getArch());
 
             return this;
         }
@@ -671,6 +709,15 @@ public class FileMetadata {
          */
         public OS getOs() {
             return os;
+        }
+
+        /**
+         * Returns the arch passed in {@link #arch(String)} or {@code null} if non.
+         * 
+         * @return The arch passed in {@link #arch(String)} or {@code null}.
+         */
+        public String getArch() {
+            return arch;
         }
 
         public Reference classpath(boolean cp) {
@@ -850,6 +897,7 @@ public class FileMetadata {
                 }
 
                 mapper.os = getOs();
+                mapper.arch = getArch();
                 mapper.size = getSize();
                 mapper.checksum = Long.toHexString(getChecksum());
                 mapper.classpath = isClasspath();
@@ -884,6 +932,7 @@ public class FileMetadata {
         private URI uri;
         private Path path;
         private OS os;
+        private String arch;
         private long checksum;
         private long size;
         private boolean classpath;
@@ -928,6 +977,12 @@ public class FileMetadata {
 
         Builder os(OS os) {
             this.os = os;
+
+            return this;
+        }
+
+        Builder arch(String arch) {
+            this.arch = arch;
 
             return this;
         }
@@ -1042,7 +1097,7 @@ public class FileMetadata {
                 this.path = basePath.resolve(path);
             }
 
-            return new FileMetadata(uri, path, os, checksum, size, classpath, modulepath, comment, ignoreBootConflict,
+            return new FileMetadata(uri, path, os, arch, checksum, size, classpath, modulepath, comment, ignoreBootConflict,
                             signature, addExports, addOpens, addReads);
         }
     }

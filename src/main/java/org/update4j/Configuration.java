@@ -1847,6 +1847,8 @@ public class Configuration {
 
             if (fm.os != null)
                 fileBuilder.os(fm.os);
+            if (fm.arch != null)
+                fileBuilder.arch(fm.arch);
 
             // defaults to false
             fileBuilder.modulepath(fm.modulepath != null && fm.modulepath);

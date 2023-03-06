@@ -33,6 +33,7 @@ public class FileMapper extends XmlMapper {
     public String checksum;
     public Long size;
     public OS os;
+    public String arch;
     public Boolean classpath;
     public Boolean modulepath;
     public String comment;
@@ -60,6 +61,7 @@ public class FileMapper extends XmlMapper {
         checksum = copy.checksum;
         size = copy.size;
         os = copy.os;
+        arch = copy.arch;
         classpath = copy.classpath;
         modulepath = copy.modulepath;
         comment = copy.comment;
@@ -89,6 +91,8 @@ public class FileMapper extends XmlMapper {
         if (os != null) {
             this.os = OS.fromShortName(os);
         }
+
+        arch = getAttributeValue(node, "arch");
 
         String classpath = getAttributeValue(node, "classpath");
         if (classpath != null) {
@@ -179,6 +183,9 @@ public class FileMapper extends XmlMapper {
         }
         if (os != null) {
             builder.append(" os=\"" + os.getShortName() + "\"");
+        }
+        if(arch != null) {
+            builder.append(" arch=\"" + arch + "\"");
         }
         if (classpath != null && classpath) {
             builder.append(" classpath=\"true\"");

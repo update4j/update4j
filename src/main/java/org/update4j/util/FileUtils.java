@@ -49,7 +49,7 @@ import org.update4j.OS;
 
 public class FileUtils {
 
-    public static final Pattern OS_PATTERN = Pattern.compile(".+-(linux|win|mac)\\.[^.]+");
+    public static final Pattern OS_PATTERN = Pattern.compile(".+-(linux|win|mac)(?:-(.+))?\\.[^.]+$");
 
     private FileUtils() {
     }
@@ -182,14 +182,17 @@ public class FileUtils {
         return base.resolve(child.toString().replaceFirst("^\\\\|/", ""));
     }
 
-    public static OS fromFilename(String filename) {
-        Matcher osMatcher = OS_PATTERN.matcher(filename);
+    public static FilenameMatch fromFilename(String filename) {
+        Matcher filenameMatcher = OS_PATTERN.matcher(filename);
 
-        if (osMatcher.matches()) {
-            return OS.fromShortName(osMatcher.group(1));
+        OS os = null;
+        String arch = null;
+        if (filenameMatcher.matches()) {
+            os = OS.fromShortName(filenameMatcher.group(1));
+            arch = filenameMatcher.group(2);
         }
 
-        return null;
+        return new FilenameMatch(os, arch);
     }
 
     public static boolean isEmptyDirectory(Path path) throws IOException {
