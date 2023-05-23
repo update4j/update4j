@@ -72,9 +72,9 @@ For more information refer to [Starting the Application](https://github.com/upda
   * Support Elliptic Curve cipher. [#89](https://github.com/update4j/update4j/issues/89)
   * Clamp update handler `frac` values between 0 and 1. [#106](https://github.com/update4j/update4j/issues/106)
 
-## Sponsers
+## Sponsors
 
-[![docsolver](https://avatars.githubusercontent.com/u/1634032?s=75)](https://github.com/docsolver)
+[![Basil Inc](https://avatars.githubusercontent.com/u/1634032?s=75)](https://github.com/basil-inc)
 
 ## License
 
