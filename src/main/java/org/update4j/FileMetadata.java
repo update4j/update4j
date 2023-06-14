@@ -396,11 +396,17 @@ public class FileMetadata {
      *             If any exception arises while reading the file content.
      */
     public boolean requiresUpdate() throws IOException {
-        if (getOs() != null && (getOs() != OS.CURRENT || (getArch() != null && !System.getProperty("os.arch").equals(getArch()))))
+        if (!appliesToCurrentPlatform())
             return false;
 
         return Files.notExists(getPath()) || Files.size(getPath()) != getSize()
                         || FileUtils.getChecksum(getPath()) != getChecksum();
+    }
+
+    public boolean appliesToCurrentPlatform() {
+        return getOs() == null || (
+                getOs() == OS.CURRENT && (getArch() == null || System.getProperty("os.arch").equals(getArch()))
+        );
     }
 
     /**
@@ -654,8 +660,10 @@ public class FileMetadata {
          * Sets the arch of this file to exclude it from other architectures when
          * updating and launching. You must also set the OS to a non-null value to use this attribute.
          * 
-         * @param os
-         *            The architecture to associate this file with.
+         * @param arch
+         *            The architecture, from the system property `os.arch`, to associate this file with.
+         *            This is not validated as there is no documented list of potential os.arch values.
+         *            Values should be obtained by checking `os.arch` on target systems.
          * @return This instance for chaining.
          */
         public Reference arch(String arch) {
