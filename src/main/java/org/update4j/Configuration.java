@@ -1641,13 +1641,13 @@ public class Configuration {
                 continue;
             }
             
-            if(getFiles().stream().anyMatch(f -> (f.getOs() == null || f.getOs() == OS.CURRENT) && f.getPath().equals(file.getPath()))) {
+            if(getFiles().stream().anyMatch(f -> (f.appliesToCurrentPlatform()) && f.getPath().equals(file.getPath()))) {
                 continue;
             }
 
             // at this point this path isn't present in the new config, let's rule out symlinks
             for (FileMetadata newFile : getFiles()) {
-                if (newFile.getOs() == null || newFile.getOs() == OS.CURRENT) {
+                if (newFile.appliesToCurrentPlatform()) {
                     if (Files.isSameFile(newFile.getPath(), file.getPath())) {
                         continue outer;
                     }
@@ -1847,6 +1847,8 @@ public class Configuration {
 
             if (fm.os != null)
                 fileBuilder.os(fm.os);
+            if (fm.arch != null)
+                fileBuilder.arch(fm.arch);
 
             // defaults to false
             fileBuilder.modulepath(fm.modulepath != null && fm.modulepath);
@@ -1868,14 +1870,20 @@ public class Configuration {
             FileMetadata file = fileBuilder.build();
             for (FileMetadata prevFile : files) {
                 // if any path is null (by referencing foreign property), ignore
-                if ((prevFile.getPath() != null && file.getPath() != null)
-                                // files do not have cascading as properties, so if 
-                                // at least one is null, OR both are non-null but same os
-                                && ((prevFile.getOs() == null || file.getOs() == null)
-                                                || prevFile.getOs() == file.getOs())
-                                // and have same paths, throw exception
-                                && prevFile.getPath().equals(file.getPath())) {
-                    throw new IllegalStateException("2 files resolve to same 'path': " + file.getPath());
+                if ((prevFile.getPath() != null && file.getPath() != null)) {
+                    // files do not have cascading os properties, so if
+                    // at least one is null, OR both are non-null but same os
+                    boolean osOverlap = prevFile.getOs() == null || file.getOs() == null
+                                    || prevFile.getOs() == file.getOs();
+                    // and files do not have cascading arch properties, so if
+                    // at least one is null, OR both are non-null but same architecture
+                    boolean archOverlap = prevFile.getArch() == null || file.getArch() == null
+                                    || Objects.equals(prevFile.getArch(), file.getArch());
+                    // and have same paths, throw exception
+                    boolean pathOverlap = prevFile.getPath().equals(file.getPath());
+                    if(osOverlap && archOverlap && pathOverlap) {
+                        throw new IllegalStateException("2 files resolve to same 'path': " + file.getPath());
+                    }
                 }
             }
 

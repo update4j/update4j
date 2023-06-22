@@ -101,7 +101,7 @@ class ConfigImpl {
 
             List<FileMetadata> osFiles = config.getFiles()
                             .stream()
-                            .filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
+                            .filter(FileMetadata::appliesToCurrentPlatform)
                             .collect(Collectors.toList());
 
             long updateJobSize = osFiles.stream().mapToLong(FileMetadata::getSize).sum();
@@ -271,7 +271,7 @@ class ConfigImpl {
 
             List<FileMetadata> osFiles = config.getFiles()
                             .stream()
-                            .filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
+                            .filter(FileMetadata::appliesToCurrentPlatform)
                             .collect(Collectors.toList());
 
             long updateJobSize = osFiles.stream().mapToLong(FileMetadata::getSize).sum();
@@ -546,7 +546,7 @@ class ConfigImpl {
     static void doLaunch(Configuration config, Injectable injectable, Launcher launcher) {
         List<FileMetadata> modules = config.getFiles()
                         .stream()
-                        .filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
+                        .filter(FileMetadata::appliesToCurrentPlatform)
                         .filter(FileMetadata::isModulepath)
                         .collect(Collectors.toList());
 
@@ -554,7 +554,7 @@ class ConfigImpl {
 
         List<URL> classpaths = config.getFiles()
                         .stream()
-                        .filter(file -> file.getOs() == null || file.getOs() == OS.CURRENT)
+                        .filter(FileMetadata::appliesToCurrentPlatform)
                         .filter(FileMetadata::isClasspath)
                         .map(FileMetadata::getNormalizedPath)
                         .map(path -> {
